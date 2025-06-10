@@ -1481,9 +1481,9 @@ if 'session_id' not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 # Interfaz principal
-st.title("🧬 ARTGEN")
-st.markdown("**Laboratorio de Arte Genético - Plataforma pionera de investigación artística**")
-st.markdown("*Arte NFT basado en ADN real de especies*")
+st.title("🧬 GeneticFrames")
+st.markdown("**Marcos de Arte Genético - Donde el ADN se convierte en arte único**")
+st.markdown("*Cada especie. Una obra maestra. Ediciones limitadas.*")
 
 # Hero section con especies destacadas
 st.markdown("---")

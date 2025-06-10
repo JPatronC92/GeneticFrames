@@ -1481,8 +1481,8 @@ if 'session_id' not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 # Interfaz principal
-st.title("🧬 Arca Digital Genética")
-st.markdown("**El primer zoológico digital del mundo - Arte NFT basado en ADN real de especies**")
+st.title("🧬 Laboratorio de Arte Genético")
+st.markdown("**Plataforma pionera de investigación artística - Arte NFT basado en ADN real de especies**")
 
 # Hero section con especies destacadas
 st.markdown("---")

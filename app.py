@@ -586,7 +586,7 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
             if st.button("🎨 Crear NFT", use_container_width=True):
                 with st.spinner("Preparando NFT..."):
                     nft_package = nft_manager.prepare_nft_package(
-                        seq_record, organismo, gc, conteo_bases, fig
+                        seq_record, final_organismo, gc, conteo_bases, fig
                     )
                     
                     if nft_package:

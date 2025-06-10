@@ -551,11 +551,8 @@ def generar_anillo_fractal(secuencia, ring, colors, base_values, gc_ratio, compl
             size = max(6, 8 + value * 3 + ring * 0.5)
             sizes.append(size)
             
-            # Símbolo basado en características
-            if base in ['G', 'C']:
-                symbols.append('diamond' if ring % 2 == 0 else 'square')
-            else:
-                symbols.append('circle')
+            # Formas abstractas orgánicas
+            symbols.append('circle')  # Solo círculos para simplicidad
     
     # Crear puntos suavizados para líneas
     if len(x_coords) > 3:

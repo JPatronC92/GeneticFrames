@@ -1,0 +1,194 @@
+# main.py
+from flask import Flask, render_template_string, request, jsonify
+from Bio import Entrez, SeqIO
+from Bio.SeqUtils import GC_content
+import plotly.graph_objects as go
+from io import BytesIO
+import base64
+
+app = Flask(__name__)
+
+# Configura NCBI (Reemplaza con tu email real)
+Entrez.email = "tu_email@ejemplo.com"
+
+# Mapeo científico fijo de bases a atributos visuales
+BASE_ART_MAP = {
+    'A': {'color': '#FF5555', 'size': 10, 'symbol': 'circle'},
+    'T': {'color': '#FFFF50', 'size': 12, 'symbol': 'diamond'},
+    'C': {'color': '#5555FF', 'size': 8, 'symbol': 'square'},
+    'G': {'color': '#55FF55', 'size': 14, 'symbol': 'star'},
+    'N': {'color': '#AAAAAA', 'size': 6, 'symbol': 'x'}
+}
+
+def obtener_secuencia(organismo):
+    """Obtiene secuencia de ADN desde NCBI"""
+    try:
+        handle = Entrez.esearch(db="nucleotide", term=organismo, retmax=1)
+        record = Entrez.read(handle)
+        handle.close()
+        
+        if not record["IdList"]:
+            return None
+            
+        seq_id = record["IdList"][0]
+        handle = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
+        seq_record = SeqIO.read(handle, "fasta")
+        handle.close()
+        
+        return seq_record
+        
+    except Exception as e:
+        print(f"Error NCBI: {str(e)}")
+        return None
+
+def generar_visualizacion(seq_record):
+    """Genera arte científico del ADN"""
+    secuencia = str(seq_record.seq).upper()[:500]  # Limita a 500 bases
+    
+    # Datos para el gráfico
+    posiciones = []
+    bases = []
+    propiedades = []
+    
+    for i, base in enumerate(secuencia):
+        base = base if base in BASE_ART_MAP else 'N'
+        posiciones.append(i)
+        bases.append(base)
+        propiedades.append(BASE_ART_MAP[base])
+    
+    # Crear figura Plotly
+    fig = go.Figure()
+    
+    for base in set(bases):
+        indices = [i for i, b in enumerate(bases) if b == base]
+        fig.add_trace(go.Scatter(
+            x=[posiciones[i] for i in indices],
+            y=[1]*len(indices),
+            mode='markers',
+            marker=dict(
+                color=BASE_ART_MAP[base]['color'],
+                size=BASE_ART_MAP[base]['size'],
+                symbol=BASE_ART_MAP[base]['symbol']
+            ),
+            name=f"Base {base}"
+        ))
+    
+    fig.update_layout(
+        title=f"ADN de {seq_record.id}",
+        xaxis_title="Posición en secuencia",
+        yaxis_visible=False,
+        showlegend=True,
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    # Convertir imagen a base64
+    img_bytes = fig.to_image(format="png")
+    img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+    
+    return img_b64, GC_content(secuencia), seq_record.description
+
+# HTML Template
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DNA Scientific Art</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #2c3e50; text-align: center; }
+        .search-box { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .result-box { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .metrics { display: flex; gap: 15px; margin: 15px 0; }
+        .metric { background: #e8f4f8; padding: 10px; border-radius: 5px; flex: 1; text-align: center; }
+        button { background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        #dna-image { width: 100%; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧬 DNA Scientific Art</h1>
+    
+    <div class="search-box">
+        <form method="POST">
+            <h3>🔍 Buscar organismo:</h3>
+            <input type="text" name="organismo" value="{{ organismo }}" placeholder="Ej: Homo sapiens" required>
+            <button type="submit">Generar Visualización</button>
+        </form>
+    </div>
+    
+    {% if error %}
+        <div style="color: red; padding: 10px; background: #ffeeee; border-radius: 5px;">
+            {{ error }}
+        </div>
+    {% endif %}
+    
+    {% if resultados %}
+    <div class="result-box">
+        <div class="metrics">
+            <div class="metric">
+                <strong>Longitud</strong>
+                <div>{{ resultados.longitud }} bp</div>
+            </div>
+            <div class="metric">
+                <strong>Contenido GC</strong>
+                <div>{{ resultados.gc }}%</div>
+            </div>
+        </div>
+        
+        <img id="dna-image" src="data:image/png;base64,{{ resultados.imagen }}">
+        
+        <h3>Detalles:</h3>
+        <p><strong>ID:</strong> {{ resultados.id }}</p>
+        <p><strong>Descripción:</strong> {{ resultados.descripcion }}</p>
+        
+        <a href="/descargar?organismo={{ organismo }}" download>
+            <button>⬇️ Descargar Imagen</button>
+        </a>
+    </div>
+    {% endif %}
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    organismo = ""
+    resultados = None
+    error = ""
+    
+    if request.method == "POST":
+        organismo = request.form.get("organismo", "").strip()
+        if organismo:
+            seq_record = obtener_secuencia(organismo)
+            if seq_record:
+                img_b64, gc, desc = generar_visualizacion(seq_record)
+                resultados = {
+                    "imagen": img_b64,
+                    "gc": f"{gc:.2f}",
+                    "longitud": len(seq_record.seq),
+                    "id": seq_record.id,
+                    "descripcion": desc
+                }
+            else:
+                error = f"No se encontraron resultados para: {organismo}"
+    
+    return render_template_string(HTML_TEMPLATE, 
+                               organismo=organismo,
+                               resultados=resultados,
+                               error=error)
+
+@app.route("/descargar")
+def descargar():
+    organismo = request.args.get("organismo", "ADN")
+    seq_record = obtener_secuencia(organismo)
+    if seq_record:
+        img_b64, _, _ = generar_visualizacion(seq_record)
+        img_bytes = base64.b64decode(img_b64)
+        return img_bytes, 200, {
+            'Content-Type': 'image/png',
+            'Content-Disposition': f'attachment; filename=dna_art_{organismo.replace(" ", "_")}.png'
+        }
+    return "Organismo no encontrado", 404
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8080)

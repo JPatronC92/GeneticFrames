@@ -23,24 +23,71 @@ from animal_search import animal_search
 Entrez.email = os.getenv("ENTREZ_EMAIL")
 Entrez.api_key = os.getenv("NCBI_API_KEY")
 
+def limpiar_nombre_cientifico(nombre):
+    """Limpia nombre científico removiendo autores y años para búsqueda en NCBI"""
+    import re
+    # Remover autor y año (ej: "Dynastes grantii Horn, 1870" -> "Dynastes grantii")
+    # Patrones comunes: "Autor, YYYY", "Autor YYYY", "(Autor, YYYY)", "(Autor) YYYY"
+    patterns = [
+        r'\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,?\s+\d{4}.*$',  # Autor, año
+        r'\s+\([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,?\s*\d{4}\).*$',  # (Autor, año)
+        r'\s+\([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\)\s+\d{4}.*$',  # (Autor) año
+        r'\s+[A-Z][a-z]+\s+\d{4}.*$',  # Autor año
+    ]
+    
+    nombre_limpio = nombre.strip()
+    for pattern in patterns:
+        nombre_limpio = re.sub(pattern, '', nombre_limpio)
+    
+    return nombre_limpio.strip()
+
 # Cache para evitar repetir búsquedas
 @st.cache_data(ttl=3600, show_spinner="Buscando en bases de datos genéticas...")
 def obtener_secuencia(organismo):
     """Obtiene secuencia de ADN desde NCBI"""
     try:
-        search = Entrez.esearch(db="nucleotide", term=organismo, retmax=1, idtype="acc")
-        record = Entrez.read(search)
-        search.close()
+        # Limpiar nombre científico antes de la búsqueda
+        nombre_limpio = limpiar_nombre_cientifico(organismo)
         
-        if not record["IdList"]:
-            return None
+        # Lista de términos de búsqueda a probar en orden de preferencia
+        search_terms = [
+            f'"{nombre_limpio}"[Organism]',  # Búsqueda exacta por organismo
+            f'{nombre_limpio}[Organism]',    # Búsqueda por organismo sin comillas
+            f'"{nombre_limpio}" AND complete genome',  # Genoma completo
+            f'"{nombre_limpio}" AND mitochondrion',    # Mitocondrial
+            f'"{nombre_limpio}" AND 16S',              # ARN ribosomal 16S
+            f'"{nombre_limpio}" AND COI',              # Citocromo oxidasa I
+            nombre_limpio,                             # Búsqueda general
+        ]
+        
+        for term in search_terms:
+            search = Entrez.esearch(db="nucleotide", term=term, retmax=1, idtype="acc")
+            record = Entrez.read(search)
+            search.close()
             
-        seq_id = record["IdList"][0]
-        fetch = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
-        seq_record = SeqIO.read(fetch, "fasta")
-        fetch.close()
+            if record["IdList"]:
+                seq_id = record["IdList"][0]
+                fetch = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
+                seq_record = SeqIO.read(fetch, "fasta")
+                fetch.close()
+                return seq_record
         
-        return seq_record
+        # Si no se encuentra nada, intentar con solo el género
+        genus = nombre_limpio.split()[0] if ' ' in nombre_limpio else nombre_limpio
+        if genus != nombre_limpio:
+            for term_suffix in ['[Organism]', ' AND complete genome', ' AND mitochondrion']:
+                search = Entrez.esearch(db="nucleotide", term=f'"{genus}"{term_suffix}', retmax=1, idtype="acc")
+                record = Entrez.read(search)
+                search.close()
+                
+                if record["IdList"]:
+                    seq_id = record["IdList"][0]
+                    fetch = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
+                    seq_record = SeqIO.read(fetch, "fasta")
+                    fetch.close()
+                    return seq_record
+        
+        return None
         
     except Exception as e:
         st.error(f"Error al acceder a NCBI: {str(e)}")

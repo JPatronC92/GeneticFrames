@@ -134,36 +134,48 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     # Valores artísticos premium para mayor expresividad
     base_values = {'A': 1.3, 'T': 2.1, 'C': 2.7, 'G': 3.4, 'N': 0.9}
     
-    # Usar semilla genética ultra-específica para máxima diferenciación
+    # Usar firmas genéticas completamente únicas para cada secuencia
     if genetic_seed:
-        # Múltiples semillas combinadas para diferenciación extrema
-        primary_seed = genetic_seed['unique_signature']
-        secondary_seed = genetic_seed['combined_hash']
-        tertiary_seed = genetic_seed['first_segment'] + genetic_seed['last_segment']
+        # Semillas principales basadas en la secuencia específica
+        master_seed = genetic_seed['master_signature']
+        fingerprint_seed = genetic_seed['sequence_fingerprint']
+        transition_seed = genetic_seed['transition_signature']
         
-        np.random.seed(primary_seed)
-        random.seed(secondary_seed)
+        np.random.seed(master_seed % 2147483647)
+        random.seed(fingerprint_seed % 2147483647)
         
-        # Parámetros ultra-específicos basados en genética compleja
-        unique_frequency_base = genetic_seed['trinuc_frequency'] * 0.8 + (primary_seed % 200) / 2000
-        complexity_multiplier = genetic_seed['sequence_diversity'] / 10.0 + genetic_seed['entropy'] + (secondary_seed % 100) / 200
-        gc_influence = genetic_seed['gc_variance'] * 5.0 + genetic_seed['gc_ratio'] * 4.0
+        # Parámetros únicos basados en las firmas específicas de esta secuencia
+        segments = genetic_seed.get('segment_signatures', [1000])
+        patterns = genetic_seed.get('repetition_patterns', [])
         
-        # Factores de variación extrema ultra-únicos
-        color_shift = (tertiary_seed % 360) / 360  # Rotación de color ultra-específica
-        pattern_intensity = 0.3 + genetic_seed['entropy'] * 2 + genetic_seed['trinuc_frequency'] * 3
-        layer_count_modifier = (primary_seed % 8) + 3  # 3-10 capas variables
-        wave_modifier = genetic_seed['gc_variance'] * 10 + (secondary_seed % 50) / 100
-        amplitude_multiplier = 1.0 + genetic_seed['entropy'] + (tertiary_seed % 100) / 500
+        # Frecuencias únicas basadas en segmentos específicos
+        unique_frequency_base = (sum(segments[:3]) % 1000) / 10000 + 0.01
+        complexity_multiplier = (genetic_seed['complexity_score'] / 100) + (master_seed % 50) / 100
+        
+        # Factores visuales completamente únicos por secuencia
+        color_shift = (genetic_seed['unique_signature_1'] % 360) / 360
+        pattern_intensity = 0.5 + (genetic_seed['unique_signature_2'] % 100) / 200
+        layer_count_modifier = (genetic_seed['unique_signature_3'] % 7) + 4  # 4-10 capas
+        wave_modifier = 1.0 + (transition_seed % 100) / 100
+        amplitude_multiplier = 0.8 + (fingerprint_seed % 80) / 200
+        
+        # Factores adicionales únicos basados en patrones de repetición
+        if patterns:
+            pattern_influence = sum(p['pattern_hash'] for p in patterns[:3]) / 3000
+            frequency_modulation = sum(p['frequency'] for p in patterns[:2]) / 100
+        else:
+            pattern_influence = 0.5
+            frequency_modulation = 1.0
     else:
         unique_frequency_base = 0.05
         complexity_multiplier = 1.0
-        gc_influence = 1.0
         color_shift = 0
         pattern_intensity = 1.0
-        layer_count_modifier = 3
+        layer_count_modifier = 4
         wave_modifier = 1.0
         amplitude_multiplier = 1.0
+        pattern_influence = 0.5
+        frequency_modulation = 1.0
     
     # Análisis de características genéticas únicas
     gc_content = sequence_segment.count('G') + sequence_segment.count('C')
@@ -199,17 +211,29 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             # Coordenadas con múltiples armónicos
             x = i * 0.8
             
-            # Ondas ultra-complejas con múltiples fases genéticas únicas
-            genetic_phase = color_shift * np.pi * 2 * wave_modifier if genetic_seed else 0
-            secondary_phase = (tertiary_seed % 180) * np.pi / 180 if genetic_seed else 0
-            tertiary_phase = (primary_seed % 120) * np.pi / 120 if genetic_seed else 0
+            # Ondas completamente únicas basadas en firmas genéticas específicas
+            if genetic_seed:
+                # Usar firmas específicas para fases completamente diferentes
+                genetic_phase = (genetic_seed['unique_signature_1'] % 628) / 100  # 0-6.28 radianes
+                sequence_phase = (genetic_seed['unique_signature_2'] % 628) / 100  
+                transition_phase = (genetic_seed['transition_signature'] % 628) / 100
+                segment_phase = (sum(segments[:2]) % 628) / 100 if segments else 0
+                
+                # Frecuencias específicas basadas en patrones de la secuencia
+                freq1 = unique_frequency_base * frequency_modulation
+                freq2 = (genetic_seed['master_signature'] % 100) / 10000 + 0.001
+                freq3 = pattern_influence * 0.01
+                freq4 = (genetic_seed['sequence_fingerprint'] % 50) / 5000 + 0.002
+            else:
+                genetic_phase = sequence_phase = transition_phase = segment_phase = 0
+                freq1 = freq2 = freq3 = freq4 = 0.01
             
             y_base = (
-                np.sin(x * primary_frequency * wave_modifier + value + genetic_phase) * amplitude_factor * pattern_intensity * amplitude_multiplier +
-                np.cos(x * secondary_frequency * complexity_multiplier + value * 2 + secondary_phase) * amplitude_factor * 0.6 * amplitude_multiplier +
-                np.sin(x * 0.01 * gc_influence + value * 3 + tertiary_phase) * amplitude_factor * 0.3 * wave_modifier +
-                np.cos(x * 0.15 * pattern_intensity + layer + genetic_phase) * amplitude_factor * 0.2 * complexity_multiplier +
-                np.sin(x * unique_frequency_base * 10 + genetic_phase * 0.3) * amplitude_factor * 0.15 * amplitude_multiplier
+                np.sin(x * freq1 + value + genetic_phase) * amplitude_factor * pattern_intensity * amplitude_multiplier +
+                np.cos(x * freq2 + value * 2 + sequence_phase) * amplitude_factor * 0.7 * amplitude_multiplier +
+                np.sin(x * freq3 + value * 3 + transition_phase) * amplitude_factor * 0.4 * wave_modifier +
+                np.cos(x * freq4 + layer + segment_phase) * amplitude_factor * 0.3 * complexity_multiplier +
+                np.sin(x * unique_frequency_base * 8 + genetic_phase * 0.5) * amplitude_factor * 0.2 * amplitude_multiplier
             )
             
             # Variación por capa
@@ -1301,60 +1325,62 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     return fig, gc
 
 def crear_semilla_genetica(secuencia, sequence_id):
-    """Crea una semilla única ultra-específica para cada secuencia genética"""
-    # Múltiples hashes para máxima diferenciación
-    id_hash = hash(sequence_id) % 1000000
-    sequence_hash = hash(secuencia) % 1000000
+    """Crea una semilla completamente única basada en la secuencia específica, no en proporciones generales"""
     
-    # Análisis exhaustivo de la secuencia
-    first_100 = secuencia[:100] if len(secuencia) >= 100 else secuencia
-    middle_100 = secuencia[len(secuencia)//2-50:len(secuencia)//2+50] if len(secuencia) >= 100 else secuencia
-    last_100 = secuencia[-100:] if len(secuencia) >= 100 else secuencia
+    # Hash de la secuencia completa como base principal
+    sequence_fingerprint = hash(secuencia) % 999999
+    id_fingerprint = hash(sequence_id) % 999999
     
-    # Métricas genéticas ultra-específicas
-    gc_content = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
-    at_content = (secuencia.count('A') + secuencia.count('T')) / len(secuencia)
+    # Análisis de patrones únicos específicos de esta secuencia
+    # Usar segmentos específicos como huellas digitales
+    segment_size = max(50, len(secuencia) // 20)
+    segments = []
+    for i in range(0, min(len(secuencia), 1000), segment_size):
+        segment = secuencia[i:i+segment_size]
+        segments.append(hash(segment) % 10000)
     
-    # Análisis de trinucleótidos para mayor especificidad
-    trinucleotides = {}
-    for i in range(len(secuencia) - 2):
-        triplet = secuencia[i:i+3]
-        trinucleotides[triplet] = trinucleotides.get(triplet, 0) + 1
+    # Patrones de repetición únicos basados en la secuencia exacta
+    repetition_patterns = []
+    for pattern_length in [3, 4, 5, 6]:
+        patterns = {}
+        for i in range(len(secuencia) - pattern_length + 1):
+            pattern = secuencia[i:i+pattern_length]
+            patterns[pattern] = patterns.get(pattern, 0) + 1
+        
+        if patterns:
+            most_frequent = max(patterns.items(), key=lambda x: x[1])
+            repetition_patterns.append({
+                'pattern': most_frequent[0],
+                'frequency': most_frequent[1],
+                'pattern_hash': hash(most_frequent[0]) % 1000
+            })
     
-    most_common_trinuc = max(trinucleotides, key=trinucleotides.get) if trinucleotides else 'ATG'
-    trinuc_frequency = trinucleotides.get(most_common_trinuc, 1) / len(secuencia)
+    # Crear múltiples firmas únicas
+    signature_1 = hash(secuencia[:min(200, len(secuencia))]) % 50000
+    signature_2 = hash(secuencia[-min(200, len(secuencia)):]) % 50000
+    signature_3 = hash(secuencia[len(secuencia)//2:len(secuencia)//2+100]) % 50000 if len(secuencia) > 100 else 0
     
-    # Patrones complejos únicos
-    repeat_pattern = detectar_patron_principal(secuencia)
+    # Calcular complejidad única basada en transiciones específicas
+    transitions = []
+    for i in range(len(secuencia) - 1):
+        transition = secuencia[i] + secuencia[i+1]
+        transitions.append(transition)
     
-    # Distribución de bases en cuadrantes
-    quarter = len(secuencia) // 4
-    gc_q1 = (secuencia[:quarter].count('G') + secuencia[:quarter].count('C')) / quarter if quarter > 0 else 0
-    gc_q2 = (secuencia[quarter:2*quarter].count('G') + secuencia[quarter:2*quarter].count('C')) / quarter if quarter > 0 else 0
-    gc_q3 = (secuencia[2*quarter:3*quarter].count('G') + secuencia[2*quarter:3*quarter].count('C')) / quarter if quarter > 0 else 0
-    gc_q4 = (secuencia[3*quarter:].count('G') + secuencia[3*quarter:].count('C')) / len(secuencia[3*quarter:]) if len(secuencia[3*quarter:]) > 0 else 0
-    
-    # Entropía de la secuencia
-    base_counts = {'A': secuencia.count('A'), 'T': secuencia.count('T'), 'C': secuencia.count('C'), 'G': secuencia.count('G')}
-    entropy = sum([-(count/len(secuencia)) * np.log2(count/len(secuencia)) if count > 0 else 0 for count in base_counts.values()])
+    transition_signature = hash(''.join(transitions[:100])) % 100000 if transitions else 0
     
     return {
-        'id_hash': id_hash,
-        'sequence_hash': sequence_hash,
-        'combined_hash': (id_hash + sequence_hash) % 100000,
+        'sequence_fingerprint': sequence_fingerprint,
+        'id_fingerprint': id_fingerprint,
+        'master_signature': (sequence_fingerprint + id_fingerprint) % 999999,
+        'segment_signatures': segments,
+        'repetition_patterns': repetition_patterns,
+        'unique_signature_1': signature_1,
+        'unique_signature_2': signature_2,
+        'unique_signature_3': signature_3,
+        'transition_signature': transition_signature,
         'sequence_length': len(secuencia),
-        'gc_ratio': gc_content,
-        'at_ratio': at_content,
-        'first_segment': hash(first_100) % 10000,
-        'middle_segment': hash(middle_100) % 10000,
-        'last_segment': hash(last_100) % 10000,
-        'dominant_trinucleotide': most_common_trinuc,
-        'trinuc_frequency': trinuc_frequency,
-        'repeat_signature': repeat_pattern,
-        'sequence_diversity': len(set(secuencia[:500])),  # Más bases para diversidad
-        'gc_variance': abs(gc_q1 - gc_q2) + abs(gc_q2 - gc_q3) + abs(gc_q3 - gc_q4),
-        'entropy': entropy,
-        'unique_signature': hash(sequence_id + secuencia[:20] + secuencia[-20:]) % 50000
+        'complexity_score': len(set(transitions)) if transitions else 1,
+        'sequence_hash_full': hash(secuencia + sequence_id) % 999999
     }
 
 def detectar_patron_principal(secuencia):

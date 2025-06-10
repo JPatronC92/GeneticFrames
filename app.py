@@ -19,8 +19,8 @@ from species_catalog import (
 )
 
 # Configuración de Entrez con variables de entorno
-Entrez.email = os.getenv("ENTREZ_EMAIL", "researcher@example.com")
-Entrez.api_key = os.getenv("NCBI_API_KEY", None)  # Opcional para mayor límite de requests
+Entrez.email = os.getenv("ENTREZ_EMAIL")
+Entrez.api_key = os.getenv("NCBI_API_KEY")
 
 # Cache para evitar repetir búsquedas
 @st.cache_data(ttl=3600, show_spinner="Buscando en bases de datos genéticas...")
@@ -183,58 +183,16 @@ with col3:
 
 st.markdown("---")
 
-# Configuración de credenciales NCBI
-with st.expander("🔑 Configuración de credenciales NCBI", expanded=False):
-    st.markdown("**Para acceso completo a la base de datos genética:**")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        email_input = st.text_input(
-            "📧 Email (requerido por NCBI):",
-            value="",
-            placeholder="tu_email@ejemplo.com",
-            help="NCBI requiere un email válido para identificar las consultas"
-        )
-    
-    with col2:
-        api_key_input = st.text_input(
-            "🔐 NCBI API Key (opcional):",
-            value="",
-            type="password",
-            placeholder="Obtén tu clave en ncbi.nlm.nih.gov/account",
-            help="Aumenta el límite de consultas de 3 a 10 por segundo"
-        )
-    
-    if st.button("💾 Guardar credenciales"):
-        if email_input.strip():
-            # Actualizar variables de entorno temporalmente
-            os.environ["ENTREZ_EMAIL"] = email_input.strip()
-            if api_key_input.strip():
-                os.environ["NCBI_API_KEY"] = api_key_input.strip()
-            
-            # Actualizar configuración de Entrez
-            Entrez.email = email_input.strip()
-            if api_key_input.strip():
-                Entrez.api_key = api_key_input.strip()
-            
-            st.success("✅ Credenciales guardadas correctamente")
-            st.info("💡 Las credenciales se mantienen activas durante esta sesión")
-        else:
-            st.error("❌ El email es obligatorio")
-    
-    # Mostrar estado actual
-    current_email = os.getenv("ENTREZ_EMAIL", "No configurado")
-    has_api_key = "✅ Configurada" if os.getenv("NCBI_API_KEY") else "❌ No configurada"
-    
-    st.markdown(f"**Estado actual:**")
-    st.markdown(f"- Email: `{current_email}`")
-    st.markdown(f"- API Key: {has_api_key}")
-    
-    st.markdown("---")
-    st.markdown("🔗 **Enlaces útiles:**")
-    st.markdown("- [Crear cuenta NCBI](https://www.ncbi.nlm.nih.gov/account/)")
-    st.markdown("- [Obtener API Key](https://www.ncbi.nlm.nih.gov/account/settings/)")
-    st.markdown("- [Documentación NCBI](https://www.ncbi.nlm.nih.gov/books/NBK25497/)")
+# Verificar estado de credenciales NCBI
+current_email = os.getenv("ENTREZ_EMAIL")
+current_api_key = os.getenv("NCBI_API_KEY")
+
+if current_email and current_api_key:
+    st.success(f"🔗 Conectado a NCBI GenBank con acceso premium (10 req/sec)")
+elif current_api_key:
+    st.info(f"🔗 Conectado a NCBI GenBank - Configurar ENTREZ_EMAIL para funcionalidad completa")
+else:
+    st.warning("⚠️ Configura NCBI_API_KEY y ENTREZ_EMAIL en variables de entorno para acceso completo")
 
 # Sidebar con configuraciones
 with st.sidebar:

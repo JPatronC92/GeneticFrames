@@ -125,7 +125,7 @@ COLOR_THEMES = {
     }
 }
 
-def crear_arte_fluido(secuencia, theme='scientific'):
+def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     """Crea arte fluido complejo con texturas y gradientes únicos por especie"""
     max_length = min(len(secuencia), 5000)
     sequence_segment = secuencia[:max_length]
@@ -133,15 +133,30 @@ def crear_arte_fluido(secuencia, theme='scientific'):
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
     
+    # Usar semilla genética para parámetros únicos
+    if genetic_seed:
+        # Establecer semilla para consistencia pero diferenciación
+        np.random.seed(genetic_seed['id_hash'] % 10000)
+        random.seed(genetic_seed['id_hash'] % 10000)
+        
+        # Parámetros únicos basados en características genéticas
+        unique_frequency_base = genetic_seed['dinuc_frequency'] * 0.2
+        complexity_multiplier = genetic_seed['sequence_diversity'] / 4.0
+        gc_influence = genetic_seed['gc_ratio'] * 2.0
+    else:
+        unique_frequency_base = 0.05
+        complexity_multiplier = 1.0
+        gc_influence = 1.0
+    
     # Análisis de características genéticas únicas
     gc_content = sequence_segment.count('G') + sequence_segment.count('C')
     at_content = sequence_segment.count('A') + sequence_segment.count('T')
     complexity = len(set(sequence_segment[:100]))  # Diversidad en primeras 100 bases
     
-    # Parámetros únicos basados en la secuencia
-    primary_frequency = 0.05 + (gc_content / len(sequence_segment)) * 0.1
-    secondary_frequency = 0.02 + (at_content / len(sequence_segment)) * 0.08
-    amplitude_factor = 15 + complexity * 3
+    # Parámetros únicos basados en la secuencia y semilla genética
+    primary_frequency = unique_frequency_base + (gc_content / len(sequence_segment)) * 0.1 + unique_frequency_base
+    secondary_frequency = 0.02 + (at_content / len(sequence_segment)) * 0.08 + (unique_frequency_base * 0.5)
+    amplitude_factor = 15 + complexity * 3 * complexity_multiplier
     
     fig = go.Figure()
     
@@ -323,13 +338,23 @@ def agregar_espirales_geneticas(fig, spiral_data, colors, complexity):
     
     return fig
 
-def crear_mandala_genetico(secuencia, theme='scientific'):
+def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     """Crea un mandala artístico complejo con texturas fractales"""
     max_length = min(len(secuencia), 4000)
     sequence_segment = secuencia[:max_length]
     
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
+    
+    # Usar semilla genética para variaciones únicas
+    if genetic_seed:
+        np.random.seed(genetic_seed['id_hash'] % 10000)
+        random.seed(genetic_seed['id_hash'] % 10000)
+        ring_variation = genetic_seed['dinuc_frequency'] * 10
+        size_multiplier = 1 + genetic_seed['sequence_diversity'] / 10
+    else:
+        ring_variation = 1.0
+        size_multiplier = 1.0
     
     # Análisis genético para parámetros únicos
     gc_ratio = (sequence_segment.count('G') + sequence_segment.count('C')) / len(sequence_segment)
@@ -636,13 +661,23 @@ def crear_rayos_geneticos(secuencia, colors, gc_ratio):
     
     return rayos
 
-def crear_galaxia_genetica(secuencia, theme='scientific'):
+def crear_galaxia_genetica(secuencia, theme='scientific', genetic_seed=None):
     """Crea una galaxia artística compleja con múltiples estructuras cósmicas"""
     max_length = min(len(secuencia), 6000)
     sequence_segment = secuencia[:max_length]
     
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    
+    # Usar semilla genética para galaxias únicas
+    if genetic_seed:
+        np.random.seed(genetic_seed['id_hash'] % 10000)
+        random.seed(genetic_seed['id_hash'] % 10000)
+        arm_count_modifier = int(genetic_seed['sequence_diversity'] / 2)
+        density_modifier = genetic_seed['dinuc_frequency']
+    else:
+        arm_count_modifier = 0
+        density_modifier = 1.0
     
     # Análisis genético para estructura galáctica única
     gc_content = sequence_segment.count('G') + sequence_segment.count('C')
@@ -1186,18 +1221,84 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     secuencia = str(seq_record.seq).upper()
     gc = gc_fraction(secuencia) * 100
     
+    # Crear semilla única basada en el ID de la secuencia y primeras bases
+    sequence_id = str(seq_record.id)
+    genetic_seed = crear_semilla_genetica(secuencia, sequence_id)
+    
     if style == 'fluid':
-        fig = crear_arte_fluido(secuencia, theme)
+        fig = crear_arte_fluido(secuencia, theme, genetic_seed)
     elif style == 'mandala':
-        fig = crear_mandala_genetico(secuencia, theme)
+        fig = crear_mandala_genetico(secuencia, theme, genetic_seed)
     elif style == 'galaxy':
-        fig = crear_galaxia_genetica(secuencia, theme)
+        fig = crear_galaxia_genetica(secuencia, theme, genetic_seed)
     elif style == 'heatmap':
         fig = crear_mapa_calor_gc(secuencia)
     else:  # classic fallback
         fig = crear_visualizacion_clasica(secuencia, seq_record, theme)
     
     return fig, gc
+
+def crear_semilla_genetica(secuencia, sequence_id):
+    """Crea una semilla única para cada secuencia genética"""
+    # Combinar ID de secuencia con características genéticas únicas
+    id_hash = hash(sequence_id) % 1000000
+    
+    # Análisis de la secuencia para parámetros únicos
+    first_50 = secuencia[:50] if len(secuencia) >= 50 else secuencia
+    last_50 = secuencia[-50:] if len(secuencia) >= 50 else secuencia
+    
+    # Calcular métricas únicas
+    gc_content = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
+    at_content = (secuencia.count('A') + secuencia.count('T')) / len(secuencia)
+    
+    # Patrón de dinucleótidos únicos
+    dinucleotides = {}
+    for i in range(len(secuencia) - 1):
+        pair = secuencia[i:i+2]
+        dinucleotides[pair] = dinucleotides.get(pair, 0) + 1
+    
+    most_common_dinuc = max(dinucleotides, key=dinucleotides.get) if dinucleotides else 'AT'
+    dinuc_frequency = dinucleotides.get(most_common_dinuc, 1) / len(secuencia)
+    
+    # Patrones de repetición únicos
+    repeat_pattern = detectar_patron_principal(secuencia)
+    
+    return {
+        'id_hash': id_hash,
+        'sequence_length': len(secuencia),
+        'gc_ratio': gc_content,
+        'at_ratio': at_content,
+        'first_bases': first_50,
+        'last_bases': last_50,
+        'dominant_dinucleotide': most_common_dinuc,
+        'dinuc_frequency': dinuc_frequency,
+        'repeat_signature': repeat_pattern,
+        'sequence_diversity': len(set(secuencia[:200])),  # Diversidad en primeras 200 bases
+        'middle_gc': (secuencia[len(secuencia)//4:3*len(secuencia)//4].count('G') + 
+                     secuencia[len(secuencia)//4:3*len(secuencia)//4].count('C')) / 
+                     (len(secuencia)//2) if len(secuencia) > 4 else gc_content
+    }
+
+def detectar_patron_principal(secuencia):
+    """Detecta el patrón repetitivo más significativo en la secuencia"""
+    best_pattern = ""
+    max_score = 0
+    
+    # Buscar patrones de longitud 3-8
+    for length in range(3, 9):
+        pattern_counts = {}
+        for i in range(len(secuencia) - length):
+            pattern = secuencia[i:i + length]
+            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+        
+        if pattern_counts:
+            most_common = max(pattern_counts, key=pattern_counts.get)
+            score = pattern_counts[most_common] * length
+            if score > max_score:
+                max_score = score
+                best_pattern = most_common
+    
+    return best_pattern if best_pattern else secuencia[:6]
 
 def crear_visualizacion_clasica(secuencia, seq_record, theme):
     """Visualización clásica mejorada"""

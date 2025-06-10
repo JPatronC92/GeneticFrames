@@ -126,227 +126,132 @@ COLOR_THEMES = {
 }
 
 def crear_arte_fluido(secuencia, theme='scientific'):
-    """Crea arte fluido abstracto basado en la secuencia de ADN"""
-    max_length = min(len(secuencia), 3000)
+    """Crea arte fluido complejo con texturas y gradientes únicos por especie"""
+    max_length = min(len(secuencia), 5000)
     sequence_segment = secuencia[:max_length]
     
     colors = COLOR_THEMES[theme]
+    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
     
-    # Crear ondas fluidas basadas en la secuencia
-    fig = go.Figure()
+    # Análisis de características genéticas únicas
+    gc_content = sequence_segment.count('G') + sequence_segment.count('C')
+    at_content = sequence_segment.count('A') + sequence_segment.count('T')
+    complexity = len(set(sequence_segment[:100]))  # Diversidad en primeras 100 bases
     
-    # Generar múltiples capas de ondas
-    for layer in range(4):
-        x_points = []
-        y_points = []
-        color_values = []
-        
-        for i, base in enumerate(sequence_segment[::4+layer]):  # Diferentes densidades por capa
-            # Crear ondas complejas basadas en las bases
-            base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
-            value = base_values.get(base, 0)
-            
-            # Múltiples frecuencias armónicas
-            x = i * 2.5
-            y = (
-                np.sin(x * 0.1 + value) * (layer + 1) * 10 +
-                np.cos(x * 0.05 + value * 2) * (layer + 1) * 5 +
-                np.sin(x * 0.02 + value * 3) * (layer + 1) * 15
-            )
-            
-            x_points.append(x)
-            y_points.append(y + layer * 30)
-            color_values.append(colors[base] if base in colors else colors['N'])
-        
-        # Crear curva suave
-        fig.add_trace(go.Scatter(
-            x=x_points,
-            y=y_points,
-            mode='lines',
-            line=dict(
-                color=color_values[0] if color_values else colors['A'],
-                width=8 - layer,
-                shape='spline',
-                smoothing=1.3
-            ),
-            fill='tonexty' if layer > 0 else None,
-            fillcolor=f"rgba({','.join(map(str, [int(color_values[0][1:3], 16), int(color_values[0][3:5], 16), int(color_values[0][5:7], 16)]))}, 0.2)" if color_values else 'rgba(255,0,0,0.2)',
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-    
-    fig.update_layout(
-        showlegend=False,
-        plot_bgcolor='rgba(0,0,0,1)',
-        paper_bgcolor='rgba(0,0,0,1)',
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
-        height=600,
-        margin=dict(l=0, r=0, t=0, b=0)
-    )
-    
-    return fig
-
-def crear_mandala_genetico(secuencia, theme='scientific'):
-    """Crea un mandala artístico basado en patrones genéticos"""
-    max_length = min(len(secuencia), 2000)
-    sequence_segment = secuencia[:max_length]
-    
-    colors = COLOR_THEMES[theme]
-    base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
+    # Parámetros únicos basados en la secuencia
+    primary_frequency = 0.05 + (gc_content / len(sequence_segment)) * 0.1
+    secondary_frequency = 0.02 + (at_content / len(sequence_segment)) * 0.08
+    amplitude_factor = 15 + complexity * 3
     
     fig = go.Figure()
     
-    # Crear múltiples anillos concéntricos
-    for ring in range(8):
-        angles = []
-        radii = []
+    # Crear múltiples capas con diferentes texturas
+    for layer in range(6):
+        x_coords = []
+        y_coords = []
         colors_list = []
         sizes = []
         
-        ring_radius = (ring + 1) * 15
-        points_in_ring = min(len(sequence_segment) // (ring + 1), 120)
+        step = max(1, len(sequence_segment) // (200 + layer * 50))
         
-        for i in range(points_in_ring):
-            if i < len(sequence_segment):
-                base = sequence_segment[i * (ring + 1)]
-                value = base_values.get(base, 0)
+        for i in range(0, len(sequence_segment), step):
+            if i >= len(sequence_segment):
+                break
                 
-                # Ángulo basado en la posición y el valor de la base
-                angle = (2 * math.pi * i / points_in_ring) + (value * 0.1)
+            base = sequence_segment[i]
+            value = base_values.get(base, 0.5)
+            
+            # Coordenadas con múltiples armónicos
+            x = i * 0.8
+            
+            # Ondas complejas con interferencia
+            y_base = (
+                np.sin(x * primary_frequency + value) * amplitude_factor +
+                np.cos(x * secondary_frequency + value * 2) * amplitude_factor * 0.6 +
+                np.sin(x * 0.01 + value * 3) * amplitude_factor * 0.3 +
+                np.cos(x * 0.15 + layer) * amplitude_factor * 0.2
+            )
+            
+            # Variación por capa
+            y = y_base + layer * (30 + complexity * 2)
+            
+            # Modulación de amplitud basada en patrones locales
+            local_pattern = sum(base_values.get(sequence_segment[j], 0) 
+                              for j in range(max(0, i-5), min(len(sequence_segment), i+5)))
+            amplitude_mod = 1 + (local_pattern / 50) * 0.5
+            y *= amplitude_mod
+            
+            x_coords.append(x)
+            y_coords.append(y)
+            
+            # Colores con gradientes basados en contexto genético
+            base_color = colors.get(base, colors['N'])
+            
+            # Modificar color basado en vecinos genéticos
+            if i > 0 and i < len(sequence_segment) - 1:
+                prev_base = sequence_segment[i-1]
+                next_base = sequence_segment[i+1]
+                context_value = (base_values.get(prev_base, 0) + base_values.get(next_base, 0)) / 2
                 
-                # Radio con variación basada en la base
-                radius = ring_radius + (value * 3) + np.sin(angle * 8) * 2
+                # Interpolación de color basada en contexto
+                r = int(base_color[1:3], 16)
+                g = int(base_color[3:5], 16)
+                b = int(base_color[5:7], 16)
                 
-                # Coordenadas polares a cartesianas
-                x = radius * np.cos(angle)
-                y = radius * np.sin(angle)
+                # Ajustar saturación basada en contexto genético
+                saturation_factor = 0.7 + (context_value / 5) * 0.3
+                r = min(255, int(r * saturation_factor))
+                g = min(255, int(g * saturation_factor))
+                b = min(255, int(b * saturation_factor))
                 
-                angles.append(angle)
-                radii.append(radius)
-                colors_list.append(colors.get(base, colors['N']))
-                sizes.append(12 + value * 2)
+                color_final = f"rgb({r},{g},{b})"
+            else:
+                color_final = base_color
+                
+            colors_list.append(color_final)
+            sizes.append(max(2, value * 3 + layer))
         
-        # Convertir a coordenadas cartesianas
-        x_coords = [r * np.cos(a) for r, a in zip(radii, angles)]
-        y_coords = [r * np.sin(a) for r, a in zip(radii, angles)]
-        
-        # Agregar puntos del anillo
-        if x_coords:
+        if len(x_coords) > 1:
+            # Líneas principales con grosor variable
             fig.add_trace(go.Scatter(
                 x=x_coords,
                 y=y_coords,
-                mode='markers',
-                marker=dict(
-                    color=colors_list,
-                    size=sizes,
-                    opacity=0.8,
-                    line=dict(width=1, color='white')
+                mode='lines',
+                line=dict(
+                    color=colors_list[0] if colors_list else colors['A'],
+                    width=max(1, 12 - layer * 1.5),
+                    shape='spline',
+                    smoothing=1.3
                 ),
+                opacity=0.8 - layer * 0.1,
                 showlegend=False,
                 hoverinfo='skip'
             ))
             
-            # Agregar líneas conectoras dentro del anillo
-            if len(x_coords) > 2:
+            # Agregar puntos de textura
+            if layer < 3:  # Solo en las primeras capas
+                scatter_x = x_coords[::max(1, len(x_coords)//30)]
+                scatter_y = y_coords[::max(1, len(y_coords)//30)]
+                scatter_colors = colors_list[::max(1, len(colors_list)//30)]
+                
                 fig.add_trace(go.Scatter(
-                    x=x_coords + [x_coords[0]],  # Cerrar el círculo
-                    y=y_coords + [y_coords[0]],
-                    mode='lines',
-                    line=dict(
-                        color=colors_list[0] if colors_list else colors['A'],
-                        width=1,
-                        dash='dot'
+                    x=scatter_x,
+                    y=scatter_y,
+                    mode='markers',
+                    marker=dict(
+                        color=scatter_colors,
+                        size=[s*2 for s in sizes[::max(1, len(sizes)//30)]],
+                        opacity=0.6,
+                        symbol='circle'
                     ),
-                    opacity=0.3,
                     showlegend=False,
                     hoverinfo='skip'
                 ))
     
-    fig.update_layout(
-        showlegend=False,
-        plot_bgcolor='rgba(0,0,0,1)',
-        paper_bgcolor='rgba(0,0,0,1)',
-        xaxis=dict(visible=False, range=[-150, 150]),
-        yaxis=dict(visible=False, range=[-150, 150]),
-        height=600,
-        margin=dict(l=0, r=0, t=0, b=0)
-    )
-    
-    return fig
-
-def crear_galaxia_genetica(secuencia, theme='scientific'):
-    """Crea una galaxia de partículas basada en el ADN"""
-    max_length = min(len(secuencia), 4000)
-    sequence_segment = secuencia[:max_length]
-    
-    colors = COLOR_THEMES[theme]
-    base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
-    
-    fig = go.Figure()
-    
-    # Crear diferentes grupos de "estrellas" basados en las bases
-    for base_type in ['A', 'T', 'C', 'G']:
-        if base_type not in colors:
-            continue
-            
-        x_coords = []
-        y_coords = []
-        sizes = []
-        
-        # Encontrar todas las posiciones de esta base
-        for i, base in enumerate(sequence_segment):
-            if base == base_type:
-                # Distribución en espiral galáctica
-                angle = i * 0.1 + base_values[base] * 0.5
-                radius = np.sqrt(i) * 2 + np.sin(angle * 3) * 10
-                
-                # Agregar ruido para efecto de dispersión
-                noise_x = np.random.normal(0, 5)
-                noise_y = np.random.normal(0, 5)
-                
-                x = radius * np.cos(angle) + noise_x
-                y = radius * np.sin(angle) + noise_y
-                
-                x_coords.append(x)
-                y_coords.append(y)
-                
-                # Tamaño basado en densidad local
-                density = sum(1 for j in range(max(0, i-10), min(len(sequence_segment), i+10)) 
-                             if sequence_segment[j] == base_type)
-                sizes.append(max(3, density * 2))
-        
-        if x_coords:
-            fig.add_trace(go.Scatter(
-                x=x_coords,
-                y=y_coords,
-                mode='markers',
-                marker=dict(
-                    color=colors[base_type],
-                    size=sizes,
-                    opacity=0.7,
-                    line=dict(width=0)
-                ),
-                name=f'Base {base_type}',
-                showlegend=False,
-                hoverinfo='skip'
-            ))
-    
-    # Agregar efecto de centro galáctico
-    center_x, center_y = 0, 0
-    fig.add_trace(go.Scatter(
-        x=[center_x],
-        y=[center_y],
-        mode='markers',
-        marker=dict(
-            color='white',
-            size=30,
-            opacity=0.9,
-            symbol='star'
-        ),
-        showlegend=False,
-        hoverinfo='skip'
-    ))
+    # Agregar espirales de fondo basadas en patrones repetitivos
+    spiral_data = detectar_patrones_repetitivos(sequence_segment)
+    if spiral_data:
+        fig = agregar_espirales_geneticas(fig, spiral_data, colors, complexity)
     
     fig.update_layout(
         showlegend=False,
@@ -359,6 +264,804 @@ def crear_galaxia_genetica(secuencia, theme='scientific'):
     )
     
     return fig
+
+def detectar_patrones_repetitivos(secuencia):
+    """Detecta patrones repetitivos en la secuencia para crear espirales"""
+    patrones = {}
+    
+    # Buscar patrones de diferentes longitudes
+    for pattern_length in range(2, 8):
+        for i in range(len(secuencia) - pattern_length + 1):
+            pattern = secuencia[i:i + pattern_length]
+            if pattern in patrones:
+                patrones[pattern].append(i)
+            else:
+                patrones[pattern] = [i]
+    
+    # Filtrar patrones que aparecen múltiples veces
+    significant_patterns = {k: v for k, v in patrones.items() if len(v) >= 3}
+    
+    return significant_patterns
+
+def agregar_espirales_geneticas(fig, spiral_data, colors, complexity):
+    """Agrega espirales de fondo basadas en patrones genéticos"""
+    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    
+    for pattern, positions in list(spiral_data.items())[:3]:  # Máximo 3 espirales
+        if len(positions) < 3:
+            continue
+            
+        # Calcular parámetros de espiral basados en el patrón
+        pattern_value = sum(base_values.get(base, 0.5) for base in pattern) / len(pattern)
+        spiral_radius = 100 + pattern_value * 20
+        spiral_turns = 2 + len(pattern) * 0.5
+        
+        # Generar puntos de espiral
+        angles = np.linspace(0, spiral_turns * 2 * math.pi, len(positions) * 10)
+        radii = np.linspace(spiral_radius * 0.3, spiral_radius, len(angles))
+        
+        x_spiral = radii * np.cos(angles) + positions[0] * 2
+        y_spiral = radii * np.sin(angles) + complexity * 10
+        
+        # Color basado en el patrón dominante
+        dominant_base = max(set(pattern), key=pattern.count)
+        spiral_color = colors.get(dominant_base, colors['N'])
+        
+        fig.add_trace(go.Scatter(
+            x=x_spiral,
+            y=y_spiral,
+            mode='lines',
+            line=dict(
+                color=spiral_color,
+                width=2,
+                dash='dot'
+            ),
+            opacity=0.4,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return fig
+
+def crear_mandala_genetico(secuencia, theme='scientific'):
+    """Crea un mandala artístico complejo con texturas fractales"""
+    max_length = min(len(secuencia), 4000)
+    sequence_segment = secuencia[:max_length]
+    
+    colors = COLOR_THEMES[theme]
+    base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
+    
+    # Análisis genético para parámetros únicos
+    gc_ratio = (sequence_segment.count('G') + sequence_segment.count('C')) / len(sequence_segment)
+    complexity_factor = len(set(sequence_segment[:200])) / 4  # Diversidad normalizada
+    repeat_density = calcular_densidad_repeticiones(sequence_segment)
+    
+    fig = go.Figure()
+    
+    # Crear múltiples capas de anillos con diferentes patrones
+    num_rings = max(6, int(8 + complexity_factor * 4))
+    
+    for ring in range(num_rings):
+        ring_data = generar_anillo_fractal(
+            sequence_segment, ring, colors, base_values, 
+            gc_ratio, complexity_factor, repeat_density
+        )
+        
+        if ring_data:
+            # Puntos principales del anillo
+            fig.add_trace(go.Scatter(
+                x=ring_data['x_coords'],
+                y=ring_data['y_coords'],
+                mode='markers',
+                marker=dict(
+                    color=ring_data['colors'],
+                    size=ring_data['sizes'],
+                    opacity=ring_data['opacity'],
+                    symbol=ring_data['symbols'],
+                    line=dict(width=1, color='rgba(255,255,255,0.3)')
+                ),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            
+            # Líneas de conexión orgánicas
+            if len(ring_data['x_coords']) > 3:
+                fig.add_trace(go.Scatter(
+                    x=ring_data['x_smooth'],
+                    y=ring_data['y_smooth'],
+                    mode='lines',
+                    line=dict(
+                        color=ring_data['line_color'],
+                        width=ring_data['line_width'],
+                        shape='spline',
+                        smoothing=1.2
+                    ),
+                    opacity=ring_data['line_opacity'],
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+            
+            # Patrones fractales secundarios
+            if ring % 2 == 0 and ring < 6:  # Solo en anillos pares
+                fractal_data = crear_patron_fractal(
+                    ring_data, sequence_segment[ring*100:(ring+1)*100], colors
+                )
+                if fractal_data:
+                    fig.add_trace(go.Scatter(
+                        x=fractal_data['x'],
+                        y=fractal_data['y'],
+                        mode='markers',
+                        marker=dict(
+                            color=fractal_data['colors'],
+                            size=fractal_data['sizes'],
+                            opacity=0.4,
+                            symbol='diamond'
+                        ),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+    
+    # Agregar centro artístico basado en secuencia inicial
+    centro_data = crear_centro_mandala(sequence_segment[:50], colors, complexity_factor)
+    if centro_data:
+        fig.add_trace(go.Scatter(
+            x=centro_data['x'],
+            y=centro_data['y'],
+            mode='markers',
+            marker=dict(
+                color=centro_data['colors'],
+                size=centro_data['sizes'],
+                opacity=0.9,
+                symbol='star',
+                line=dict(width=2, color='white')
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Agregar rayos genéticos emanando del centro
+    rayos_data = crear_rayos_geneticos(sequence_segment, colors, gc_ratio)
+    for rayo in rayos_data:
+        fig.add_trace(go.Scatter(
+            x=rayo['x'],
+            y=rayo['y'],
+            mode='lines',
+            line=dict(
+                color=rayo['color'],
+                width=rayo['width'],
+                dash='dash'
+            ),
+            opacity=0.3,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    max_radius = 150 + complexity_factor * 50
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,1)',
+        paper_bgcolor='rgba(0,0,0,1)',
+        xaxis=dict(visible=False, range=[-max_radius, max_radius]),
+        yaxis=dict(visible=False, range=[-max_radius, max_radius]),
+        height=600,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+    
+    return fig
+
+def calcular_densidad_repeticiones(secuencia):
+    """Calcula la densidad de repeticiones en la secuencia"""
+    repeticiones = 0
+    for i in range(len(secuencia) - 3):
+        triplete = secuencia[i:i+3]
+        if secuencia.count(triplete) > 1:
+            repeticiones += 1
+    return repeticiones / len(secuencia) if len(secuencia) > 0 else 0
+
+def generar_anillo_fractal(secuencia, ring, colors, base_values, gc_ratio, complexity_factor, repeat_density):
+    """Genera un anillo con patrones fractales únicos"""
+    ring_radius = 20 + ring * (15 + complexity_factor * 5)
+    points_per_ring = max(12, int(60 + ring * 8 - repeat_density * 20))
+    
+    if ring * 50 >= len(secuencia):
+        return None
+    
+    segment = secuencia[ring * 50:(ring + 1) * 50]
+    if not segment:
+        return None
+    
+    x_coords, y_coords = [], []
+    colors_list, sizes, symbols = [], [], []
+    
+    for i in range(points_per_ring):
+        if i < len(segment):
+            base = segment[i]
+            value = base_values.get(base, 0.6)
+            
+            # Ángulo con perturbación genética
+            angle_base = (2 * math.pi * i / points_per_ring)
+            genetic_perturbation = (value - 1.5) * 0.3 + gc_ratio * 0.2
+            angle = angle_base + genetic_perturbation
+            
+            # Radio con variaciones complejas
+            radius_variation = (
+                np.sin(angle * (3 + ring)) * (5 + complexity_factor * 3) +
+                np.cos(angle * (2 + value)) * (3 + repeat_density * 10) +
+                value * 4
+            )
+            radius = ring_radius + radius_variation
+            
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            
+            x_coords.append(x)
+            y_coords.append(y)
+            
+            # Color contextual
+            base_color = colors.get(base, colors['N'])
+            colors_list.append(base_color)
+            
+            # Tamaño basado en posición genética
+            size = max(6, 8 + value * 3 + ring * 0.5)
+            sizes.append(size)
+            
+            # Símbolo basado en características
+            if base in ['G', 'C']:
+                symbols.append('diamond' if ring % 2 == 0 else 'square')
+            else:
+                symbols.append('circle')
+    
+    # Crear puntos suavizados para líneas
+    if len(x_coords) > 3:
+        # Interpolación circular
+        angles_smooth = np.linspace(0, 2 * math.pi, len(x_coords) * 3)
+        x_interp = np.interp(angles_smooth, 
+                           [math.atan2(y, x) for x, y in zip(x_coords, y_coords)], 
+                           x_coords)
+        y_interp = np.interp(angles_smooth,
+                           [math.atan2(y, x) for x, y in zip(x_coords, y_coords)], 
+                           y_coords)
+        x_smooth = list(x_interp) + [x_interp[0]]
+        y_smooth = list(y_interp) + [y_interp[0]]
+    else:
+        x_smooth, y_smooth = x_coords, y_coords
+    
+    return {
+        'x_coords': x_coords,
+        'y_coords': y_coords,
+        'colors': colors_list,
+        'sizes': sizes,
+        'symbols': symbols,
+        'opacity': max(0.4, 0.9 - ring * 0.08),
+        'x_smooth': x_smooth,
+        'y_smooth': y_smooth,
+        'line_color': colors_list[0] if colors_list else colors['A'],
+        'line_width': max(1, 3 - ring * 0.3),
+        'line_opacity': max(0.2, 0.6 - ring * 0.05)
+    }
+
+def crear_patron_fractal(ring_data, segment, colors):
+    """Crea patrones fractales secundarios"""
+    if len(segment) < 10:
+        return None
+    
+    base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
+    
+    fractal_x, fractal_y = [], []
+    fractal_colors, fractal_sizes = [], []
+    
+    for i, base in enumerate(segment[::2]):  # Cada segunda base
+        if i < len(ring_data['x_coords']):
+            # Posición base del anillo principal
+            base_x = ring_data['x_coords'][i % len(ring_data['x_coords'])]
+            base_y = ring_data['y_coords'][i % len(ring_data['y_coords'])]
+            
+            # Crear mini-fractal alrededor del punto
+            value = base_values.get(base, 0.6)
+            for sub_i in range(3):
+                angle = (2 * math.pi * sub_i / 3) + value
+                radius = 5 + value * 2
+                
+                fx = base_x + radius * np.cos(angle)
+                fy = base_y + radius * np.sin(angle)
+                
+                fractal_x.append(fx)
+                fractal_y.append(fy)
+                fractal_colors.append(colors.get(base, colors['N']))
+                fractal_sizes.append(max(2, value * 2))
+    
+    return {
+        'x': fractal_x,
+        'y': fractal_y,
+        'colors': fractal_colors,
+        'sizes': fractal_sizes
+    }
+
+def crear_centro_mandala(segment, colors, complexity_factor):
+    """Crea el centro artístico del mandala"""
+    if len(segment) < 5:
+        return None
+    
+    base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
+    
+    centro_x, centro_y = [], []
+    centro_colors, centro_sizes = [], []
+    
+    # Crear estrella central basada en las primeras bases
+    for i, base in enumerate(segment[:8]):
+        value = base_values.get(base, 0.6)
+        angle = (2 * math.pi * i / 8) + value * 0.1
+        radius = 8 + complexity_factor * 3 + value * 2
+        
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        
+        centro_x.append(x)
+        centro_y.append(y)
+        centro_colors.append(colors.get(base, colors['N']))
+        centro_sizes.append(15 + value * 3)
+    
+    return {
+        'x': centro_x,
+        'y': centro_y,
+        'colors': centro_colors,
+        'sizes': centro_sizes
+    }
+
+def crear_rayos_geneticos(secuencia, colors, gc_ratio):
+    """Crea rayos emanando del centro basados en patrones genéticos"""
+    base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
+    rayos = []
+    
+    # Crear rayos basados en secuencias repetitivas
+    num_rayos = max(4, int(6 + gc_ratio * 8))
+    
+    for i in range(num_rayos):
+        if i * 20 < len(secuencia):
+            base = secuencia[i * 20]
+            value = base_values.get(base, 0.6)
+            
+            angle = (2 * math.pi * i / num_rayos) + value * 0.2
+            length = 80 + value * 20 + gc_ratio * 30
+            
+            x_rayo = [0, length * np.cos(angle)]
+            y_rayo = [0, length * np.sin(angle)]
+            
+            rayos.append({
+                'x': x_rayo,
+                'y': y_rayo,
+                'color': colors.get(base, colors['N']),
+                'width': max(1, value)
+            })
+    
+    return rayos
+
+def crear_galaxia_genetica(secuencia, theme='scientific'):
+    """Crea una galaxia artística compleja con múltiples estructuras cósmicas"""
+    max_length = min(len(secuencia), 6000)
+    sequence_segment = secuencia[:max_length]
+    
+    colors = COLOR_THEMES[theme]
+    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    
+    # Análisis genético para estructura galáctica única
+    gc_content = sequence_segment.count('G') + sequence_segment.count('C')
+    at_content = sequence_segment.count('A') + sequence_segment.count('T')
+    gc_ratio = gc_content / len(sequence_segment) if len(sequence_segment) > 0 else 0.5
+    
+    # Detectar patrones para crear brazos espirales
+    spiral_patterns = detectar_patrones_espirales(sequence_segment)
+    cluster_density = calcular_clusters_geneticos(sequence_segment)
+    
+    fig = go.Figure()
+    
+    # Crear brazos espirales principales basados en patrones genéticos
+    for arm_index, pattern in enumerate(spiral_patterns[:4]):  # Máximo 4 brazos
+        arm_data = generar_brazo_espiral(
+            sequence_segment, pattern, arm_index, colors, base_values, 
+            gc_ratio, cluster_density
+        )
+        
+        if arm_data:
+            # Estrellas principales del brazo
+            fig.add_trace(go.Scatter(
+                x=arm_data['stars_x'],
+                y=arm_data['stars_y'],
+                mode='markers',
+                marker=dict(
+                    color=arm_data['star_colors'],
+                    size=arm_data['star_sizes'],
+                    opacity=arm_data['star_opacity'],
+                    symbol='circle',
+                    line=dict(width=0)
+                ),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            
+            # Nebulosas (nubes de gas genético)
+            if arm_data['nebula_x']:
+                fig.add_trace(go.Scatter(
+                    x=arm_data['nebula_x'],
+                    y=arm_data['nebula_y'],
+                    mode='markers',
+                    marker=dict(
+                        color=arm_data['nebula_colors'],
+                        size=arm_data['nebula_sizes'],
+                        opacity=0.3,
+                        symbol='circle'
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+            
+            # Conectores estelares (líneas tenues entre estrellas)
+            if len(arm_data['stars_x']) > 1:
+                fig.add_trace(go.Scatter(
+                    x=arm_data['connector_x'],
+                    y=arm_data['connector_y'],
+                    mode='lines',
+                    line=dict(
+                        color=arm_data['arm_color'],
+                        width=1,
+                        dash='dot'
+                    ),
+                    opacity=0.2,
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+    
+    # Crear centro galáctico super masivo
+    centro_galactico = crear_centro_galactico(sequence_segment[:100], colors, gc_ratio)
+    if centro_galactico:
+        fig.add_trace(go.Scatter(
+            x=centro_galactico['x'],
+            y=centro_galactico['y'],
+            mode='markers',
+            marker=dict(
+                color=centro_galactico['colors'],
+                size=centro_galactico['sizes'],
+                opacity=centro_galactico['opacity'],
+                symbol='star',
+                line=dict(width=2, color='white')
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Anillos de acreción alrededor del centro
+        anillos = crear_anillos_acrecion(sequence_segment[:50], colors, gc_ratio)
+        for anillo in anillos:
+            fig.add_trace(go.Scatter(
+                x=anillo['x'],
+                y=anillo['y'],
+                mode='lines',
+                line=dict(
+                    color=anillo['color'],
+                    width=anillo['width']
+                ),
+                opacity=anillo['opacity'],
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+    
+    # Crear cúmulos estelares dispersos
+    cumulos = crear_cumulos_estelares(sequence_segment, colors, cluster_density)
+    for cumulo in cumulos:
+        fig.add_trace(go.Scatter(
+            x=cumulo['x'],
+            y=cumulo['y'],
+            mode='markers',
+            marker=dict(
+                color=cumulo['colors'],
+                size=cumulo['sizes'],
+                opacity=0.6,
+                symbol='diamond'
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Agregar polvo cósmico (fondo de partículas pequeñas)
+    polvo_cosmico = generar_polvo_cosmico(sequence_segment, colors, len(sequence_segment))
+    if polvo_cosmico:
+        fig.add_trace(go.Scatter(
+            x=polvo_cosmico['x'],
+            y=polvo_cosmico['y'],
+            mode='markers',
+            marker=dict(
+                color=polvo_cosmico['colors'],
+                size=[1, 2] * (len(polvo_cosmico['x']) // 2),
+                opacity=0.3,
+                symbol='circle'
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Configurar vista galáctica
+    max_extent = 200 + len(sequence_segment) * 0.05
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,1)',
+        paper_bgcolor='rgba(0,0,0,1)',
+        xaxis=dict(visible=False, range=[-max_extent, max_extent]),
+        yaxis=dict(visible=False, range=[-max_extent, max_extent]),
+        height=600,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+    
+    return fig
+
+def detectar_patrones_espirales(secuencia):
+    """Detecta patrones que formarán brazos espirales"""
+    patrones = []
+    
+    # Buscar secuencias repetitivas que definirán los brazos
+    for length in range(3, 12):
+        for i in range(len(secuencia) - length):
+            pattern = secuencia[i:i + length]
+            count = secuencia.count(pattern)
+            if count >= 3:  # Patrón significativo
+                positions = [j for j, seq in enumerate(secuencia) if secuencia[j:j+length] == pattern]
+                patrones.append({
+                    'pattern': pattern,
+                    'positions': positions,
+                    'frequency': count,
+                    'length': length
+                })
+    
+    # Ordenar por frecuencia y devolver los más significativos
+    patrones.sort(key=lambda x: x['frequency'] * x['length'], reverse=True)
+    return patrones[:6]
+
+def calcular_clusters_geneticos(secuencia):
+    """Calcula densidad de clusters para cúmulos estelares"""
+    clusters = 0
+    window_size = 20
+    
+    for i in range(0, len(secuencia) - window_size, window_size):
+        window = secuencia[i:i + window_size]
+        unique_bases = len(set(window))
+        if unique_bases <= 2:  # Región homogénea = cluster
+            clusters += 1
+    
+    return clusters / (len(secuencia) // window_size) if len(secuencia) > window_size else 0.1
+
+def generar_brazo_espiral(secuencia, pattern_data, arm_index, colors, base_values, gc_ratio, cluster_density):
+    """Genera un brazo espiral basado en un patrón genético"""
+    if not pattern_data or len(pattern_data['positions']) < 3:
+        return None
+    
+    # Parámetros del brazo basados en genética
+    pattern = pattern_data['pattern']
+    positions = pattern_data['positions']
+    
+    # Color dominante del patrón
+    base_counts = {base: pattern.count(base) for base in 'ATCG'}
+    dominant_base = max(base_counts, key=base_counts.get)
+    arm_color = colors.get(dominant_base, colors['N'])
+    
+    stars_x, stars_y = [], []
+    star_colors, star_sizes = [], []
+    nebula_x, nebula_y = [], []
+    nebula_colors, nebula_sizes = [], []
+    
+    # Generar espiral basada en posiciones del patrón
+    for i, pos in enumerate(positions):
+        # Ángulo de espiral
+        base_angle = (2 * math.pi * arm_index / 4) + (pos * 0.02)  # 4 brazos máximo
+        spiral_factor = 3 + gc_ratio * 2  # Apertura de espiral
+        angle = base_angle + (i * spiral_factor * 0.1)
+        
+        # Radio creciente con variaciones
+        base_radius = 30 + i * 8
+        genetic_variation = sum(base_values.get(secuencia[j], 1) for j in range(max(0, pos-5), min(len(secuencia), pos+5))) / 10
+        radius = base_radius + genetic_variation * 10
+        
+        # Posición de estrella principal
+        x_star = radius * np.cos(angle)
+        y_star = radius * np.sin(angle)
+        
+        stars_x.append(x_star)
+        stars_y.append(y_star)
+        star_colors.append(arm_color)
+        
+        # Tamaño basado en importancia del patrón
+        size = max(4, 6 + pattern_data['frequency'] * 0.5 + genetic_variation)
+        star_sizes.append(size)
+        
+        # Agregar nebulosas ocasionales
+        if i % 3 == 0 and cluster_density > 0.3:
+            # Nebulosa alrededor de la estrella
+            for nebula_i in range(random.randint(2, 6)):
+                nebula_angle = angle + random.uniform(-0.5, 0.5)
+                nebula_radius = radius + random.uniform(-15, 15)
+                
+                nebula_x.append(nebula_radius * np.cos(nebula_angle))
+                nebula_y.append(nebula_radius * np.sin(nebula_angle))
+                nebula_colors.append(arm_color)
+                nebula_sizes.append(random.randint(8, 20))
+    
+    # Crear conectores suaves entre estrellas
+    connector_x, connector_y = [], []
+    if len(stars_x) > 1:
+        for i in range(len(stars_x)):
+            connector_x.append(stars_x[i])
+            connector_y.append(stars_y[i])
+            
+            # Agregar puntos intermedios suaves
+            if i < len(stars_x) - 1:
+                mid_x = (stars_x[i] + stars_x[i+1]) / 2
+                mid_y = (stars_y[i] + stars_y[i+1]) / 2
+                connector_x.extend([mid_x])
+                connector_y.extend([mid_y])
+    
+    return {
+        'stars_x': stars_x,
+        'stars_y': stars_y,
+        'star_colors': star_colors,
+        'star_sizes': star_sizes,
+        'star_opacity': max(0.5, 0.8 - arm_index * 0.1),
+        'nebula_x': nebula_x,
+        'nebula_y': nebula_y,
+        'nebula_colors': nebula_colors,
+        'nebula_sizes': nebula_sizes,
+        'connector_x': connector_x,
+        'connector_y': connector_y,
+        'arm_color': arm_color
+    }
+
+def crear_centro_galactico(secuencia, colors, gc_ratio):
+    """Crea el centro galáctico supermasivo"""
+    if len(secuencia) < 10:
+        return None
+    
+    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    
+    centro_x, centro_y = [], []
+    centro_colors, centro_sizes = [], []
+    
+    # Centro principal (agujero negro)
+    centro_x.append(0)
+    centro_y.append(0)
+    centro_colors.append('white')
+    centro_sizes.append(25 + gc_ratio * 15)
+    
+    # Estrellas orbitando el centro
+    for i, base in enumerate(secuencia[:12]):
+        value = base_values.get(base, 1.0)
+        angle = (2 * math.pi * i / 12) + value * 0.3
+        radius = 15 + value * 5
+        
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        
+        centro_x.append(x)
+        centro_y.append(y)
+        centro_colors.append(colors.get(base, colors['N']))
+        centro_sizes.append(8 + value * 3)
+    
+    return {
+        'x': centro_x,
+        'y': centro_y,
+        'colors': centro_colors,
+        'sizes': centro_sizes,
+        'opacity': [1.0] + [0.8] * (len(centro_x) - 1)
+    }
+
+def crear_anillos_acrecion(secuencia, colors, gc_ratio):
+    """Crea anillos de acreción alrededor del centro galáctico"""
+    anillos = []
+    
+    for ring_i in range(3):
+        radius = 20 + ring_i * 8 + gc_ratio * 10
+        points = 36
+        
+        x_ring = []
+        y_ring = []
+        
+        for i in range(points + 1):
+            angle = (2 * math.pi * i / points)
+            # Agregar variación basada en secuencia
+            if ring_i < len(secuencia):
+                base_value = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}.get(secuencia[ring_i], 1.0)
+                radius_var = radius + np.sin(angle * 4) * base_value
+            else:
+                radius_var = radius
+            
+            x_ring.append(radius_var * np.cos(angle))
+            y_ring.append(radius_var * np.sin(angle))
+        
+        anillos.append({
+            'x': x_ring,
+            'y': y_ring,
+            'color': colors['G'] if ring_i % 2 == 0 else colors['C'],
+            'width': max(1, 3 - ring_i),
+            'opacity': max(0.2, 0.6 - ring_i * 0.15)
+        })
+    
+    return anillos
+
+def crear_cumulos_estelares(secuencia, colors, cluster_density):
+    """Crea cúmulos estelares dispersos"""
+    cumulos = []
+    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    
+    num_cumulos = max(2, int(cluster_density * 8))
+    
+    for cumulo_i in range(num_cumulos):
+        if cumulo_i * 50 >= len(secuencia):
+            break
+            
+        # Posición del cúmulo
+        angle = random.uniform(0, 2 * math.pi)
+        distance = random.uniform(80, 150)
+        center_x = distance * np.cos(angle)
+        center_y = distance * np.sin(angle)
+        
+        cumulo_x, cumulo_y = [], []
+        cumulo_colors, cumulo_sizes = [], []
+        
+        # Estrellas del cúmulo
+        segment = secuencia[cumulo_i * 50:(cumulo_i + 1) * 50]
+        for i, base in enumerate(segment[:15]):  # Máximo 15 estrellas por cúmulo
+            value = base_values.get(base, 1.0)
+            
+            # Distribución alrededor del centro
+            local_angle = random.uniform(0, 2 * math.pi)
+            local_radius = random.uniform(5, 20) + value * 3
+            
+            x = center_x + local_radius * np.cos(local_angle)
+            y = center_y + local_radius * np.sin(local_angle)
+            
+            cumulo_x.append(x)
+            cumulo_y.append(y)
+            cumulo_colors.append(colors.get(base, colors['N']))
+            cumulo_sizes.append(max(3, 4 + value * 2))
+        
+        if cumulo_x:
+            cumulos.append({
+                'x': cumulo_x,
+                'y': cumulo_y,
+                'colors': cumulo_colors,
+                'sizes': cumulo_sizes
+            })
+    
+    return cumulos
+
+def generar_polvo_cosmico(secuencia, colors, sequence_length):
+    """Genera polvo cósmico de fondo"""
+    if sequence_length < 100:
+        return None
+    
+    num_particles = min(200, sequence_length // 20)
+    
+    polvo_x, polvo_y = [], []
+    polvo_colors = []
+    
+    for i in range(num_particles):
+        # Distribución aleatoria pero concentrada hacia el centro
+        angle = random.uniform(0, 2 * math.pi)
+        # Distribución exponencial hacia afuera
+        radius = random.expovariate(0.02) + 20
+        
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        
+        polvo_x.append(x)
+        polvo_y.append(y)
+        
+        # Color basado en posición en secuencia
+        base_index = i % len(secuencia)
+        base = secuencia[base_index]
+        polvo_colors.append(colors.get(base, colors['N']))
+    
+    return {
+        'x': polvo_x,
+        'y': polvo_y,
+        'colors': polvo_colors
+    }
 
 def crear_mapa_calor_gc(secuencia, window_size=50):
     """Crea un mapa de calor del contenido GC a lo largo de la secuencia"""

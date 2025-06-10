@@ -90,9 +90,18 @@ class DNANFTManager:
         
         dna_hash = self.generate_dna_hash(str(seq_record.seq), organism_name)
         
+        # Import species catalog for enhanced metadata
+        try:
+            from species_catalog import get_species_info, get_rarity_multiplier
+            species_info = get_species_info(organism_name)
+            rarity_multiplier = get_rarity_multiplier(organism_name)
+        except ImportError:
+            species_info = None
+            rarity_multiplier = 1.0
+        
         # Calculate rarity traits
         sequence_length = len(seq_record.seq)
-        rarity_score = self._calculate_rarity_score(gc_content, sequence_length, base_counts)
+        rarity_score = self._calculate_rarity_score(gc_content, sequence_length, base_counts) * rarity_multiplier
         
         metadata = {
             "name": f"DNA Art: {organism_name}",

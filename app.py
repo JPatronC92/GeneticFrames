@@ -13,6 +13,10 @@ from database import (
     add_favorite, get_user_favorites, get_database_stats
 )
 from blockchain_nft import nft_manager
+from species_catalog import (
+    FEATURED_SPECIES, get_species_info, get_rarity_multiplier,
+    get_species_story, suggest_search_terms, is_featured_species
+)
 
 # Configuración de Entrez con variables de entorno
 Entrez.email = os.getenv("ENTREZ_EMAIL", "researcher@example.com")
@@ -155,8 +159,29 @@ if 'session_id' not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 # Interfaz principal
-st.title("🧬 DNA Scientific Art Generator")
-st.markdown("**Visualización científica automática de secuencias genéticas desde NCBI GenBank**")
+st.title("🧬 Arca Digital Genética")
+st.markdown("**El primer zoológico digital del mundo - Arte NFT basado en ADN real de especies**")
+
+# Hero section con especies destacadas
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("### 🐅 Especies en Peligro")
+    st.markdown("Tigre Siberiano, Orangután de Sumatra")
+    st.markdown("*Arte genético de las especies más raras*")
+
+with col2:
+    st.markdown("### 🐋 Megafauna Icónica") 
+    st.markdown("Ballena Azul, Elefante Africano")
+    st.markdown("*Los gigantes genéticos del planeta*")
+
+with col3:
+    st.markdown("### 🧬 Genética Única")
+    st.markdown("Medusa Inmortal, Oso de Agua")
+    st.markdown("*ADN con superpoderes evolutivos*")
+
+st.markdown("---")
 
 # Configuración de credenciales NCBI
 with st.expander("🔑 Configuración de credenciales NCBI", expanded=False):
@@ -213,43 +238,75 @@ with st.expander("🔑 Configuración de credenciales NCBI", expanded=False):
 
 # Sidebar con configuraciones
 with st.sidebar:
-    st.header("🔧 Configuración")
+    st.header("🔧 Explorar el Arca")
     
-    # Input del organismo
+    # Especies destacadas organizadas por categoría
+    st.subheader("🌟 Colecciones Especiales")
+    
+    for category_key, category_data in FEATURED_SPECIES.items():
+        with st.expander(f"{category_data['name']} (×{category_data['rarity_multiplier']})"):
+            for species in category_data['species']:
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    if st.button(
+                        f"{species['common_name']}", 
+                        key=f"feat_{species['scientific_name']}",
+                        help=f"{species['conservation_status']} - {species['population']}"
+                    ):
+                        st.session_state.selected_organism = species['scientific_name']
+                        st.rerun()
+                with col2:
+                    # Indicador de rareza
+                    rarity_emoji = "💎" if category_data['rarity_multiplier'] >= 4 else "⭐" if category_data['rarity_multiplier'] >= 3 else "🔹"
+                    st.markdown(f"{rarity_emoji}")
+    
+    st.markdown("---")
+    
+    # Input manual del organismo
+    st.subheader("🔍 Búsqueda Personalizada")
     organismo = st.text_input(
-        "🔍 Organismo (nombre científico):", 
+        "Nombre científico:", 
         value="Homo sapiens",
-        help="Ingrese el nombre científico del organismo (ej: Escherichia coli, Saccharomyces cerevisiae)"
+        help="Busca cualquier especie en GenBank"
     )
     
-    # Organismos populares
-    st.subheader("🔥 Populares")
-    popular_organisms = get_popular_organisms(limit=5)
-    if popular_organisms:
-        for org_data in popular_organisms:
-            if st.button(f"{org_data['organism']} ({org_data['count']})", key=f"pop_{org_data['organism']}"):
-                st.session_state.selected_organism = org_data['organism']
-                st.rerun()
+    # Sugerencias de búsqueda
+    if organismo and len(organismo) > 2:
+        suggestions = suggest_search_terms(organismo)
+        if suggestions:
+            st.markdown("**Sugerencias:**")
+            for suggestion in suggestions[:3]:
+                if st.button(f"🔸 {suggestion['common_name']}", key=f"sug_{suggestion['scientific_name']}"):
+                    st.session_state.selected_organism = suggestion['scientific_name']
+                    st.rerun()
+    
+    st.markdown("---")
     
     # Favoritos del usuario
     st.subheader("⭐ Mis Favoritos")
-    user_favorites = get_user_favorites(st.session_state.session_id)
-    if user_favorites:
-        for fav in user_favorites[:5]:
-            if st.button(f"🧬 {fav.organism_name}", key=f"fav_{fav.id}"):
-                st.session_state.selected_organism = fav.organism_name
-                st.rerun()
-    else:
-        st.info("Aún no tienes favoritos")
+    try:
+        user_favorites = get_user_favorites(st.session_state.session_id)
+        if user_favorites:
+            for fav in user_favorites[:5]:
+                if st.button(f"🧬 {fav.organism_name}", key=f"fav_{fav.id}"):
+                    st.session_state.selected_organism = fav.organism_name
+                    st.rerun()
+        else:
+            st.info("Aún no tienes favoritos")
+    except Exception:
+        st.info("Favoritos temporalmente no disponibles")
     
     # Recientes
     st.subheader("🕒 Recientes")
-    recent_sequences = get_recent_sequences(limit=3)
-    if recent_sequences:
-        for seq in recent_sequences:
-            if st.button(f"📊 {seq.organism_name}", key=f"rec_{seq.id}"):
-                st.session_state.selected_organism = seq.organism_name
-                st.rerun()
+    try:
+        recent_sequences = get_recent_sequences(limit=3)
+        if recent_sequences:
+            for seq in recent_sequences:
+                if st.button(f"📊 {seq.organism_name}", key=f"rec_{seq.id}"):
+                    st.session_state.selected_organism = seq.organism_name
+                    st.rerun()
+    except Exception:
+        st.info("Historial temporalmente no disponible")
     
     # Opciones avanzadas
     with st.expander("⚙️ Opciones avanzadas"):
@@ -377,16 +434,39 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
         if save_to_favorites and db_record:
             add_favorite(st.session_state.session_id, organismo, seq_record.id)
         
-        # Mostrar información básica
-        st.success(f"✅ Secuencia obtenida exitosamente: **{seq_record.id}**")
+        # Mostrar información de la especie si está en el catálogo
+        species_story = get_species_story(organismo)
+        if species_story:
+            st.success(f"🎨 **{species_story['title']}**")
+            st.info(f"📖 {species_story['story']}")
+            
+            # Mostrar datos de conservación
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                status_color = "🔴" if "Crítico" in species_story['conservation'] else "🟡" if "Peligro" in species_story['conservation'] else "🟢"
+                st.markdown(f"**Estado:** {status_color} {species_story['conservation']}")
+            with col2:
+                st.markdown(f"**Población:** {species_story['population']}")
+            with col3:
+                st.markdown(f"**Hábitat:** {species_story['habitat']}")
+                
+            # Calcular rareza aumentada para especies especiales
+            rarity_multiplier = get_rarity_multiplier(organismo)
+            if rarity_multiplier > 1:
+                st.markdown(f"### 💎 Rareza Especial: ×{rarity_multiplier}")
+        else:
+            st.success(f"✅ Secuencia obtenida exitosamente: **{seq_record.id}**")
         
         # Botón para agregar a favoritos
         if not save_to_favorites:
             if st.button("⭐ Agregar a favoritos"):
-                if add_favorite(st.session_state.session_id, organismo, seq_record.id):
-                    st.success("Agregado a favoritos")
-                else:
-                    st.info("Ya está en favoritos")
+                try:
+                    if add_favorite(st.session_state.session_id, organismo, seq_record.id):
+                        st.success("Agregado a favoritos")
+                    else:
+                        st.info("Ya está en favoritos")
+                except Exception:
+                    st.warning("Error guardando favorito")
         
         # Métricas principales
         col1, col2, col3 = st.columns(3)

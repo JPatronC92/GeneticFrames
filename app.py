@@ -133,22 +133,27 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
     
-    # Usar semilla genética para parámetros únicos
+    # Usar semilla genética ultra-específica para máxima diferenciación
     if genetic_seed:
-        # Semilla única más agresiva para diferenciación extrema
-        unique_seed = hash(genetic_seed['repeat_signature'] + genetic_seed['first_bases'] + genetic_seed['last_bases']) % 50000
-        np.random.seed(unique_seed)
-        random.seed(unique_seed)
+        # Múltiples semillas combinadas para diferenciación extrema
+        primary_seed = genetic_seed['unique_signature']
+        secondary_seed = genetic_seed['combined_hash']
+        tertiary_seed = genetic_seed['first_segment'] + genetic_seed['last_segment']
         
-        # Parámetros dramáticamente diferentes basados en genética
-        unique_frequency_base = genetic_seed['dinuc_frequency'] * 0.5 + (unique_seed % 100) / 1000
-        complexity_multiplier = genetic_seed['sequence_diversity'] / 2.0 + (unique_seed % 50) / 100
-        gc_influence = genetic_seed['gc_ratio'] * 3.0 + genetic_seed['middle_gc']
+        np.random.seed(primary_seed)
+        random.seed(secondary_seed)
         
-        # Factores de variación extrema por secuencia
-        color_shift = (unique_seed % 360) / 360  # Rotación de color única
-        pattern_intensity = 0.5 + genetic_seed['dinuc_frequency'] * 2
-        layer_count_modifier = (unique_seed % 5) + 2  # 2-6 capas variables
+        # Parámetros ultra-específicos basados en genética compleja
+        unique_frequency_base = genetic_seed['trinuc_frequency'] * 0.8 + (primary_seed % 200) / 2000
+        complexity_multiplier = genetic_seed['sequence_diversity'] / 10.0 + genetic_seed['entropy'] + (secondary_seed % 100) / 200
+        gc_influence = genetic_seed['gc_variance'] * 5.0 + genetic_seed['gc_ratio'] * 4.0
+        
+        # Factores de variación extrema ultra-únicos
+        color_shift = (tertiary_seed % 360) / 360  # Rotación de color ultra-específica
+        pattern_intensity = 0.3 + genetic_seed['entropy'] * 2 + genetic_seed['trinuc_frequency'] * 3
+        layer_count_modifier = (primary_seed % 8) + 3  # 3-10 capas variables
+        wave_modifier = genetic_seed['gc_variance'] * 10 + (secondary_seed % 50) / 100
+        amplitude_multiplier = 1.0 + genetic_seed['entropy'] + (tertiary_seed % 100) / 500
     else:
         unique_frequency_base = 0.05
         complexity_multiplier = 1.0
@@ -156,6 +161,8 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
         color_shift = 0
         pattern_intensity = 1.0
         layer_count_modifier = 3
+        wave_modifier = 1.0
+        amplitude_multiplier = 1.0
     
     # Análisis de características genéticas únicas
     gc_content = sequence_segment.count('G') + sequence_segment.count('C')
@@ -188,13 +195,17 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             # Coordenadas con múltiples armónicos
             x = i * 0.8
             
-            # Ondas complejas con interferencia genética única
-            genetic_phase = color_shift * np.pi * 2 if genetic_seed else 0
+            # Ondas ultra-complejas con múltiples fases genéticas únicas
+            genetic_phase = color_shift * np.pi * 2 * wave_modifier if genetic_seed else 0
+            secondary_phase = (tertiary_seed % 180) * np.pi / 180 if genetic_seed and 'tertiary_seed' in locals() else 0
+            tertiary_phase = (primary_seed % 120) * np.pi / 120 if genetic_seed and 'primary_seed' in locals() else 0
+            
             y_base = (
-                np.sin(x * primary_frequency + value + genetic_phase) * amplitude_factor * pattern_intensity +
-                np.cos(x * secondary_frequency + value * 2 + genetic_phase * 0.5) * amplitude_factor * 0.6 +
-                np.sin(x * 0.01 * complexity_multiplier + value * 3) * amplitude_factor * 0.3 +
-                np.cos(x * 0.15 * gc_influence + layer + genetic_phase) * amplitude_factor * 0.2
+                np.sin(x * primary_frequency * wave_modifier + value + genetic_phase) * amplitude_factor * pattern_intensity * amplitude_multiplier +
+                np.cos(x * secondary_frequency * complexity_multiplier + value * 2 + secondary_phase) * amplitude_factor * 0.6 * amplitude_multiplier +
+                np.sin(x * 0.01 * gc_influence + value * 3 + tertiary_phase) * amplitude_factor * 0.3 * wave_modifier +
+                np.cos(x * 0.15 * pattern_intensity + layer + genetic_phase) * amplitude_factor * 0.2 * complexity_multiplier +
+                np.sin(x * unique_frequency_base * 10 + genetic_phase * 0.3) * amplitude_factor * 0.15 * amplitude_multiplier
             )
             
             # Variación por capa
@@ -356,23 +367,29 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
     
-    # Usar semilla genética para variaciones únicas extremas
+    # Usar semilla genética ultra-específica para galaxias únicas extremas
     if genetic_seed:
-        unique_seed = hash(genetic_seed['repeat_signature'] + genetic_seed['first_bases']) % 50000
-        np.random.seed(unique_seed)
-        random.seed(unique_seed)
+        # Múltiples semillas para diferenciación máxima
+        galaxy_seed = genetic_seed['unique_signature'] + genetic_seed['middle_segment']
+        spiral_seed = genetic_seed['combined_hash'] * genetic_seed['entropy']
         
-        ring_variation = genetic_seed['dinuc_frequency'] * 20 + (unique_seed % 100) / 50
-        size_multiplier = 1 + genetic_seed['sequence_diversity'] / 5 + (unique_seed % 50) / 100
-        mandala_rotation = (unique_seed % 360) / 360 * 2 * np.pi
-        ring_count_modifier = (unique_seed % 4) + 3  # 3-6 anillos variables
-        pattern_complexity = 0.5 + genetic_seed['middle_gc'] * 2
+        np.random.seed(galaxy_seed % 100000)
+        random.seed(spiral_seed % 100000)
+        
+        # Parámetros galácticos ultra-únicos
+        arm_count_modifier = int(genetic_seed['sequence_diversity'] / 20) + (galaxy_seed % 5) + 2  # 2-7 brazos variables
+        density_modifier = genetic_seed['trinuc_frequency'] * 3 + genetic_seed['gc_variance'] * 2
+        spiral_tightness = genetic_seed['entropy'] * 5 + (spiral_seed % 100) / 200
+        galaxy_rotation = (galaxy_seed % 360) / 360 * 4 * np.pi  # Rotación extrema
+        stellar_density = 0.5 + genetic_seed['gc_ratio'] * 2 + genetic_seed['entropy']
+        core_size_multiplier = 1.0 + genetic_seed['trinuc_frequency'] * 4 + (galaxy_seed % 50) / 100
     else:
-        ring_variation = 1.0
-        size_multiplier = 1.0
-        mandala_rotation = 0
-        ring_count_modifier = 5
-        pattern_complexity = 1.0
+        arm_count_modifier = 0
+        density_modifier = 1.0
+        spiral_tightness = 1.0
+        galaxy_rotation = 0
+        stellar_density = 1.0
+        core_size_multiplier = 1.0
     
     # Análisis genético para parámetros únicos
     gc_ratio = (sequence_segment.count('G') + sequence_segment.count('C')) / len(sequence_segment)
@@ -386,11 +403,11 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     
     for ring in range(num_rings):
         # Aplicar rotación genética única por anillo
-        ring_rotation = mandala_rotation + ring * (mandala_rotation / num_rings)
+        ring_rotation = galaxy_rotation + ring * (galaxy_rotation / num_rings)
         ring_data = generar_anillo_fractal(
             sequence_segment, ring, colors, base_values, 
             gc_ratio, complexity_factor, repeat_density, 
-            ring_rotation, pattern_complexity
+            ring_rotation, stellar_density
         )
         
         if ring_data:
@@ -1255,44 +1272,60 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     return fig, gc
 
 def crear_semilla_genetica(secuencia, sequence_id):
-    """Crea una semilla única para cada secuencia genética"""
-    # Combinar ID de secuencia con características genéticas únicas
+    """Crea una semilla única ultra-específica para cada secuencia genética"""
+    # Múltiples hashes para máxima diferenciación
     id_hash = hash(sequence_id) % 1000000
+    sequence_hash = hash(secuencia) % 1000000
     
-    # Análisis de la secuencia para parámetros únicos
-    first_50 = secuencia[:50] if len(secuencia) >= 50 else secuencia
-    last_50 = secuencia[-50:] if len(secuencia) >= 50 else secuencia
+    # Análisis exhaustivo de la secuencia
+    first_100 = secuencia[:100] if len(secuencia) >= 100 else secuencia
+    middle_100 = secuencia[len(secuencia)//2-50:len(secuencia)//2+50] if len(secuencia) >= 100 else secuencia
+    last_100 = secuencia[-100:] if len(secuencia) >= 100 else secuencia
     
-    # Calcular métricas únicas
+    # Métricas genéticas ultra-específicas
     gc_content = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
     at_content = (secuencia.count('A') + secuencia.count('T')) / len(secuencia)
     
-    # Patrón de dinucleótidos únicos
-    dinucleotides = {}
-    for i in range(len(secuencia) - 1):
-        pair = secuencia[i:i+2]
-        dinucleotides[pair] = dinucleotides.get(pair, 0) + 1
+    # Análisis de trinucleótidos para mayor especificidad
+    trinucleotides = {}
+    for i in range(len(secuencia) - 2):
+        triplet = secuencia[i:i+3]
+        trinucleotides[triplet] = trinucleotides.get(triplet, 0) + 1
     
-    most_common_dinuc = max(dinucleotides, key=dinucleotides.get) if dinucleotides else 'AT'
-    dinuc_frequency = dinucleotides.get(most_common_dinuc, 1) / len(secuencia)
+    most_common_trinuc = max(trinucleotides, key=trinucleotides.get) if trinucleotides else 'ATG'
+    trinuc_frequency = trinucleotides.get(most_common_trinuc, 1) / len(secuencia)
     
-    # Patrones de repetición únicos
+    # Patrones complejos únicos
     repeat_pattern = detectar_patron_principal(secuencia)
+    
+    # Distribución de bases en cuadrantes
+    quarter = len(secuencia) // 4
+    gc_q1 = (secuencia[:quarter].count('G') + secuencia[:quarter].count('C')) / quarter if quarter > 0 else 0
+    gc_q2 = (secuencia[quarter:2*quarter].count('G') + secuencia[quarter:2*quarter].count('C')) / quarter if quarter > 0 else 0
+    gc_q3 = (secuencia[2*quarter:3*quarter].count('G') + secuencia[2*quarter:3*quarter].count('C')) / quarter if quarter > 0 else 0
+    gc_q4 = (secuencia[3*quarter:].count('G') + secuencia[3*quarter:].count('C')) / len(secuencia[3*quarter:]) if len(secuencia[3*quarter:]) > 0 else 0
+    
+    # Entropía de la secuencia
+    base_counts = {'A': secuencia.count('A'), 'T': secuencia.count('T'), 'C': secuencia.count('C'), 'G': secuencia.count('G')}
+    entropy = sum([-(count/len(secuencia)) * np.log2(count/len(secuencia)) if count > 0 else 0 for count in base_counts.values()])
     
     return {
         'id_hash': id_hash,
+        'sequence_hash': sequence_hash,
+        'combined_hash': (id_hash + sequence_hash) % 100000,
         'sequence_length': len(secuencia),
         'gc_ratio': gc_content,
         'at_ratio': at_content,
-        'first_bases': first_50,
-        'last_bases': last_50,
-        'dominant_dinucleotide': most_common_dinuc,
-        'dinuc_frequency': dinuc_frequency,
+        'first_segment': hash(first_100) % 10000,
+        'middle_segment': hash(middle_100) % 10000,
+        'last_segment': hash(last_100) % 10000,
+        'dominant_trinucleotide': most_common_trinuc,
+        'trinuc_frequency': trinuc_frequency,
         'repeat_signature': repeat_pattern,
-        'sequence_diversity': len(set(secuencia[:200])),  # Diversidad en primeras 200 bases
-        'middle_gc': (secuencia[len(secuencia)//4:3*len(secuencia)//4].count('G') + 
-                     secuencia[len(secuencia)//4:3*len(secuencia)//4].count('C')) / 
-                     (len(secuencia)//2) if len(secuencia) > 4 else gc_content
+        'sequence_diversity': len(set(secuencia[:500])),  # Más bases para diversidad
+        'gc_variance': abs(gc_q1 - gc_q2) + abs(gc_q2 - gc_q3) + abs(gc_q3 - gc_q4),
+        'entropy': entropy,
+        'unique_signature': hash(sequence_id + secuencia[:20] + secuencia[-20:]) % 50000
     }
 
 def detectar_patron_principal(secuencia):

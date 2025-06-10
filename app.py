@@ -7,6 +7,7 @@ import io
 import os
 import numpy as np
 import math
+import random
 from datetime import datetime
 import uuid
 import json
@@ -124,91 +125,237 @@ COLOR_THEMES = {
     }
 }
 
-def crear_espiral_dna(secuencia, theme='scientific'):
-    """Crea una visualización en espiral de doble hélice del ADN"""
-    
-    max_length = min(len(secuencia), 1000)
+def crear_arte_fluido(secuencia, theme='scientific'):
+    """Crea arte fluido abstracto basado en la secuencia de ADN"""
+    max_length = min(len(secuencia), 3000)
     sequence_segment = secuencia[:max_length]
     
-    # Parámetros de la espiral
-    turns = max_length / 40  # Una vuelta completa cada 40 bases
-    height_per_turn = 20
-    radius = 8
-    
-    # Generar coordenadas para las dos hebras
-    angles = np.linspace(0, turns * 2 * math.pi, max_length)
-    x1 = radius * np.cos(angles)
-    y1 = radius * np.sin(angles)
-    z1 = np.linspace(0, turns * height_per_turn, max_length)
-    
-    # Segunda hebra (complementaria)
-    x2 = radius * np.cos(angles + math.pi)
-    y2 = radius * np.sin(angles + math.pi)
-    z2 = z1.copy()
-    
-    # Colores según el tema
     colors = COLOR_THEMES[theme]
     
+    # Crear ondas fluidas basadas en la secuencia
     fig = go.Figure()
     
-    # Primera hebra
-    for i, base in enumerate(sequence_segment):
-        if base not in colors:
-            base = 'N'
+    # Generar múltiples capas de ondas
+    for layer in range(4):
+        x_points = []
+        y_points = []
+        color_values = []
         
-        fig.add_trace(go.Scatter3d(
-            x=[x1[i]], y=[y1[i]], z=[z1[i]],
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=colors[base],
-                opacity=0.8
-            ),
-            name=f'Hebra 1: {base}',
-            showlegend=False,
-            hovertemplate=f"<b>Posición:</b> {i}<br><b>Base:</b> {base}<extra></extra>"
-        ))
-    
-    # Conexiones entre hebras (enlaces de hidrógeno)
-    for i in range(0, max_length, 5):  # Mostrar cada 5 enlaces para claridad
-        fig.add_trace(go.Scatter3d(
-            x=[x1[i], x2[i]], y=[y1[i], y2[i]], z=[z1[i], z2[i]],
+        for i, base in enumerate(sequence_segment[::4+layer]):  # Diferentes densidades por capa
+            # Crear ondas complejas basadas en las bases
+            base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
+            value = base_values.get(base, 0)
+            
+            # Múltiples frecuencias armónicas
+            x = i * 2.5
+            y = (
+                np.sin(x * 0.1 + value) * (layer + 1) * 10 +
+                np.cos(x * 0.05 + value * 2) * (layer + 1) * 5 +
+                np.sin(x * 0.02 + value * 3) * (layer + 1) * 15
+            )
+            
+            x_points.append(x)
+            y_points.append(y + layer * 30)
+            color_values.append(colors[base] if base in colors else colors['N'])
+        
+        # Crear curva suave
+        fig.add_trace(go.Scatter(
+            x=x_points,
+            y=y_points,
             mode='lines',
-            line=dict(color='rgba(200,200,200,0.3)', width=2),
+            line=dict(
+                color=color_values[0] if color_values else colors['A'],
+                width=8 - layer,
+                shape='spline',
+                smoothing=1.3
+            ),
+            fill='tonexty' if layer > 0 else None,
+            fillcolor=f"rgba({','.join(map(str, [int(color_values[0][1:3], 16), int(color_values[0][3:5], 16), int(color_values[0][5:7], 16)]))}, 0.2)" if color_values else 'rgba(255,0,0,0.2)',
             showlegend=False,
             hoverinfo='skip'
         ))
     
-    # Segunda hebra (bases complementarias)
-    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}
-    for i, base in enumerate(sequence_segment):
-        comp_base = complement.get(base, 'N')
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,1)',
+        paper_bgcolor='rgba(0,0,0,1)',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+    
+    return fig
+
+def crear_mandala_genetico(secuencia, theme='scientific'):
+    """Crea un mandala artístico basado en patrones genéticos"""
+    max_length = min(len(secuencia), 2000)
+    sequence_segment = secuencia[:max_length]
+    
+    colors = COLOR_THEMES[theme]
+    base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
+    
+    fig = go.Figure()
+    
+    # Crear múltiples anillos concéntricos
+    for ring in range(8):
+        angles = []
+        radii = []
+        colors_list = []
+        sizes = []
         
-        fig.add_trace(go.Scatter3d(
-            x=[x2[i]], y=[y2[i]], z=[z2[i]],
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=colors[comp_base],
-                opacity=0.8
-            ),
-            name=f'Hebra 2: {comp_base}',
-            showlegend=False,
-            hovertemplate=f"<b>Posición:</b> {i}<br><b>Base:</b> {comp_base}<extra></extra>"
-        ))
+        ring_radius = (ring + 1) * 15
+        points_in_ring = min(len(sequence_segment) // (ring + 1), 120)
+        
+        for i in range(points_in_ring):
+            if i < len(sequence_segment):
+                base = sequence_segment[i * (ring + 1)]
+                value = base_values.get(base, 0)
+                
+                # Ángulo basado en la posición y el valor de la base
+                angle = (2 * math.pi * i / points_in_ring) + (value * 0.1)
+                
+                # Radio con variación basada en la base
+                radius = ring_radius + (value * 3) + np.sin(angle * 8) * 2
+                
+                # Coordenadas polares a cartesianas
+                x = radius * np.cos(angle)
+                y = radius * np.sin(angle)
+                
+                angles.append(angle)
+                radii.append(radius)
+                colors_list.append(colors.get(base, colors['N']))
+                sizes.append(12 + value * 2)
+        
+        # Convertir a coordenadas cartesianas
+        x_coords = [r * np.cos(a) for r, a in zip(radii, angles)]
+        y_coords = [r * np.sin(a) for r, a in zip(radii, angles)]
+        
+        # Agregar puntos del anillo
+        if x_coords:
+            fig.add_trace(go.Scatter(
+                x=x_coords,
+                y=y_coords,
+                mode='markers',
+                marker=dict(
+                    color=colors_list,
+                    size=sizes,
+                    opacity=0.8,
+                    line=dict(width=1, color='white')
+                ),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            
+            # Agregar líneas conectoras dentro del anillo
+            if len(x_coords) > 2:
+                fig.add_trace(go.Scatter(
+                    x=x_coords + [x_coords[0]],  # Cerrar el círculo
+                    y=y_coords + [y_coords[0]],
+                    mode='lines',
+                    line=dict(
+                        color=colors_list[0] if colors_list else colors['A'],
+                        width=1,
+                        dash='dot'
+                    ),
+                    opacity=0.3,
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
     
     fig.update_layout(
-        scene=dict(
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Secuencia",
-            bgcolor='rgba(0,0,0,0)',
-            camera=dict(eye=dict(x=1.5, y=1.5, z=1.5))
-        ),
-        title="Estructura de Doble Hélice del ADN",
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,1)',
+        paper_bgcolor='rgba(0,0,0,1)',
+        xaxis=dict(visible=False, range=[-150, 150]),
+        yaxis=dict(visible=False, range=[-150, 150]),
         height=600,
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)'
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+    
+    return fig
+
+def crear_galaxia_genetica(secuencia, theme='scientific'):
+    """Crea una galaxia de partículas basada en el ADN"""
+    max_length = min(len(secuencia), 4000)
+    sequence_segment = secuencia[:max_length]
+    
+    colors = COLOR_THEMES[theme]
+    base_values = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
+    
+    fig = go.Figure()
+    
+    # Crear diferentes grupos de "estrellas" basados en las bases
+    for base_type in ['A', 'T', 'C', 'G']:
+        if base_type not in colors:
+            continue
+            
+        x_coords = []
+        y_coords = []
+        sizes = []
+        
+        # Encontrar todas las posiciones de esta base
+        for i, base in enumerate(sequence_segment):
+            if base == base_type:
+                # Distribución en espiral galáctica
+                angle = i * 0.1 + base_values[base] * 0.5
+                radius = np.sqrt(i) * 2 + np.sin(angle * 3) * 10
+                
+                # Agregar ruido para efecto de dispersión
+                noise_x = np.random.normal(0, 5)
+                noise_y = np.random.normal(0, 5)
+                
+                x = radius * np.cos(angle) + noise_x
+                y = radius * np.sin(angle) + noise_y
+                
+                x_coords.append(x)
+                y_coords.append(y)
+                
+                # Tamaño basado en densidad local
+                density = sum(1 for j in range(max(0, i-10), min(len(sequence_segment), i+10)) 
+                             if sequence_segment[j] == base_type)
+                sizes.append(max(3, density * 2))
+        
+        if x_coords:
+            fig.add_trace(go.Scatter(
+                x=x_coords,
+                y=y_coords,
+                mode='markers',
+                marker=dict(
+                    color=colors[base_type],
+                    size=sizes,
+                    opacity=0.7,
+                    line=dict(width=0)
+                ),
+                name=f'Base {base_type}',
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+    
+    # Agregar efecto de centro galáctico
+    center_x, center_y = 0, 0
+    fig.add_trace(go.Scatter(
+        x=[center_x],
+        y=[center_y],
+        mode='markers',
+        marker=dict(
+            color='white',
+            size=30,
+            opacity=0.9,
+            symbol='star'
+        ),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+    
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,1)',
+        paper_bgcolor='rgba(0,0,0,1)',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=0, b=0)
     )
     
     return fig
@@ -331,15 +478,17 @@ def crear_patron_circular(secuencia, theme='scientific'):
     
     return fig
 
-def generar_visualizacion(seq_record, style='spiral', theme='scientific'):
+def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     """Crea visualización artística avanzada del ADN"""
     secuencia = str(seq_record.seq).upper()
     gc = gc_fraction(secuencia) * 100
     
-    if style == 'spiral':
-        fig = crear_espiral_dna(secuencia, theme)
-    elif style == 'circular':
-        fig = crear_patron_circular(secuencia, theme)
+    if style == 'fluid':
+        fig = crear_arte_fluido(secuencia, theme)
+    elif style == 'mandala':
+        fig = crear_mandala_genetico(secuencia, theme)
+    elif style == 'galaxy':
+        fig = crear_galaxia_genetica(secuencia, theme)
     elif style == 'heatmap':
         fig = crear_mapa_calor_gc(secuencia)
     else:  # classic fallback
@@ -610,12 +759,13 @@ with st.sidebar:
     # Selector de estilo de visualización
     art_style = st.selectbox(
         "Estilo de visualización:",
-        ["spiral", "circular", "classic", "heatmap"],
+        ["fluid", "mandala", "galaxy", "heatmap", "classic"],
         format_func=lambda x: {
-            "spiral": "🧬 Espiral 3D (Doble Hélice)",
-            "circular": "⭕ Patrón Circular",
-            "classic": "📊 Clásico Mejorado", 
-            "heatmap": "🔥 Mapa de Calor GC"
+            "fluid": "🌊 Arte Fluido Abstracto",
+            "mandala": "🔮 Mandala Genético",
+            "galaxy": "✨ Galaxia de Partículas",
+            "heatmap": "🔥 Mapa de Calor GC",
+            "classic": "📊 Clásico Mejorado"
         }[x],
         help="Selecciona el estilo artístico para la visualización del ADN"
     )

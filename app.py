@@ -2,8 +2,11 @@ import streamlit as st
 from Bio import Entrez, SeqIO
 from Bio.SeqUtils import gc_fraction
 import plotly.express as px
+import plotly.graph_objects as go
 import io
 import os
+import numpy as np
+import math
 from datetime import datetime
 import uuid
 import json
@@ -93,72 +96,312 @@ def obtener_secuencia(organismo):
         st.error(f"Error al acceder a NCBI: {str(e)}")
         return None
 
-# Mapeo científico de bases a atributos visuales (fijo)
+# Mapeo científico de bases a atributos visuales mejorado
 BASE_ART_MAP = {
-    'A': {'color': '#FF5555', 'size': 10, 'symbol': 'circle'},     # Adenina
-    'T': {'color': '#FFFF50', 'size': 12, 'symbol': 'diamond'},    # Timina
-    'C': {'color': '#5555FF', 'size': 8, 'symbol': 'square'},      # Citosina
-    'G': {'color': '#55FF55', 'size': 14, 'symbol': 'star'},       # Guanina
-    'N': {'color': '#AAAAAA', 'size': 6, 'symbol': 'x'}            # Desconocido
+    'A': {'color': '#FF6B6B', 'size': 12, 'symbol': 'circle', 'frequency': 440},     # Adenina - Rojo coral
+    'T': {'color': '#4ECDC4', 'size': 10, 'symbol': 'diamond', 'frequency': 494},    # Timina - Turquesa
+    'C': {'color': '#45B7D1', 'size': 8, 'symbol': 'square', 'frequency': 523},      # Citosina - Azul cielo
+    'G': {'color': '#96CEB4', 'size': 14, 'symbol': 'star', 'frequency': 587},       # Guanina - Verde menta
+    'N': {'color': '#FECA57', 'size': 6, 'symbol': 'x', 'frequency': 330}            # Desconocido - Amarillo dorado
 }
 
-def generar_visualizacion(seq_record):
-    """Crea visualización científica del ADN"""
-    secuencia = str(seq_record.seq).upper()
-    gc = gc_fraction(secuencia) * 100
+# Paletas de colores por tema
+COLOR_THEMES = {
+    'scientific': {
+        'A': '#E74C3C', 'T': '#3498DB', 'C': '#2ECC71', 'G': '#F39C12', 'N': '#95A5A6'
+    },
+    'ocean': {
+        'A': '#1ABC9C', 'T': '#16A085', 'C': '#2980B9', 'G': '#3498DB', 'N': '#BDC3C7'
+    },
+    'forest': {
+        'A': '#27AE60', 'T': '#2ECC71', 'C': '#229954', 'G': '#58D68D', 'N': '#A9DFBF'
+    },
+    'sunset': {
+        'A': '#E74C3C', 'T': '#E67E22', 'C': '#F39C12', 'G': '#F1C40F', 'N': '#F8C471'
+    },
+    'cosmic': {
+        'A': '#8E44AD', 'T': '#9B59B6', 'C': '#3F51B5', 'G': '#673AB7', 'N': '#B39DDB'
+    }
+}
+
+def crear_espiral_dna(secuencia, theme='scientific'):
+    """Crea una visualización en espiral de doble hélice del ADN"""
     
-    # Preparar datos para Plotly
-    bases = []
-    posiciones = []
-    propiedades = []
+    max_length = min(len(secuencia), 1000)
+    sequence_segment = secuencia[:max_length]
     
-    # Limitar longitud para mejor rendimiento visual
-    max_length = min(len(secuencia), 500)
+    # Parámetros de la espiral
+    turns = max_length / 40  # Una vuelta completa cada 40 bases
+    height_per_turn = 20
+    radius = 8
     
-    for i, base in enumerate(secuencia[:max_length]):
-        if base not in BASE_ART_MAP:
-            base = 'N'  # Para bases no estándar
-            
-        bases.append(base)
-        posiciones.append(i)
-        propiedades.append(BASE_ART_MAP[base])
+    # Generar coordenadas para las dos hebras
+    angles = np.linspace(0, turns * 2 * math.pi, max_length)
+    x1 = radius * np.cos(angles)
+    y1 = radius * np.sin(angles)
+    z1 = np.linspace(0, turns * height_per_turn, max_length)
     
-    # Crear figura científica
-    fig = px.scatter(
-        x=posiciones,
-        y=[1]*len(posiciones),  # Linea horizontal
-        color=bases,
-        symbol=bases,
-        color_discrete_map={k: v['color'] for k, v in BASE_ART_MAP.items()},
-        symbol_map={k: v['symbol'] for k, v in BASE_ART_MAP.items()},
-        size=[prop['size'] for prop in propiedades],
-        title=f"Visualización Científica de: {seq_record.id}",
-        hover_data={'x': posiciones, 'color': bases}
+    # Segunda hebra (complementaria)
+    x2 = radius * np.cos(angles + math.pi)
+    y2 = radius * np.sin(angles + math.pi)
+    z2 = z1.copy()
+    
+    # Colores según el tema
+    colors = COLOR_THEMES[theme]
+    
+    fig = go.Figure()
+    
+    # Primera hebra
+    for i, base in enumerate(sequence_segment):
+        if base not in colors:
+            base = 'N'
+        
+        fig.add_trace(go.Scatter3d(
+            x=[x1[i]], y=[y1[i]], z=[z1[i]],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=colors[base],
+                opacity=0.8
+            ),
+            name=f'Hebra 1: {base}',
+            showlegend=False,
+            hovertemplate=f"<b>Posición:</b> {i}<br><b>Base:</b> {base}<extra></extra>"
+        ))
+    
+    # Conexiones entre hebras (enlaces de hidrógeno)
+    for i in range(0, max_length, 5):  # Mostrar cada 5 enlaces para claridad
+        fig.add_trace(go.Scatter3d(
+            x=[x1[i], x2[i]], y=[y1[i], y2[i]], z=[z1[i], z2[i]],
+            mode='lines',
+            line=dict(color='rgba(200,200,200,0.3)', width=2),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Segunda hebra (bases complementarias)
+    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}
+    for i, base in enumerate(sequence_segment):
+        comp_base = complement.get(base, 'N')
+        
+        fig.add_trace(go.Scatter3d(
+            x=[x2[i]], y=[y2[i]], z=[z2[i]],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=colors[comp_base],
+                opacity=0.8
+            ),
+            name=f'Hebra 2: {comp_base}',
+            showlegend=False,
+            hovertemplate=f"<b>Posición:</b> {i}<br><b>Base:</b> {comp_base}<extra></extra>"
+        ))
+    
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Secuencia",
+            bgcolor='rgba(0,0,0,0)',
+            camera=dict(eye=dict(x=1.5, y=1.5, z=1.5))
+        ),
+        title="Estructura de Doble Hélice del ADN",
+        height=600,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
     )
     
-    # Ajustes estéticos
+    return fig
+
+def crear_mapa_calor_gc(secuencia, window_size=50):
+    """Crea un mapa de calor del contenido GC a lo largo de la secuencia"""
+    
+    # Calcular contenido GC en ventanas deslizantes
+    gc_content = []
+    positions = []
+    
+    for i in range(0, len(secuencia) - window_size + 1, 10):
+        window = secuencia[i:i + window_size]
+        gc_count = window.count('G') + window.count('C')
+        gc_percentage = (gc_count / len(window)) * 100
+        gc_content.append(gc_percentage)
+        positions.append(i + window_size // 2)
+    
+    # Crear matriz para el heatmap
+    matrix = np.array(gc_content).reshape(1, -1)
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=matrix,
+        x=positions,
+        colorscale='Viridis',
+        colorbar=dict(title="% GC Content"),
+        hovertemplate="<b>Posición:</b> %{x}<br><b>Contenido GC:</b> %{z:.1f}%<extra></extra>"
+    ))
+    
     fig.update_layout(
-        showlegend=True,
-        plot_bgcolor='rgba(0,0,0,0)',
-        xaxis_title="Posición en secuencia",
+        title="Mapa de Calor: Contenido GC a lo largo de la Secuencia",
+        xaxis_title="Posición en la Secuencia",
         yaxis_visible=False,
-        hovermode="x unified",
-        height=400,
+        height=200,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    return fig
+
+def crear_patron_circular(secuencia, theme='scientific'):
+    """Crea un patrón circular artístico del ADN"""
+    
+    max_length = min(len(secuencia), 2000)
+    sequence_segment = secuencia[:max_length]
+    
+    # Crear círculo con las bases
+    angles = np.linspace(0, 2 * np.pi, max_length, endpoint=False)
+    
+    # Radio variable según la base
+    base_radii = {'A': 1.0, 'T': 1.2, 'C': 0.8, 'G': 1.4, 'N': 0.6}
+    
+    x_coords = []
+    y_coords = []
+    colors_list = []
+    sizes = []
+    
+    colors = COLOR_THEMES[theme]
+    
+    for i, (angle, base) in enumerate(zip(angles, sequence_segment)):
+        if base not in base_radii:
+            base = 'N'
+        
+        radius = base_radii[base]
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        
+        x_coords.append(x)
+        y_coords.append(y)
+        colors_list.append(colors[base])
+        sizes.append(BASE_ART_MAP[base]['size'])
+    
+    fig = go.Figure()
+    
+    # Agregar puntos de bases
+    for base in ['A', 'T', 'C', 'G', 'N']:
+        base_x = [x for i, x in enumerate(x_coords) if sequence_segment[i] == base]
+        base_y = [y for i, y in enumerate(y_coords) if sequence_segment[i] == base]
+        base_sizes = [s for i, s in enumerate(sizes) if sequence_segment[i] == base]
+        
+        if base_x:  # Solo si hay bases de este tipo
+            fig.add_trace(go.Scatter(
+                x=base_x, y=base_y,
+                mode='markers',
+                marker=dict(
+                    color=colors[base],
+                    size=base_sizes,
+                    opacity=0.7,
+                    line=dict(width=1, color='white')
+                ),
+                name=f'Base {base}',
+                hovertemplate=f"<b>Base:</b> {base}<extra></extra>"
+            ))
+    
+    # Agregar líneas conectoras suaves
+    fig.add_trace(go.Scatter(
+        x=x_coords, y=y_coords,
+        mode='lines',
+        line=dict(color='rgba(255,255,255,0.2)', width=1),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+    
+    fig.update_layout(
+        title="Patrón Circular Genético",
+        xaxis=dict(visible=False, range=[-2, 2]),
+        yaxis=dict(visible=False, range=[-2, 2]),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=500,
+        showlegend=True,
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
+            y=-0.1,
+            xanchor="center",
+            x=0.5
         )
     )
     
-    # Agregar información de hover personalizada
-    fig.update_traces(
-        hovertemplate="<b>Posición:</b> %{x}<br><b>Base:</b> %{marker.color}<br><extra></extra>"
-    )
+    return fig
+
+def generar_visualizacion(seq_record, style='spiral', theme='scientific'):
+    """Crea visualización artística avanzada del ADN"""
+    secuencia = str(seq_record.seq).upper()
+    gc = gc_fraction(secuencia) * 100
+    
+    if style == 'spiral':
+        fig = crear_espiral_dna(secuencia, theme)
+    elif style == 'circular':
+        fig = crear_patron_circular(secuencia, theme)
+    elif style == 'heatmap':
+        fig = crear_mapa_calor_gc(secuencia)
+    else:  # classic fallback
+        fig = crear_visualizacion_clasica(secuencia, seq_record, theme)
     
     return fig, gc
+
+def crear_visualizacion_clasica(secuencia, seq_record, theme):
+    """Visualización clásica mejorada"""
+    max_length = min(len(secuencia), 1000)
+    sequence_segment = secuencia[:max_length]
+    
+    # Preparar datos
+    bases = []
+    posiciones = []
+    y_positions = []
+    
+    colors = COLOR_THEMES[theme]
+    
+    for i, base in enumerate(sequence_segment):
+        if base not in colors:
+            base = 'N'
+        
+        bases.append(base)
+        posiciones.append(i)
+        # Crear patrón ondulado basado en la base
+        base_heights = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}
+        y_positions.append(base_heights[base] + np.sin(i / 20) * 0.5)
+    
+    fig = go.Figure()
+    
+    # Agregar trazas por cada tipo de base
+    for base in ['A', 'T', 'C', 'G', 'N']:
+        base_x = [x for i, x in enumerate(posiciones) if bases[i] == base]
+        base_y = [y for i, y in enumerate(y_positions) if bases[i] == base]
+        
+        if base_x:
+            fig.add_trace(go.Scatter(
+                x=base_x, y=base_y,
+                mode='markers',
+                marker=dict(
+                    color=colors[base],
+                    size=BASE_ART_MAP[base]['size'],
+                    opacity=0.8,
+                    line=dict(width=1, color='white'),
+                    symbol=BASE_ART_MAP[base]['symbol']
+                ),
+                name=f'Base {base}',
+                hovertemplate=f"<b>Posición:</b> %{{x}}<br><b>Base:</b> {base}<extra></extra>"
+            ))
+    
+    fig.update_layout(
+        title=f"Arte Genético: {seq_record.id}",
+        xaxis_title="Posición en Secuencia",
+        yaxis_title="Estructura",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=400,
+        showlegend=True
+    )
+    
+    return fig
 
 def mostrar_estadisticas_secuencia(seq_record):
     """Muestra estadísticas detalladas de la secuencia"""
@@ -358,6 +601,47 @@ with st.sidebar:
                     if st.button(f"🔸 {suggestion['common_name']}", key=f"sug_{suggestion['scientific_name']}"):
                         st.session_state.selected_organism = suggestion['scientific_name']
                         st.rerun()
+    
+    st.markdown("---")
+    
+    # Controles artísticos
+    st.subheader("🎨 Estilo Artístico")
+    
+    # Selector de estilo de visualización
+    art_style = st.selectbox(
+        "Estilo de visualización:",
+        ["spiral", "circular", "classic", "heatmap"],
+        format_func=lambda x: {
+            "spiral": "🧬 Espiral 3D (Doble Hélice)",
+            "circular": "⭕ Patrón Circular",
+            "classic": "📊 Clásico Mejorado", 
+            "heatmap": "🔥 Mapa de Calor GC"
+        }[x],
+        help="Selecciona el estilo artístico para la visualización del ADN"
+    )
+    
+    # Selector de tema de colores
+    color_theme = st.selectbox(
+        "Tema de colores:",
+        ["scientific", "ocean", "forest", "sunset", "cosmic"],
+        format_func=lambda x: {
+            "scientific": "🔬 Científico",
+            "ocean": "🌊 Océano",
+            "forest": "🌲 Bosque",
+            "sunset": "🌅 Atardecer",
+            "cosmic": "🌌 Cósmico"
+        }[x],
+        help="Escoge la paleta de colores para tu arte genético"
+    )
+    
+    # Previsualización de colores
+    if color_theme in COLOR_THEMES:
+        st.markdown("**Vista previa de colores:**")
+        theme_colors = COLOR_THEMES[color_theme]
+        color_preview = ""
+        for base, color in theme_colors.items():
+            color_preview += f'<span style="background-color: {color}; color: white; padding: 2px 8px; margin: 2px; border-radius: 3px;">{base}</span> '
+        st.markdown(color_preview, unsafe_allow_html=True)
     
     st.markdown("---")
     

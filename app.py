@@ -217,7 +217,7 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
                 genetic_phase = (genetic_seed['unique_signature_1'] % 628) / 100  # 0-6.28 radianes
                 sequence_phase = (genetic_seed['unique_signature_2'] % 628) / 100  
                 transition_phase = (genetic_seed['transition_signature'] % 628) / 100
-                segment_phase = (sum(segments[:2]) % 628) / 100 if segments else 0
+                segment_phase = (sum(segments[:2]) % 628) / 100 if segments and len(segments) >= 2 else 0
                 
                 # Frecuencias específicas basadas en patrones de la secuencia
                 freq1 = unique_frequency_base * frequency_modulation
@@ -268,7 +268,7 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             b = int(base_color[5:7], 16)
             
             # Modulación premium multi-factorial
-            genetic_intensity = genetic_seed['entropy'] if genetic_seed else 1.0
+            genetic_intensity = genetic_seed.get('complexity_score', 10) / 10 if genetic_seed else 1.0
             local_complexity = diversity_local * genetic_intensity
             
             # Gradiente dinámico basado en posición y genética

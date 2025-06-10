@@ -1,0 +1,155 @@
+import streamlit as st
+from Bio import Entrez, SeqIO
+from Bio.SeqUtils import GC_content
+import matplotlib.pyplot as plt
+import io
+from PIL import Image
+import plotly.express as px
+import numpy as np
+from datetime import datetime
+
+# Configuración de Entrez
+Entrez.email = "tu_correo@ejemplo.com"
+Entrez.api_key = "TU_API_KEY_NCBI"  # Opcional para mayor límite de requests
+
+# Cache para evitar repetir búsquedas
+@st.cache_data(ttl=3600, show_spinner="Buscando en bases de datos genéticas...")
+def obtener_secuencia(organismo):
+    """Obtiene secuencia de ADN desde NCBI"""
+    try:
+        search = Entrez.esearch(db="nucleotide", term=organismo, retmax=1, idtype="acc")
+        record = Entrez.read(search)
+        search.close()
+        
+        if not record["IdList"]:
+            return None
+            
+        seq_id = record["IdList"][0]
+        fetch = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
+        seq_record = SeqIO.read(fetch, "fasta")
+        fetch.close()
+        
+        return seq_record
+        
+    except Exception as e:
+        st.error(f"Error al acceder a NCBI: {str(e)}")
+        return None
+
+# Mapeo científico de bases a atributos visuales (fijo)
+BASE_ART_MAP = {
+    'A': {'color': '#FF5555', 'size': 10, 'symbol': 'circle'},     # Adenina
+    'T': {'color': '#FFFF50', 'size': 12, 'symbol': 'diamond'},    # Timina
+    'C': {'color': '#5555FF', 'size': 8, 'symbol': 'square'},      # Citosina
+    'G': {'color': '#55FF55', 'size': 14, 'symbol': 'star'},       # Guanina
+    'N': {'color': '#AAAAAA', 'size': 6, 'symbol': 'x'}            # Desconocido
+}
+
+def generar_visualizacion(seq_record):
+    """Crea visualización científica del ADN"""
+    secuencia = str(seq_record.seq).upper()
+    gc = GC_content(secuencia)
+    
+    # Preparar datos para Plotly
+    bases = []
+    posiciones = []
+    propiedades = []
+    
+    for i, base in enumerate(secuencia[:500]):  # Limitar longitud
+        if base not in BASE_ART_MAP:
+            base = 'N'  # Para bases no estándar
+            
+        bases.append(base)
+        posiciones.append(i)
+        propiedades.append(BASE_ART_MAP[base])
+    
+    # Crear figura científica
+    fig = px.scatter(
+        x=posiciones,
+        y=[1]*len(posiciones),  # Linea horizontal
+        color=bases,
+        symbol=bases,
+        color_discrete_map={k: v['color'] for k, v in BASE_ART_MAP.items()},
+        symbol_map={k: v['symbol'] for k, v in BASE_ART_MAP.items()},
+        size=[prop['size'] for prop in propiedades],
+        title=f"Visualización Científica de: {seq_record.id}"
+    )
+    
+    # Ajustes estéticos
+    fig.update_layout(
+        showlegend=True,
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis_title="Posición en secuencia",
+        yaxis_visible=False,
+        hovermode="x unified"
+    )
+    
+    return fig, gc
+
+# Configuración de página
+st.set_page_config(
+    page_title="DNA Scientific Art",
+    page_icon="🧬",
+    layout="centered"
+)
+
+# Estilos CSS personalizados
+st.markdown("""
+<style>
+    .header { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 5px; }
+    .subheader { font-size: 16px; text-align: center; margin-bottom: 30px; color: #666; }
+    .metric-box { background: #f0f2f6; border-radius: 10px; padding: 15px; margin: 10px 0; }
+    .footer { font-size: 12px; text-align: center; margin-top: 40px; color: #999; }
+</style>
+""", unsafe_allow_html=True)
+
+# Interfaz
+st.markdown('<div class="header">🧬 DNA Scientific Art</div>', unsafe_allow_html=True)
+st.markdown('<div class="subheader">Visualización científica automática de secuencias genéticas</div>', unsafe_allow_html=True)
+
+# Input del organismo
+organismo = st.text_input("🔍 Organismo (nombre científico):", "Homo sapiens")
+
+if st.button("Generar Visualización", type="primary"):
+    with st.spinner(f"Obteniendo secuencia de {organismo}..."):
+        seq_record = obtener_secuencia(organismo)
+        
+        if not seq_record:
+            st.error("Organismo no encontrado en NCBI")
+            st.stop()
+            
+        # Generar visualización
+        fig, gc = generar_visualizacion(seq_record)
+        
+        # Mostrar metadatos científicos
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Longitud de secuencia", f"{len(seq_record.seq)} bp")
+        with col2:
+            st.metric("Contenido GC", f"{gc:.2f}%")
+        
+        # Mostrar visualización
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Información adicional
+        with st.expander("📝 Detalles técnicos"):
+            st.write(f"**ID de acceso:** `{seq_record.id}`")
+            st.write(f"**Descripción:** {seq_record.description}")
+            st.write(f"**Primeros 50 bases:** `{str(seq_record.seq[:50])}...`")
+            
+            # Botón de descarga
+            buf = io.BytesIO()
+            fig.write_image(buf, format="png", width=1000)
+            st.download_button(
+                label="Descargar visualización (PNG)",
+                data=buf.getvalue(),
+                file_name=f"dna_viz_{seq_record.id}.png",
+                mime="image/png"
+            )
+
+# Pie de página
+st.markdown("""
+<div class="footer">
+    Desarrollado con BioPython + Streamlit | 
+    Datos genéticos proporcionados por <a href="https://www.ncbi.nlm.nih.gov/" target="_blank">NCBI</a>
+</div>
+""", unsafe_allow_html=True)

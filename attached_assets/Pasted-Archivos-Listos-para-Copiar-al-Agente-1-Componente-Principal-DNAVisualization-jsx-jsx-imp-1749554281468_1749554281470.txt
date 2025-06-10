@@ -1,0 +1,383 @@
+Archivos Listos para Copiar al Agente
+
+## 1. Componente Principal - DNAVisualization.jsx
+
+```jsx
+import React, { useState, useEffect, useMemo } from 'react';
+import Plot from 'react-plotly.js';
+
+const COLOR_THEMES = {
+    scientific: { 'A': '#E74C3C', 'T': '#3498DB', 'C': '#2ECC71', 'G': '#F39C12', 'N': '#95A5A6' },
+    ocean: { 'A': '#1ABC9C', 'T': '#16A085', 'C': '#2980B9', 'G': '#3498DB', 'N': '#BDC3C7' },
+    forest: { 'A': '#27AE60', 'T': '#2ECC71', 'C': '#229954', 'G': '#58D68D', 'N': '#A9DFBF' },
+    sunset: { 'A': '#E74C3C', 'T': '#E67E22', 'C': '#F39C12', 'G': '#F1C40F', 'N': '#F8C471' },
+    cosmic: { 'A': '#8E44AD', 'T': '#9B59B6', 'C': '#3F51B5', 'G': '#673AB7', 'N': '#B39DDB' }
+};
+
+const BASE_SIZES = { 'A': 12, 'T': 10, 'C': 8, 'G': 14, 'N': 6 };
+
+const DNAVisualization = ({ sequence, sequenceId = 'seq', style = 'fluid', theme = 'scientific', width = 800, height = 600 }) => {
+    const [plotData, setPlotData] = useState({ data: [], layout: {} });
+    
+    const hashString = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash);
+    };
+
+    const countBase = (seq, base) => seq.split('').filter(b => b === base).length;
+
+    const createGeneticSeed = (seq, id) => {
+        const gcContent = (countBase(seq, 'G') + countBase(seq, 'C')) / seq.length;
+        const idHash = hashString(id) % 1000000;
+        const dinucFreq = 0.1;
+        return {
+            gc_ratio: gcContent,
+            dinuc_frequency: dinucFreq,
+            sequence_diversity: new Set(seq.slice(0, 100)).size / 4.0,
+            first_bases: hashString(seq.slice(0, 50)) % 10000,
+            last_bases: hashString(seq.slice(-50)) % 10000,
+            repeat_signature: 'AT_' + dinucFreq.toFixed(3)
+        };
+    };
+
+    // 1. Arte Fluido
+    const createFluidArt = useMemo(() => {
+        if (!sequence) return { data: [], layout: {} };
+        
+        const maxLength = Math.min(sequence.length, 5000);
+        const seq = sequence.slice(0, maxLength);
+        const colors = COLOR_THEMES[theme];
+        const geneticSeed = createGeneticSeed(sequence, sequenceId);
+        
+        const uniqueSeed = hashString(geneticSeed.repeat_signature) % 50000;
+        const primaryFreq = 0.05 + geneticSeed.dinuc_frequency * 0.5;
+        const amplitude = 15 + geneticSeed.sequence_diversity * 30;
+        const colorShift = (uniqueSeed % 360) / 360;
+        
+        const traces = [];
+        
+        for (let layer = 0; layer < 5; layer++) {
+            const xCoords = [];
+            const yCoords = [];
+            const step = Math.max(1, Math.floor(seq.length / (150 + layer * 30)));
+            
+            for (let i = 0; i < seq.length; i += step) {
+                const base = seq[i];
+                const value = { 'A': 1, 'T': 1.5, 'C': 2, 'G': 2.5, 'N': 0.5 }[base] || 0.5;
+                const x = i * 0.8;
+                const phase = colorShift * Math.PI * 2;
+                
+                const y = (
+                    Math.sin(x * primaryFreq + value + phase) * amplitude +
+                    Math.cos(x * 0.02 + value * 2) * amplitude * 0.6 +
+                    Math.sin(x * 0.01 + value * 3) * amplitude * 0.3
+                ) + layer * 25;
+                
+                xCoords.push(x);
+                yCoords.push(y);
+            }
+            
+            if (xCoords.length > 1) {
+                traces.push({
+                    x: xCoords,
+                    y: yCoords,
+                    mode: 'lines',
+                    line: { color: colors['A'], width: Math.max(1, 10 - layer), shape: 'spline' },
+                    opacity: 0.8 - layer * 0.1,
+                    showlegend: false
+                });
+            }
+        }
+        
+        return {
+            data: traces,
+            layout: {
+                title: 'Arte Fluido Genético',
+                showlegend: false,
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { visible: false },
+                yaxis: { visible: false },
+                height: height
+            }
+        };
+    }, [sequence, sequenceId, theme, height]);
+
+    // 2. Patrón Circular
+    const createCircular = useMemo(() => {
+        if (!sequence) return { data: [], layout: {} };
+        
+        const maxBases = Math.min(sequence.length, 1000);
+        const seq = sequence.slice(0, maxBases);
+        const colors = COLOR_THEMES[theme];
+        const baseRadii = { 'A': 0.8, 'T': 1.0, 'C': 1.2, 'G': 1.4, 'N': 0.6 };
+        
+        const traces = [];
+        
+        ['A', 'T', 'C', 'G', 'N'].forEach(base => {
+            const baseX = [];
+            const baseY = [];
+            const baseSizes = [];
+            
+            seq.split('').forEach((b, i) => {
+                if (b === base) {
+                    const angle = (i / seq.length) * 2 * Math.PI;
+                    const radius = baseRadii[base];
+                    baseX.push(radius * Math.cos(angle));
+                    baseY.push(radius * Math.sin(angle));
+                    baseSizes.push(BASE_SIZES[base]);
+                }
+            });
+            
+            if (baseX.length > 0) {
+                traces.push({
+                    x: baseX,
+                    y: baseY,
+                    mode: 'markers',
+                    marker: {
+                        color: colors[base],
+                        size: baseSizes,
+                        opacity: 0.7,
+                        line: { width: 1, color: 'white' }
+                    },
+                    name: `Base ${base}`,
+                    type: 'scatter'
+                });
+            }
+        });
+        
+        return {
+            data: traces,
+            layout: {
+                title: 'Patrón Circular Genético',
+                xaxis: { visible: false, range: [-2, 2] },
+                yaxis: { visible: false, range: [-2, 2] },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                height: height,
+                showlegend: true
+            }
+        };
+    }, [sequence, theme, height]);
+
+    // 3. Clásico Mejorado
+    const createClassic = useMemo(() => {
+        if (!sequence) return { data: [], layout: {} };
+        
+        const maxLength = Math.min(sequence.length, 2000);
+        const seq = sequence.slice(0, maxLength);
+        const colors = COLOR_THEMES[theme];
+        
+        const traces = [];
+        
+        ['A', 'T', 'C', 'G', 'N'].forEach((base, baseIndex) => {
+            const positions = [];
+            const values = [];
+            
+            seq.split('').forEach((b, i) => {
+                if (b === base) {
+                    positions.push(i);
+                    values.push(baseIndex + Math.random() * 0.3);
+                }
+            });
+            
+            if (positions.length > 0) {
+                traces.push({
+                    x: positions,
+                    y: values,
+                    mode: 'markers',
+                    marker: {
+                        color: colors[base],
+                        size: BASE_SIZES[base],
+                        opacity: 0.8
+                    },
+                    name: `${base} (${positions.length})`,
+                    type: 'scatter'
+                });
+            }
+        });
+        
+        return {
+            data: traces,
+            layout: {
+                title: `Clásico Mejorado - ${sequenceId}`,
+                xaxis: { title: 'Posición' },
+                yaxis: { title: 'Tipo de Base' },
+                plot_bgcolor: 'rgba(30,30,30,0.8)',
+                height: height,
+                showlegend: true
+            }
+        };
+    }, [sequence, sequenceId, theme, height]);
+
+    useEffect(() => {
+        switch (style) {
+            case 'fluid': setPlotData(createFluidArt); break;
+            case 'circular': setPlotData(createCircular); break;
+            case 'classic': setPlotData(createClassic); break;
+            default: setPlotData(createFluidArt);
+        }
+    }, [style, createFluidArt, createCircular, createClassic]);
+
+    if (!sequence) {
+        return <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+            <p className="text-gray-500">No hay secuencia para visualizar</p>
+        </div>;
+    }
+
+    return (
+        <div className="w-full">
+            <Plot
+                data={plotData.data}
+                layout={{ ...plotData.layout, width: width, autosize: true, responsive: true }}
+                config={{
+                    displayModeBar: true,
+                    displaylogo: false,
+                    toImageButtonOptions: {
+                        format: 'png',
+                        filename: `dna_${sequenceId}_${style}`,
+                        height: height,
+                        width: width,
+                        scale: 2
+                    }
+                }}
+                className="w-full"
+            />
+        </div>
+    );
+};
+
+export default DNAVisualization;
+```
+
+## 2. Página de Remix - dna-visualizer.jsx
+
+```jsx
+import { useState } from "react";
+import DNAVisualization from "~/components/DNAVisualization";
+
+export default function DNAVisualizer() {
+  const [sequence, setSequence] = useState("ATCGATCGATCGATCGATCGATCGATCGATCG");
+  const [style, setStyle] = useState("fluid");
+  const [theme, setTheme] = useState("scientific");
+  
+  return (
+    <div className="container mx-auto p-6 max-w-6xl">
+      <h1 className="text-4xl font-bold mb-8 text-center">🧬 Visualizador de ADN Optimizado</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <label className="block text-sm font-medium mb-2">Secuencia de ADN:</label>
+          <textarea
+            value={sequence}
+            onChange={(e) => setSequence(e.target.value.toUpperCase().replace(/[^ATCGN]/g, ''))}
+            className="w-full p-3 border rounded-lg font-mono text-sm"
+            rows={4}
+            placeholder="Ingrese secuencia ATCG..."
+          />
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Estilo:</label>
+            <select
+              value={style}
+              onChange={(e) => setStyle(e.target.value)}
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="fluid">🌊 Arte Fluido</option>
+              <option value="circular">⭕ Circular</option>
+              <option value="classic">📊 Clásico</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Tema:</label>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="scientific">🔬 Científico</option>
+              <option value="ocean">🌊 Océano</option>
+              <option value="forest">🌲 Bosque</option>
+              <option value="sunset">🌅 Atardecer</option>
+              <option value="cosmic">🌌 Cósmico</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <DNAVisualization
+          sequence={sequence}
+          sequenceId="ejemplo"
+          style={style}
+          theme={theme}
+          width={1000}
+          height={600}
+        />
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg text-center">
+          <h3 className="font-semibold text-blue-900">Longitud</h3>
+          <p className="text-2xl font-bold text-blue-600">{sequence.length}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded-lg text-center">
+          <h3 className="font-semibold text-green-900">GC %</h3>
+          <p className="text-2xl font-bold text-green-600">
+            {((sequence.match(/[GC]/g) || []).length / sequence.length * 100).toFixed(1)}%
+          </p>
+        </div>
+        <div className="bg-red-50 p-4 rounded-lg text-center">
+          <h3 className="font-semibold text-red-900">A + T</h3>
+          <p className="text-2xl font-bold text-red-600">
+            {(sequence.match(/[AT]/g) || []).length}
+          </p>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-lg text-center">
+          <h3 className="font-semibold text-purple-900">Diversidad</h3>
+          <p className="text-2xl font-bold text-purple-600">
+            {new Set(sequence.slice(0, 100)).size}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## 3. Comandos de Instalación
+
+```bash
+npm install react-plotly.js plotly.js
+```
+
+## 4. Estructura de Carpetas
+
+```
+app/
+├── components/
+│   └── DNAVisualization.jsx    # Copia el primer código aquí
+└── routes/
+    └── dna-visualizer.jsx      # Copia el segundo código aquí
+```
+
+## Instrucciones Rápidas:
+
+1. Instalar dependencias: `npm install react-plotly.js plotly.js`
+2. Crear `app/components/DNAVisualization.jsx` con el primer código
+3. Crear `app/routes/dna-visualizer.jsx` con el segundo código
+4. Visitar `/dna-visualizer` en tu app
+
+Los tres estilos están listos:
+- **fluid**: Arte fluido con ondas genéticas
+- **circular**: Patrón en anillos concéntricos  
+- **classic**: Scatter plot mejorado
+
+Cada estilo está optimizado para diferentes tipos de análisis y visualización.

@@ -1245,14 +1245,12 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     
     if style == 'fluid':
         fig = crear_arte_fluido(secuencia, theme, genetic_seed)
-    elif style == 'mandala':
-        fig = crear_mandala_genetico(secuencia, theme, genetic_seed)
-    elif style == 'galaxy':
-        fig = crear_galaxia_genetica(secuencia, theme, genetic_seed)
-    elif style == 'heatmap':
-        fig = crear_mapa_calor_gc(secuencia)
-    else:  # classic fallback
+    elif style == 'circular':
+        fig = crear_galaxia_genetica(secuencia, theme, genetic_seed)  # Patrones circulares con formas de galaxias
+    elif style == 'classic':
         fig = crear_visualizacion_clasica(secuencia, seq_record, theme)
+    else:  # fallback
+        fig = crear_arte_fluido(secuencia, theme, genetic_seed)
     
     return fig, gc
 
@@ -1578,30 +1576,26 @@ with st.sidebar:
     # Controles artísticos
     st.subheader("🎨 Estilo Artístico")
     
-    # Selector de estilo de visualización
+    # Selector de estilo de visualización (simplificado)
     art_style = st.selectbox(
-        "Estilo de visualización:",
-        ["fluid", "mandala", "galaxy", "heatmap", "classic"],
+        "Estilo artístico:",
+        ["fluid", "circular", "classic"],
         format_func=lambda x: {
-            "fluid": "🌊 Arte Fluido Abstracto",
-            "mandala": "🔮 Mandala Genético",
-            "galaxy": "✨ Galaxia de Partículas",
-            "heatmap": "🔥 Mapa de Calor GC",
+            "fluid": "🎨 Arte Abstracto",
+            "circular": "🌌 Patrón Circular",
             "classic": "📊 Clásico Mejorado"
         }[x],
         help="Selecciona el estilo artístico para la visualización del ADN"
     )
     
-    # Selector de tema de colores
+    # Selector de tema de colores (simplificado)
     color_theme = st.selectbox(
         "Tema de colores:",
-        ["scientific", "ocean", "forest", "sunset", "cosmic"],
+        ["forest", "ocean", "sunset"],
         format_func=lambda x: {
-            "scientific": "🔬 Científico",
-            "ocean": "🌊 Océano",
-            "forest": "🌲 Bosque",
-            "sunset": "🌅 Atardecer",
-            "cosmic": "🌌 Cósmico"
+            "forest": "🌾 Sabana",
+            "ocean": "🌊 Océano", 
+            "sunset": "🏜️ Desierto"
         }[x],
         help="Escoge la paleta de colores para tu arte genético"
     )

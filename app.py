@@ -201,8 +201,8 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             
             # Ondas ultra-complejas con múltiples fases genéticas únicas
             genetic_phase = color_shift * np.pi * 2 * wave_modifier if genetic_seed else 0
-            secondary_phase = (tertiary_seed % 180) * np.pi / 180 if genetic_seed and 'tertiary_seed' in locals() else 0
-            tertiary_phase = (primary_seed % 120) * np.pi / 120 if genetic_seed and 'primary_seed' in locals() else 0
+            secondary_phase = (tertiary_seed % 180) * np.pi / 180 if genetic_seed else 0
+            tertiary_phase = (primary_seed % 120) * np.pi / 120 if genetic_seed else 0
             
             y_base = (
                 np.sin(x * primary_frequency * wave_modifier + value + genetic_phase) * amplitude_factor * pattern_intensity * amplitude_multiplier +
@@ -259,8 +259,8 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             g = min(255, max(30, int(g * brightness_mod * saturation_mod)))
             b = min(255, max(30, int(b * brightness_mod * saturation_mod)))
             
-            # Efectos de transparencia y brillo variables
-            opacity = 0.6 + (value / 4.0) * 0.4 + (diversity_local * 0.2)
+            # Efectos de transparencia y brillo variables (asegurar rango válido)
+            opacity = max(0.1, min(1.0, 0.6 + (value / 4.0) * 0.4 + (diversity_local * 0.2)))
             color_final = f"rgba({r},{g},{b},{opacity:.2f})"
                 
             colors_list.append(color_final)
@@ -399,13 +399,19 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
         np.random.seed(galaxy_seed % 100000)
         random.seed(spiral_seed % 100000)
         
-        # Parámetros galácticos ultra-únicos
-        arm_count_modifier = int(genetic_seed['sequence_diversity'] / 20) + (galaxy_seed % 5) + 2  # 2-7 brazos variables
-        density_modifier = genetic_seed['trinuc_frequency'] * 3 + genetic_seed['gc_variance'] * 2
-        spiral_tightness = genetic_seed['entropy'] * 5 + (spiral_seed % 100) / 200
+        # Parámetros galácticos ultra-únicos (con validación de claves)
+        sequence_diversity = genetic_seed.get('sequence_diversity', 10)
+        trinuc_frequency = genetic_seed.get('trinuc_frequency', 0.1)
+        gc_variance = genetic_seed.get('gc_variance', 0.1)
+        entropy = genetic_seed.get('entropy', 1.0)
+        gc_ratio = genetic_seed.get('gc_ratio', 0.5)
+        
+        arm_count_modifier = int(sequence_diversity / 20) + (galaxy_seed % 5) + 2  # 2-7 brazos variables
+        density_modifier = trinuc_frequency * 3 + gc_variance * 2
+        spiral_tightness = entropy * 5 + (spiral_seed % 100) / 200
         galaxy_rotation = (galaxy_seed % 360) / 360 * 4 * np.pi  # Rotación extrema
-        stellar_density = 0.5 + genetic_seed['gc_ratio'] * 2 + genetic_seed['entropy']
-        core_size_multiplier = 1.0 + genetic_seed['trinuc_frequency'] * 4 + (galaxy_seed % 50) / 100
+        stellar_density = 0.5 + gc_ratio * 2 + entropy
+        core_size_multiplier = 1.0 + trinuc_frequency * 4 + (galaxy_seed % 50) / 100
     else:
         arm_count_modifier = 0
         density_modifier = 1.0

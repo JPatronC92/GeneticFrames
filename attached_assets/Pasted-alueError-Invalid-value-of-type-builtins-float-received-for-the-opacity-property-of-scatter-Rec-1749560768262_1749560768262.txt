@@ -1,0 +1,34 @@
+alueError: Invalid value of type 'builtins.float' received for the 'opacity' property of scatter Received value: -0.09999999999999998 The 'opacity' property is a number and may be specified as: - An int or float in the interval [0, 1]
+Traceback:
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 121, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 645, in code_to_exec
+    exec(code, module.__dict__)
+File "/home/runner/workspace/app.py", line 1828, in <module>
+    fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/app.py", line 1287, in generar_visualizacion
+    fig = crear_arte_fluido(secuencia, theme, genetic_seed)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/app.py", line 275, in crear_arte_fluido
+    fig.add_trace(go.Scatter(
+                  ^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/graph_objs/_scatter.py", line 2711, in __init__
+    self._set_property("opacity", arg, opacity)
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/basedatatypes.py", line 4422, in _set_property
+    _set_property_provided_value(self, name, arg, provided)
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/basedatatypes.py", line 398, in _set_property_provided_value
+    obj[name] = val
+    ~~~^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/basedatatypes.py", line 4952, in __setitem__
+    self._set_prop(prop, value)
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/basedatatypes.py", line 5296, in _set_prop
+    raise err
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/plotly/basedatatypes.py", line 5291, in _set_prop
+    val = validator.validate_coerce(val)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_plotly_utils/basevalidators.py", line 810, in validate_coerce
+    self.raise_invalid_val(v)
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_plotly_utils/basevalidators.py", line 299, in raise_invalid_val
+    raise ValueError(

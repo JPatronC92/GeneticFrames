@@ -135,18 +135,27 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     
     # Usar semilla genética para parámetros únicos
     if genetic_seed:
-        # Establecer semilla para consistencia pero diferenciación
-        np.random.seed(genetic_seed['id_hash'] % 10000)
-        random.seed(genetic_seed['id_hash'] % 10000)
+        # Semilla única más agresiva para diferenciación extrema
+        unique_seed = hash(genetic_seed['repeat_signature'] + genetic_seed['first_bases'] + genetic_seed['last_bases']) % 50000
+        np.random.seed(unique_seed)
+        random.seed(unique_seed)
         
-        # Parámetros únicos basados en características genéticas
-        unique_frequency_base = genetic_seed['dinuc_frequency'] * 0.2
-        complexity_multiplier = genetic_seed['sequence_diversity'] / 4.0
-        gc_influence = genetic_seed['gc_ratio'] * 2.0
+        # Parámetros dramáticamente diferentes basados en genética
+        unique_frequency_base = genetic_seed['dinuc_frequency'] * 0.5 + (unique_seed % 100) / 1000
+        complexity_multiplier = genetic_seed['sequence_diversity'] / 2.0 + (unique_seed % 50) / 100
+        gc_influence = genetic_seed['gc_ratio'] * 3.0 + genetic_seed['middle_gc']
+        
+        # Factores de variación extrema por secuencia
+        color_shift = (unique_seed % 360) / 360  # Rotación de color única
+        pattern_intensity = 0.5 + genetic_seed['dinuc_frequency'] * 2
+        layer_count_modifier = (unique_seed % 5) + 2  # 2-6 capas variables
     else:
         unique_frequency_base = 0.05
         complexity_multiplier = 1.0
         gc_influence = 1.0
+        color_shift = 0
+        pattern_intensity = 1.0
+        layer_count_modifier = 3
     
     # Análisis de características genéticas únicas
     gc_content = sequence_segment.count('G') + sequence_segment.count('C')
@@ -179,12 +188,13 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             # Coordenadas con múltiples armónicos
             x = i * 0.8
             
-            # Ondas complejas con interferencia
+            # Ondas complejas con interferencia genética única
+            genetic_phase = color_shift * np.pi * 2 if genetic_seed else 0
             y_base = (
-                np.sin(x * primary_frequency + value) * amplitude_factor +
-                np.cos(x * secondary_frequency + value * 2) * amplitude_factor * 0.6 +
-                np.sin(x * 0.01 + value * 3) * amplitude_factor * 0.3 +
-                np.cos(x * 0.15 + layer) * amplitude_factor * 0.2
+                np.sin(x * primary_frequency + value + genetic_phase) * amplitude_factor * pattern_intensity +
+                np.cos(x * secondary_frequency + value * 2 + genetic_phase * 0.5) * amplitude_factor * 0.6 +
+                np.sin(x * 0.01 * complexity_multiplier + value * 3) * amplitude_factor * 0.3 +
+                np.cos(x * 0.15 * gc_influence + layer + genetic_phase) * amplitude_factor * 0.2
             )
             
             # Variación por capa
@@ -346,15 +356,23 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     colors = COLOR_THEMES[theme]
     base_values = {'A': 1.2, 'T': 1.8, 'C': 2.4, 'G': 3.0, 'N': 0.6}
     
-    # Usar semilla genética para variaciones únicas
+    # Usar semilla genética para variaciones únicas extremas
     if genetic_seed:
-        np.random.seed(genetic_seed['id_hash'] % 10000)
-        random.seed(genetic_seed['id_hash'] % 10000)
-        ring_variation = genetic_seed['dinuc_frequency'] * 10
-        size_multiplier = 1 + genetic_seed['sequence_diversity'] / 10
+        unique_seed = hash(genetic_seed['repeat_signature'] + genetic_seed['first_bases']) % 50000
+        np.random.seed(unique_seed)
+        random.seed(unique_seed)
+        
+        ring_variation = genetic_seed['dinuc_frequency'] * 20 + (unique_seed % 100) / 50
+        size_multiplier = 1 + genetic_seed['sequence_diversity'] / 5 + (unique_seed % 50) / 100
+        mandala_rotation = (unique_seed % 360) / 360 * 2 * np.pi
+        ring_count_modifier = (unique_seed % 4) + 3  # 3-6 anillos variables
+        pattern_complexity = 0.5 + genetic_seed['middle_gc'] * 2
     else:
         ring_variation = 1.0
         size_multiplier = 1.0
+        mandala_rotation = 0
+        ring_count_modifier = 5
+        pattern_complexity = 1.0
     
     # Análisis genético para parámetros únicos
     gc_ratio = (sequence_segment.count('G') + sequence_segment.count('C')) / len(sequence_segment)
@@ -367,9 +385,12 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     num_rings = max(6, int(8 + complexity_factor * 4))
     
     for ring in range(num_rings):
+        # Aplicar rotación genética única por anillo
+        ring_rotation = mandala_rotation + ring * (mandala_rotation / num_rings)
         ring_data = generar_anillo_fractal(
             sequence_segment, ring, colors, base_values, 
-            gc_ratio, complexity_factor, repeat_density
+            gc_ratio, complexity_factor, repeat_density, 
+            ring_rotation, pattern_complexity
         )
         
         if ring_data:
@@ -483,7 +504,7 @@ def calcular_densidad_repeticiones(secuencia):
             repeticiones += 1
     return repeticiones / len(secuencia) if len(secuencia) > 0 else 0
 
-def generar_anillo_fractal(secuencia, ring, colors, base_values, gc_ratio, complexity_factor, repeat_density):
+def generar_anillo_fractal(secuencia, ring, colors, base_values, gc_ratio, complexity_factor, repeat_density, ring_rotation=0, pattern_complexity=1.0):
     """Genera un anillo con patrones fractales únicos"""
     ring_radius = 20 + ring * (15 + complexity_factor * 5)
     points_per_ring = max(12, int(60 + ring * 8 - repeat_density * 20))

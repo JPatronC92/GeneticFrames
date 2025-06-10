@@ -6,11 +6,13 @@ import io
 import os
 from datetime import datetime
 import uuid
+import json
 from database import (
     create_tables, save_dna_sequence, log_search, 
     get_popular_organisms, get_recent_sequences, 
     add_favorite, get_user_favorites, get_database_stats
 )
+from blockchain_nft import nft_manager
 
 # Configuración de Entrez con variables de entorno
 Entrez.email = os.getenv("ENTREZ_EMAIL", "researcher@example.com")
@@ -265,11 +267,72 @@ with st.sidebar:
     
     # Estadísticas de la base de datos
     with st.expander("📈 Estadísticas"):
-        db_stats = get_database_stats()
-        if db_stats:
-            st.metric("Secuencias en BD", db_stats.get('total_sequences', 0))
-            st.metric("Búsquedas totales", db_stats.get('total_searches', 0))
-            st.metric("Tasa de éxito", f"{db_stats.get('success_rate', 0):.1f}%")
+        try:
+            db_stats = get_database_stats()
+            if db_stats:
+                st.metric("Secuencias en BD", db_stats.get('total_sequences', 0))
+                st.metric("Búsquedas totales", db_stats.get('total_searches', 0))
+                st.metric("Tasa de éxito", f"{db_stats.get('success_rate', 0):.1f}%")
+        except Exception as e:
+            st.info("Base de datos temporalmente no disponible")
+    
+    # Configuración de NFT/Blockchain
+    st.subheader("🔗 Blockchain & NFT")
+    blockchain_status = nft_manager.get_blockchain_status()
+    
+    if blockchain_status.get("connected"):
+        st.success("✅ Blockchain conectado")
+        if blockchain_status.get("account_configured"):
+            st.info(f"💰 Balance: {blockchain_status.get('balance', '0')} ETH")
+    else:
+        st.warning("⚠️ Blockchain no configurado")
+    
+    # Configurar credenciales blockchain
+    with st.expander("🔧 Configurar Blockchain"):
+        st.markdown("**Para crear NFTs necesitas:**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            eth_rpc = st.text_input(
+                "🌐 RPC URL:",
+                value=os.getenv("ETH_RPC_URL", ""),
+                placeholder="https://mainnet.infura.io/v3/YOUR_KEY"
+            )
+            
+            contract_addr = st.text_input(
+                "📜 Contrato NFT:",
+                value=os.getenv("NFT_CONTRACT_ADDRESS", ""),
+                placeholder="0x..."
+            )
+        
+        with col2:
+            private_key = st.text_input(
+                "🔐 Private Key:",
+                value="",
+                type="password",
+                placeholder="Tu private key de Ethereum"
+            )
+            
+            infura_key = st.text_input(
+                "🔑 Infura API:",
+                value=os.getenv("INFURA_API_KEY", ""),
+                placeholder="Tu Infura project ID"
+            )
+        
+        if st.button("💾 Guardar configuración blockchain"):
+            if private_key.strip():
+                os.environ["ETH_PRIVATE_KEY"] = private_key.strip()
+            if eth_rpc.strip():
+                os.environ["ETH_RPC_URL"] = eth_rpc.strip()
+            if contract_addr.strip():
+                os.environ["NFT_CONTRACT_ADDRESS"] = contract_addr.strip()
+            if infura_key.strip():
+                os.environ["INFURA_API_KEY"] = infura_key.strip()
+            
+            # Reinicializar manager
+            nft_manager._initialize_blockchain()
+            st.success("✅ Configuración guardada")
+            st.rerun()
 
 # Manejar selección desde sidebar
 if 'selected_organism' in st.session_state:
@@ -375,9 +438,9 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
                 st.write(f"**Primeros {sample_length} nucleótidos:**")
                 st.code(str(seq_record.seq[:sample_length]), language="text")
         
-        # Sección de descarga
+        # Sección de descarga y NFT
         st.subheader("💾 Descargar visualización")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             # Botón de descarga PNG
@@ -404,6 +467,80 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
                 mime="text/html",
                 use_container_width=True
             )
+        
+        with col3:
+            # Botón para crear NFT
+            if st.button("🎨 Crear NFT", use_container_width=True):
+                with st.spinner("Preparando NFT..."):
+                    nft_package = nft_manager.prepare_nft_package(
+                        seq_record, organismo, gc, conteo_bases, fig
+                    )
+                    
+                    if nft_package:
+                        st.session_state.nft_package = nft_package
+                        st.success("✅ NFT preparado correctamente")
+                    else:
+                        st.error("❌ Error preparando NFT")
+        
+        # Mostrar información del NFT si está preparado
+        if 'nft_package' in st.session_state:
+            st.subheader("🎨 NFT Generado")
+            nft_data = st.session_state.nft_package
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Metadatos del NFT:**")
+                metadata = nft_data['metadata']
+                st.json({
+                    "name": metadata['name'],
+                    "description": metadata['description'][:100] + "...",
+                    "attributes_count": len(metadata['attributes']),
+                    "rarity_score": next((attr['value'] for attr in metadata['attributes'] if attr['trait_type'] == 'Rarity Score'), 0)
+                })
+                
+                # Descargar metadatos
+                metadata_json = json.dumps(metadata, indent=2)
+                st.download_button(
+                    label="📄 Descargar Metadatos JSON",
+                    data=metadata_json,
+                    file_name=f"nft_metadata_{seq_record.id}.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+            
+            with col2:
+                st.markdown("**Mintear NFT en Blockchain:**")
+                
+                # Input para dirección de destino
+                to_address = st.text_input(
+                    "🎯 Dirección de destino:",
+                    placeholder="0x...",
+                    help="Dirección Ethereum donde se enviará el NFT"
+                )
+                
+                # Botón para mintear
+                if st.button("🚀 Mintear NFT", type="primary", use_container_width=True):
+                    if not to_address.strip():
+                        st.error("Ingresa una dirección válida")
+                    elif not blockchain_status.get("connected") or not blockchain_status.get("account_configured"):
+                        st.error("Configura blockchain primero")
+                    else:
+                        with st.spinner("Minteando NFT en blockchain..."):
+                            result = nft_manager.mint_nft(to_address, nft_data['metadata_uri'])
+                            
+                            if result.get("success"):
+                                st.success("🎉 NFT minteado exitosamente!")
+                                st.info(f"Hash de transacción: {result['transaction_hash']}")
+                                st.info(f"Gas usado: {result['gas_used']:,}")
+                                
+                                # Limpiar NFT package
+                                del st.session_state.nft_package
+                            else:
+                                st.error(f"Error minteando NFT: {result.get('error', 'Error desconocido')}")
+                
+                # Información sobre costos
+                st.info("💡 **Nota:** El minteo requiere ETH para gas fees")
 
 # Información sobre la aplicación
 st.markdown("---")
@@ -425,6 +562,9 @@ with st.expander("ℹ️ Acerca de esta aplicación"):
     - **Plotly:** Visualizaciones interactivas
     - **Streamlit:** Interfaz web
     - **NCBI Entrez API:** Acceso a bases de datos genéticas
+    - **Blockchain/NFT:** Creación de NFTs únicos basados en ADN
+    - **PostgreSQL:** Base de datos para historial y favoritos
+    - **IPFS:** Almacenamiento descentralizado de metadatos
     
     **Código de colores:**
     - 🔴 **Adenina (A):** Rojo

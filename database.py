@@ -62,6 +62,19 @@ class UserFavorites(Base):
     ncbi_id = Column(String(100), nullable=False)
     added_at = Column(DateTime, default=datetime.utcnow)
 
+class GenerationLimits(Base):
+    """Control generation limits for exclusive art pieces"""
+    __tablename__ = "generation_limits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    organism_name = Column(String(255), nullable=False, index=True)
+    ncbi_id = Column(String(100), nullable=False, unique=True)
+    max_generations = Column(Integer, nullable=False, default=100)  # Límite por especie
+    current_generations = Column(Integer, nullable=False, default=0)
+    is_premium_species = Column(Boolean, default=False)  # Para especies extintas/especiales
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_generated = Column(DateTime, nullable=True)
+
 def create_tables():
     """Create all database tables"""
     try:

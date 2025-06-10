@@ -126,12 +126,13 @@ COLOR_THEMES = {
 }
 
 def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
-    """Crea arte fluido complejo con texturas y gradientes únicos por especie"""
-    max_length = min(len(secuencia), 5000)
+    """Crea arte fluido ultra-premium con máxima calidad visual y diferenciación genética"""
+    max_length = min(len(secuencia), 8000)
     sequence_segment = secuencia[:max_length]
     
     colors = COLOR_THEMES[theme]
-    base_values = {'A': 1.0, 'T': 1.5, 'C': 2.0, 'G': 2.5, 'N': 0.5}
+    # Valores artísticos premium para mayor expresividad
+    base_values = {'A': 1.3, 'T': 2.1, 'C': 2.7, 'G': 3.4, 'N': 0.9}
     
     # Usar semilla genética ultra-específica para máxima diferenciación
     if genetic_seed:
@@ -176,14 +177,17 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     
     fig = go.Figure()
     
-    # Crear múltiples capas con diferentes texturas
-    for layer in range(6):
+    # Crear múltiples capas premium con ultra-alta resolución
+    total_layers = max(8, int(layer_count_modifier))
+    for layer in range(total_layers):
         x_coords = []
         y_coords = []
         colors_list = []
         sizes = []
         
-        step = max(1, len(sequence_segment) // (200 + layer * 50))
+        # Resolución premium variable por capa
+        base_resolution = 400 + layer * 100
+        step = max(1, len(sequence_segment) // base_resolution)
         
         for i in range(0, len(sequence_segment), step):
             if i >= len(sequence_segment):
@@ -220,32 +224,51 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
             x_coords.append(x)
             y_coords.append(y)
             
-            # Colores con gradientes basados en contexto genético
+            # Sistema de gradientes premium ultra-sofisticado
             base_color = colors.get(base, colors['N'])
             
-            # Modificar color basado en vecinos genéticos
-            if i > 0 and i < len(sequence_segment) - 1:
-                prev_base = sequence_segment[i-1]
-                next_base = sequence_segment[i+1]
-                context_value = (base_values.get(prev_base, 0) + base_values.get(next_base, 0)) / 2
-                
-                # Interpolación de color basada en contexto
-                r = int(base_color[1:3], 16)
-                g = int(base_color[3:5], 16)
-                b = int(base_color[5:7], 16)
-                
-                # Ajustar saturación basada en contexto genético
-                saturation_factor = 0.7 + (context_value / 5) * 0.3
-                r = min(255, int(r * saturation_factor))
-                g = min(255, int(g * saturation_factor))
-                b = min(255, int(b * saturation_factor))
-                
-                color_final = f"rgb({r},{g},{b})"
-            else:
-                color_final = base_color
+            # Análisis contextual expandido (ventana de 10 bases)
+            context_window = 5
+            start_idx = max(0, i - context_window)
+            end_idx = min(len(sequence_segment), i + context_window + 1)
+            
+            # Calcular gradiente contextual avanzado
+            context_bases = sequence_segment[start_idx:end_idx]
+            gc_local = (context_bases.count('G') + context_bases.count('C')) / len(context_bases)
+            at_local = (context_bases.count('A') + context_bases.count('T')) / len(context_bases)
+            diversity_local = len(set(context_bases)) / 4.0
+            
+            # Extraer componentes RGB
+            r = int(base_color[1:3], 16)
+            g = int(base_color[3:5], 16)
+            b = int(base_color[5:7], 16)
+            
+            # Modulación premium multi-factorial
+            genetic_intensity = genetic_seed['entropy'] if genetic_seed else 1.0
+            local_complexity = diversity_local * genetic_intensity
+            
+            # Gradiente dinámico basado en posición y genética
+            position_factor = (i / len(sequence_segment)) * 0.3
+            layer_factor = (layer / total_layers) * 0.4
+            
+            # Aplicar transformaciones de color premium
+            brightness_mod = 0.8 + local_complexity * 0.4 + position_factor
+            saturation_mod = 0.7 + gc_local * 0.6 + layer_factor
+            
+            r = min(255, max(30, int(r * brightness_mod * saturation_mod)))
+            g = min(255, max(30, int(g * brightness_mod * saturation_mod)))
+            b = min(255, max(30, int(b * brightness_mod * saturation_mod)))
+            
+            # Efectos de transparencia y brillo variables
+            opacity = 0.6 + (value / 4.0) * 0.4 + (diversity_local * 0.2)
+            color_final = f"rgba({r},{g},{b},{opacity:.2f})"
                 
             colors_list.append(color_final)
-            sizes.append(max(2, value * 3 + layer))
+            
+            # Tamaños dinámicos premium
+            size_base = max(3, value * 4 + layer * 1.5)
+            size_genetic = size_base * (1 + genetic_intensity * 0.3) if genetic_seed else size_base
+            sizes.append(size_genetic)
         
         if len(x_coords) > 1:
             # Líneas principales con grosor variable
@@ -398,12 +421,12 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
     
     fig = go.Figure()
     
-    # Crear múltiples capas de anillos con diferentes patrones
-    num_rings = max(6, int(8 + complexity_factor * 4))
+    # Crear estructura galáctica ultra-compleja con múltiples elementos
+    num_rings = max(8, int(12 + complexity_factor * 6))  # Más anillos para mayor detalle
     
     for ring in range(num_rings):
         # Aplicar rotación genética única por anillo
-        ring_rotation = galaxy_rotation + ring * (galaxy_rotation / num_rings)
+        ring_rotation = int(galaxy_rotation + ring * (galaxy_rotation / num_rings))
         ring_data = generar_anillo_fractal(
             sequence_segment, ring, colors, base_values, 
             gc_ratio, complexity_factor, repeat_density, 

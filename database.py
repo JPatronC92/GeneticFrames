@@ -269,6 +269,62 @@ def get_database_stats():
     finally:
         db.close()
 
+def check_generation_limit(organism_name, ncbi_id):
+    """Verifica si se puede generar más arte para esta especie"""
+    db = SessionLocal()
+    try:
+        from extinct_species_catalog import is_premium_collection_species
+        
+        limit_record = db.query(GenerationLimits).filter(GenerationLimits.ncbi_id == ncbi_id).first()
+        
+        if not limit_record:
+            is_premium = is_premium_collection_species(organism_name)
+            max_gens = 50 if is_premium else 100
+            
+            limit_record = GenerationLimits(
+                organism_name=organism_name,
+                ncbi_id=ncbi_id,
+                max_generations=max_gens,
+                current_generations=0,
+                is_premium_species=is_premium
+            )
+            db.add(limit_record)
+            db.commit()
+            db.refresh(limit_record)
+        
+        can_generate = limit_record.current_generations < limit_record.max_generations
+        remaining = limit_record.max_generations - limit_record.current_generations
+        
+        return {
+            'can_generate': can_generate,
+            'remaining': remaining,
+            'total_limit': limit_record.max_generations,
+            'current_count': limit_record.current_generations,
+            'is_premium': limit_record.is_premium_species
+        }
+        
+    except SQLAlchemyError as e:
+        logger.error(f"Error checking generation limit: {e}")
+        return {'can_generate': True, 'remaining': 100, 'total_limit': 100, 'current_count': 0, 'is_premium': False}
+    finally:
+        db.close()
+
+def increment_generation_count(ncbi_id):
+    """Incrementa el contador de generaciones después de crear arte"""
+    db = SessionLocal()
+    try:
+        limit_record = db.query(GenerationLimits).filter(GenerationLimits.ncbi_id == ncbi_id).first()
+        if limit_record:
+            limit_record.current_generations += 1
+            limit_record.last_generated = datetime.utcnow()
+            db.commit()
+            return True
+    except SQLAlchemyError as e:
+        logger.error(f"Error incrementing generation count: {e}")
+        return False
+    finally:
+        db.close()
+
 # Initialize database on import
 if __name__ == "__main__":
     create_tables()

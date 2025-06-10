@@ -1803,11 +1803,32 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
             log_search(final_organismo, successful=False, error_message="Organismo no encontrado", user_session=st.session_state.session_id)
             st.stop()
             
-        # Actualizar el máximo de secuencia basado en la configuración
-        BASE_ART_MAP_TEMP = BASE_ART_MAP.copy()
+        # Verificar límites de generación antes de crear arte
+        from database import check_generation_limit, increment_generation_count
+        
+        generation_info = check_generation_limit(final_organismo, seq_record.id)
+        
+        if not generation_info['can_generate']:
+            st.error(f"🚫 **Límite de generación alcanzado para {final_organismo}**")
+            st.warning(f"Esta especie ha alcanzado su límite de {generation_info['total_limit']} generaciones artísticas.")
+            if generation_info['is_premium']:
+                st.info("💎 Esta es una especie premium de la colección exclusiva.")
+            st.stop()
+        
+        # Mostrar información de generaciones restantes
+        col1, col2 = st.columns(2)
+        with col1:
+            remaining_color = "🟢" if generation_info['remaining'] > 20 else "🟡" if generation_info['remaining'] > 5 else "🔴"
+            st.markdown(f"**Generaciones restantes:** {remaining_color} {generation_info['remaining']}/{generation_info['total_limit']}")
+        with col2:
+            if generation_info['is_premium']:
+                st.markdown("💎 **Especie Premium** - Edición ultra limitada")
         
         # Generar visualización
         fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
+        
+        # Incrementar contador de generaciones
+        increment_generation_count(seq_record.id)
         
         # Registrar búsqueda exitosa
         log_search(final_organismo, successful=True, user_session=st.session_state.session_id)

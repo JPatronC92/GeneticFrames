@@ -11,6 +11,8 @@ import logging
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is required")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -148,15 +150,16 @@ def get_popular_organisms(limit=10):
     """Get most popular searched organisms"""
     db = SessionLocal()
     try:
+        from sqlalchemy import func
         popular = db.query(
             SearchHistory.organism_name,
-            db.func.count(SearchHistory.organism_name).label('search_count')
+            func.count(SearchHistory.organism_name).label('search_count')
         ).filter(
             SearchHistory.search_successful == True
         ).group_by(
             SearchHistory.organism_name
         ).order_by(
-            db.func.count(SearchHistory.organism_name).desc()
+            func.count(SearchHistory.organism_name).desc()
         ).limit(limit).all()
         
         return [{'organism': org, 'count': count} for org, count in popular]

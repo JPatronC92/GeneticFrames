@@ -5,6 +5,12 @@ import plotly.express as px
 import io
 import os
 from datetime import datetime
+import uuid
+from database import (
+    create_tables, save_dna_sequence, log_search, 
+    get_popular_organisms, get_recent_sequences, 
+    add_favorite, get_user_favorites, get_database_stats
+)
 
 # Configuración de Entrez con variables de entorno
 Entrez.email = os.getenv("ENTREZ_EMAIL", "researcher@example.com")
@@ -137,9 +143,71 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inicializar base de datos
+if 'db_initialized' not in st.session_state:
+    create_tables()
+    st.session_state.db_initialized = True
+
+# Inicializar session ID para tracking
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 # Interfaz principal
 st.title("🧬 DNA Scientific Art Generator")
 st.markdown("**Visualización científica automática de secuencias genéticas desde NCBI GenBank**")
+
+# Configuración de credenciales NCBI
+with st.expander("🔑 Configuración de credenciales NCBI", expanded=False):
+    st.markdown("**Para acceso completo a la base de datos genética:**")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        email_input = st.text_input(
+            "📧 Email (requerido por NCBI):",
+            value="",
+            placeholder="tu_email@ejemplo.com",
+            help="NCBI requiere un email válido para identificar las consultas"
+        )
+    
+    with col2:
+        api_key_input = st.text_input(
+            "🔐 NCBI API Key (opcional):",
+            value="",
+            type="password",
+            placeholder="Obtén tu clave en ncbi.nlm.nih.gov/account",
+            help="Aumenta el límite de consultas de 3 a 10 por segundo"
+        )
+    
+    if st.button("💾 Guardar credenciales"):
+        if email_input.strip():
+            # Actualizar variables de entorno temporalmente
+            os.environ["ENTREZ_EMAIL"] = email_input.strip()
+            if api_key_input.strip():
+                os.environ["NCBI_API_KEY"] = api_key_input.strip()
+            
+            # Actualizar configuración de Entrez
+            Entrez.email = email_input.strip()
+            if api_key_input.strip():
+                Entrez.api_key = api_key_input.strip()
+            
+            st.success("✅ Credenciales guardadas correctamente")
+            st.info("💡 Las credenciales se mantienen activas durante esta sesión")
+        else:
+            st.error("❌ El email es obligatorio")
+    
+    # Mostrar estado actual
+    current_email = os.getenv("ENTREZ_EMAIL", "No configurado")
+    has_api_key = "✅ Configurada" if os.getenv("NCBI_API_KEY") else "❌ No configurada"
+    
+    st.markdown(f"**Estado actual:**")
+    st.markdown(f"- Email: `{current_email}`")
+    st.markdown(f"- API Key: {has_api_key}")
+    
+    st.markdown("---")
+    st.markdown("🔗 **Enlaces útiles:**")
+    st.markdown("- [Crear cuenta NCBI](https://www.ncbi.nlm.nih.gov/account/)")
+    st.markdown("- [Obtener API Key](https://www.ncbi.nlm.nih.gov/account/settings/)")
+    st.markdown("- [Documentación NCBI](https://www.ncbi.nlm.nih.gov/books/NBK25497/)")
 
 # Sidebar con configuraciones
 with st.sidebar:
@@ -151,6 +219,35 @@ with st.sidebar:
         value="Homo sapiens",
         help="Ingrese el nombre científico del organismo (ej: Escherichia coli, Saccharomyces cerevisiae)"
     )
+    
+    # Organismos populares
+    st.subheader("🔥 Populares")
+    popular_organisms = get_popular_organisms(limit=5)
+    if popular_organisms:
+        for org_data in popular_organisms:
+            if st.button(f"{org_data['organism']} ({org_data['count']})", key=f"pop_{org_data['organism']}"):
+                st.session_state.selected_organism = org_data['organism']
+                st.rerun()
+    
+    # Favoritos del usuario
+    st.subheader("⭐ Mis Favoritos")
+    user_favorites = get_user_favorites(st.session_state.session_id)
+    if user_favorites:
+        for fav in user_favorites[:5]:
+            if st.button(f"🧬 {fav.organism_name}", key=f"fav_{fav.id}"):
+                st.session_state.selected_organism = fav.organism_name
+                st.rerun()
+    else:
+        st.info("Aún no tienes favoritos")
+    
+    # Recientes
+    st.subheader("🕒 Recientes")
+    recent_sequences = get_recent_sequences(limit=3)
+    if recent_sequences:
+        for seq in recent_sequences:
+            if st.button(f"📊 {seq.organism_name}", key=f"rec_{seq.id}"):
+                st.session_state.selected_organism = seq.organism_name
+                st.rerun()
     
     # Opciones avanzadas
     with st.expander("⚙️ Opciones avanzadas"):
@@ -164,15 +261,29 @@ with st.sidebar:
         )
         
         show_statistics = st.checkbox("Mostrar estadísticas detalladas", value=True)
+        save_to_favorites = st.checkbox("Guardar en favoritos automáticamente", value=False)
     
-    # Información sobre API
-    st.info("💡 **Tip:** Para mejores límites de rate, configure NCBI_API_KEY en las variables de entorno")
+    # Estadísticas de la base de datos
+    with st.expander("📈 Estadísticas"):
+        db_stats = get_database_stats()
+        if db_stats:
+            st.metric("Secuencias en BD", db_stats.get('total_sequences', 0))
+            st.metric("Búsquedas totales", db_stats.get('total_searches', 0))
+            st.metric("Tasa de éxito", f"{db_stats.get('success_rate', 0):.1f}%")
+
+# Manejar selección desde sidebar
+if 'selected_organism' in st.session_state:
+    organismo = st.session_state.selected_organism
+    del st.session_state.selected_organism
 
 # Área principal
 if st.button("🚀 Generar Visualización", type="primary", use_container_width=True):
     if not organismo.strip():
         st.error("Por favor, ingrese un nombre de organismo válido.")
         st.stop()
+    
+    # Registrar búsqueda
+    log_search(organismo, successful=False, user_session=st.session_state.session_id)
     
     with st.spinner(f"Obteniendo secuencia genética de {organismo}..."):
         seq_record = obtener_secuencia(organismo)
@@ -183,6 +294,7 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
             st.markdown("- Verifique la ortografía del nombre científico")
             st.markdown("- Pruebe con nombres más específicos (ej: 'Homo sapiens mitochondrion')")
             st.markdown("- Consulte la [base de datos NCBI](https://www.ncbi.nlm.nih.gov/nuccore) para nombres válidos")
+            log_search(organismo, successful=False, error_message="Organismo no encontrado", user_session=st.session_state.session_id)
             st.stop()
             
         # Actualizar el máximo de secuencia basado en la configuración
@@ -191,8 +303,27 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
         # Generar visualización
         fig, gc = generar_visualizacion(seq_record)
         
+        # Registrar búsqueda exitosa
+        log_search(organismo, successful=True, user_session=st.session_state.session_id)
+        
+        # Guardar en base de datos y obtener conteo de bases
+        conteo_bases = mostrar_estadisticas_secuencia(seq_record)
+        db_record = save_dna_sequence(organismo, seq_record, gc, conteo_bases)
+        
+        # Agregar a favoritos si está habilitado
+        if save_to_favorites and db_record:
+            add_favorite(st.session_state.session_id, organismo, seq_record.id)
+        
         # Mostrar información básica
         st.success(f"✅ Secuencia obtenida exitosamente: **{seq_record.id}**")
+        
+        # Botón para agregar a favoritos
+        if not save_to_favorites:
+            if st.button("⭐ Agregar a favoritos"):
+                if add_favorite(st.session_state.session_id, organismo, seq_record.id):
+                    st.success("Agregado a favoritos")
+                else:
+                    st.info("Ya está en favoritos")
         
         # Métricas principales
         col1, col2, col3 = st.columns(3)

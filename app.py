@@ -785,7 +785,7 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
         BASE_ART_MAP_TEMP = BASE_ART_MAP.copy()
         
         # Generar visualización
-        fig, gc = generar_visualizacion(seq_record)
+        fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
         
         # Registrar búsqueda exitosa
         log_search(final_organismo, successful=True, user_session=st.session_state.session_id)

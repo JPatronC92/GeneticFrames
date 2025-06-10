@@ -45,7 +45,7 @@ BASE_ART_MAP = {
 def generar_visualizacion(seq_record):
     """Crea visualización científica del ADN"""
     secuencia = str(seq_record.seq).upper()
-    gc = GC_content(secuencia)
+    gc = gc_fraction(secuencia) * 100
     
     # Preparar datos para Plotly
     bases = []

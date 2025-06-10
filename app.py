@@ -231,6 +231,9 @@ with st.sidebar:
         horizontal=True
     )
     
+    # Initialize organismo variable with default value
+    organismo = "Homo sapiens"
+    
     if search_type == "Nombre común (ej: tigre, ballena)":
         # Búsqueda por nombre común
         common_name_query = st.text_input(
@@ -259,6 +262,10 @@ with st.sidebar:
                                 st.rerun()
                         with col2:
                             st.text(f"{result['confidence']:.0%}")
+                    
+                    # Use the first result as the current organismo for generation
+                    if search_results:
+                        organismo = search_results[0]['scientific_name']
                 else:
                     # Mostrar sugerencias si no hay resultados exactos
                     suggestions = animal_search.suggest_similar_names(common_name_query)
@@ -417,29 +424,30 @@ with st.sidebar:
             st.rerun()
 
 # Manejar selección desde sidebar
+final_organismo = organismo  # Use the organismo from the search section
 if 'selected_organism' in st.session_state:
-    organismo = st.session_state.selected_organism
+    final_organismo = st.session_state.selected_organism
     del st.session_state.selected_organism
 
 # Área principal
 if st.button("🚀 Generar Visualización", type="primary", use_container_width=True):
-    if not organismo.strip():
+    if not final_organismo.strip():
         st.error("Por favor, ingrese un nombre de organismo válido.")
         st.stop()
     
     # Registrar búsqueda
-    log_search(organismo, successful=False, user_session=st.session_state.session_id)
+    log_search(final_organismo, successful=False, user_session=st.session_state.session_id)
     
-    with st.spinner(f"Obteniendo secuencia genética de {organismo}..."):
-        seq_record = obtener_secuencia(organismo)
+    with st.spinner(f"Obteniendo secuencia genética de {final_organismo}..."):
+        seq_record = obtener_secuencia(final_organismo)
         
         if not seq_record:
-            st.error(f"❌ Organismo '{organismo}' no encontrado en NCBI GenBank")
+            st.error(f"❌ Organismo '{final_organismo}' no encontrado en NCBI GenBank")
             st.markdown("**Sugerencias:**")
             st.markdown("- Verifique la ortografía del nombre científico")
             st.markdown("- Pruebe con nombres más específicos (ej: 'Homo sapiens mitochondrion')")
             st.markdown("- Consulte la [base de datos NCBI](https://www.ncbi.nlm.nih.gov/nuccore) para nombres válidos")
-            log_search(organismo, successful=False, error_message="Organismo no encontrado", user_session=st.session_state.session_id)
+            log_search(final_organismo, successful=False, error_message="Organismo no encontrado", user_session=st.session_state.session_id)
             st.stop()
             
         # Actualizar el máximo de secuencia basado en la configuración
@@ -449,18 +457,18 @@ if st.button("🚀 Generar Visualización", type="primary", use_container_width=
         fig, gc = generar_visualizacion(seq_record)
         
         # Registrar búsqueda exitosa
-        log_search(organismo, successful=True, user_session=st.session_state.session_id)
+        log_search(final_organismo, successful=True, user_session=st.session_state.session_id)
         
         # Guardar en base de datos y obtener conteo de bases
         conteo_bases = mostrar_estadisticas_secuencia(seq_record)
-        db_record = save_dna_sequence(organismo, seq_record, gc, conteo_bases)
+        db_record = save_dna_sequence(final_organismo, seq_record, gc, conteo_bases)
         
         # Agregar a favoritos si está habilitado
         if save_to_favorites and db_record:
-            add_favorite(st.session_state.session_id, organismo, seq_record.id)
+            add_favorite(st.session_state.session_id, final_organismo, seq_record.id)
         
         # Mostrar información de la especie si está en el catálogo
-        species_story = get_species_story(organismo)
+        species_story = get_species_story(final_organismo)
         if species_story:
             st.success(f"🎨 **{species_story['title']}**")
             st.info(f"📖 {species_story['story']}")

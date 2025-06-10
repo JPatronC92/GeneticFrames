@@ -17,6 +17,7 @@ from species_catalog import (
     FEATURED_SPECIES, get_species_info, get_rarity_multiplier,
     get_species_story, suggest_search_terms, is_featured_species
 )
+from animal_search import animal_search
 
 # Configuración de Entrez con variables de entorno
 Entrez.email = os.getenv("ENTREZ_EMAIL")
@@ -220,23 +221,89 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Input manual del organismo
-    st.subheader("🔍 Búsqueda Personalizada")
-    organismo = st.text_input(
-        "Nombre científico:", 
-        value="Homo sapiens",
-        help="Busca cualquier especie en GenBank"
+    # Sistema de búsqueda inteligente
+    st.subheader("🔍 Buscador de Animales")
+    
+    # Opción para buscar por nombre común o científico
+    search_type = st.radio(
+        "Tipo de búsqueda:",
+        ["Nombre común (ej: tigre, ballena)", "Nombre científico"],
+        horizontal=True
     )
     
-    # Sugerencias de búsqueda
-    if organismo and len(organismo) > 2:
-        suggestions = suggest_search_terms(organismo)
-        if suggestions:
-            st.markdown("**Sugerencias:**")
-            for suggestion in suggestions[:3]:
-                if st.button(f"🔸 {suggestion['common_name']}", key=f"sug_{suggestion['scientific_name']}"):
-                    st.session_state.selected_organism = suggestion['scientific_name']
-                    st.rerun()
+    if search_type == "Nombre común (ej: tigre, ballena)":
+        # Búsqueda por nombre común
+        common_name_query = st.text_input(
+            "Escribe el nombre del animal:",
+            placeholder="tigre, ballena, águila, serpiente...",
+            help="Escribe el nombre común del animal en español o inglés"
+        )
+        
+        if common_name_query and len(common_name_query) > 2:
+            with st.spinner("Buscando nombre científico..."):
+                search_results = animal_search.search_comprehensive(common_name_query)
+                
+                if search_results:
+                    st.markdown("**Resultados encontrados:**")
+                    for i, result in enumerate(search_results[:5]):
+                        confidence_emoji = "🎯" if result['confidence'] > 0.9 else "✅" if result['confidence'] > 0.7 else "📝"
+                        
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            if st.button(
+                                f"{confidence_emoji} {result['common_name']} → *{result['scientific_name']}*",
+                                key=f"search_result_{i}",
+                                help=f"Confianza: {result['confidence']:.0%} | Fuente: {result['source']}"
+                            ):
+                                st.session_state.selected_organism = result['scientific_name']
+                                st.rerun()
+                        with col2:
+                            st.text(f"{result['confidence']:.0%}")
+                else:
+                    # Mostrar sugerencias si no hay resultados exactos
+                    suggestions = animal_search.suggest_similar_names(common_name_query)
+                    if suggestions:
+                        st.info("**¿Quisiste decir alguno de estos?**")
+                        for suggestion in suggestions[:4]:
+                            if st.button(f"💡 {suggestion}", key=f"suggestion_{suggestion}"):
+                                # Re-buscar con la sugerencia
+                                auto_results = animal_search.search_comprehensive(suggestion)
+                                if auto_results:
+                                    st.session_state.selected_organism = auto_results[0]['scientific_name']
+                                    st.rerun()
+                    else:
+                        st.warning("No se encontraron resultados. Intenta con otro nombre o usa búsqueda científica.")
+        
+        # Ejemplos populares
+        if not common_name_query:
+            st.markdown("**Ejemplos populares:**")
+            example_animals = ["tigre", "ballena azul", "águila", "tiburón", "elefante", "rana"]
+            cols = st.columns(3)
+            for i, animal in enumerate(example_animals):
+                with cols[i % 3]:
+                    if st.button(f"🔸 {animal}", key=f"example_{animal}"):
+                        results = animal_search.search_comprehensive(animal)
+                        if results:
+                            st.session_state.selected_organism = results[0]['scientific_name']
+                            st.rerun()
+    
+    else:
+        # Búsqueda directa por nombre científico
+        organismo = st.text_input(
+            "Nombre científico:", 
+            value="Homo sapiens",
+            help="Busca cualquier especie en GenBank usando nomenclatura binomial"
+        )
+        
+        # Sugerencias de búsqueda del catálogo existente
+        if organismo and len(organismo) > 2:
+            suggestions = suggest_search_terms(organismo)
+            if suggestions:
+                st.markdown("**Sugerencias del catálogo:**")
+                for suggestion in suggestions[:3]:
+                    if st.button(f"🔸 {suggestion['common_name']}", key=f"sug_{suggestion['scientific_name']}"):
+                        st.session_state.selected_organism = suggestion['scientific_name']
+                        st.rerun()
     
     st.markdown("---")
     

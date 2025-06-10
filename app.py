@@ -100,10 +100,10 @@ def obtener_secuencia(organismo):
 # Mapeo científico de bases a atributos visuales mejorado
 BASE_ART_MAP = {
     'A': {'color': '#FF6B6B', 'size': 12, 'symbol': 'circle', 'frequency': 440},     # Adenina - Rojo coral
-    'T': {'color': '#4ECDC4', 'size': 10, 'symbol': 'diamond', 'frequency': 494},    # Timina - Turquesa
-    'C': {'color': '#45B7D1', 'size': 8, 'symbol': 'square', 'frequency': 523},      # Citosina - Azul cielo
-    'G': {'color': '#96CEB4', 'size': 14, 'symbol': 'star', 'frequency': 587},       # Guanina - Verde menta
-    'N': {'color': '#FECA57', 'size': 6, 'symbol': 'x', 'frequency': 330}            # Desconocido - Amarillo dorado
+    'T': {'color': '#4ECDC4', 'size': 10, 'symbol': 'circle', 'frequency': 494},    # Timina - Turquesa
+    'C': {'color': '#45B7D1', 'size': 8, 'symbol': 'circle', 'frequency': 523},      # Citosina - Azul cielo
+    'G': {'color': '#96CEB4', 'size': 14, 'symbol': 'circle', 'frequency': 587},       # Guanina - Verde menta
+    'N': {'color': '#FECA57', 'size': 6, 'symbol': 'circle', 'frequency': 330}            # Desconocido - Amarillo dorado
 }
 
 # Paletas de colores por tema
@@ -394,7 +394,7 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
         )
         
         if ring_data:
-            # Puntos principales del anillo
+            # Puntos orgánicos del anillo (solo círculos)
             fig.add_trace(go.Scatter(
                 x=ring_data['x_coords'],
                 y=ring_data['y_coords'],
@@ -403,7 +403,7 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
                     color=ring_data['colors'],
                     size=ring_data['sizes'],
                     opacity=ring_data['opacity'],
-                    symbol=ring_data['symbols'],
+                    symbol='circle',
                     line=dict(width=1, color='rgba(255,255,255,0.3)')
                 ),
                 showlegend=False,
@@ -441,7 +441,7 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
                             color=fractal_data['colors'],
                             size=fractal_data['sizes'],
                             opacity=0.4,
-                            symbol='diamond'
+                            symbol='circle'
                         ),
                         showlegend=False,
                         hoverinfo='skip'
@@ -458,7 +458,7 @@ def crear_mandala_genetico(secuencia, theme='scientific', genetic_seed=None):
                 color=centro_data['colors'],
                 size=centro_data['sizes'],
                 opacity=0.9,
-                symbol='star',
+                symbol='circle',
                 line=dict(width=2, color='white')
             ),
             showlegend=False,
@@ -775,7 +775,7 @@ def crear_galaxia_genetica(secuencia, theme='scientific', genetic_seed=None):
                 color=centro_galactico['colors'],
                 size=centro_galactico['sizes'],
                 opacity=centro_galactico['opacity'],
-                symbol='star',
+                symbol='circle',
                 line=dict(width=2, color='white')
             ),
             showlegend=False,
@@ -809,7 +809,7 @@ def crear_galaxia_genetica(secuencia, theme='scientific', genetic_seed=None):
                 color=cumulo['colors'],
                 size=cumulo['sizes'],
                 opacity=0.6,
-                symbol='diamond'
+                symbol='circle'
             ),
             showlegend=False,
             hoverinfo='skip'

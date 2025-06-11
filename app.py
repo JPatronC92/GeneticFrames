@@ -3,6 +3,9 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import time
+from datetime import datetime
+import streamlit.components.v1 as components
 from Bio import Entrez, SeqIO
 from Bio.SeqUtils import gc_fraction
 import io
@@ -845,6 +848,567 @@ def create_comparative_scatter(sequence, colors, genetic_seed, subplot_num):
             ))
     
     return traces
+
+def crear_voronoi_animado(secuencia, theme='scientific', genetic_seed=None):
+    """Genera diagrama de Voronoi con animación de partículas"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Generar múltiples frames para animación
+    frames = []
+    sample_size = min(500, len(secuencia))
+    sequence_sample = secuencia[:sample_size]
+    
+    # Crear 20 frames para animación suave
+    for frame_idx in range(20):
+        frame_data = []
+        time_factor = frame_idx * 0.1
+        
+        # Generar puntos con movimiento
+        points = []
+        nucleotide_map = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
+        
+        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+        entropy = genetic_seed.get('entropy', 2.0)
+        
+        for i in range(0, len(sequence_sample), max(1, len(sequence_sample) // 50)):
+            nucleotide = sequence_sample[i]
+            if nucleotide in nucleotide_map:
+                # Posición base con movimiento orbital
+                base_x = (i / len(sequence_sample)) * 400 - 200
+                base_y = (nucleotide_map[nucleotide] * 100) - 150
+                
+                # Añadir movimiento circular y ondulatorio
+                orbit_radius = 15 + (entropy * 5)
+                rotation_speed = gc_content * 2 + 0.5
+                
+                animated_x = base_x + orbit_radius * np.sin(time_factor * rotation_speed + i * 0.1)
+                animated_y = base_y + orbit_radius * np.cos(time_factor * rotation_speed + i * 0.1)
+                
+                # Añadir ondulación vertical
+                wave_amplitude = 10
+                animated_y += wave_amplitude * np.sin(time_factor * 3 + i * 0.2)
+                
+                points.append([animated_x, animated_y, nucleotide])
+        
+        # Crear trazas animadas para este frame
+        for point in points:
+            nucleotide_freq = sequence_sample.count(point[2]) / len(sequence_sample)
+            size = max(4, min(12, 8 + nucleotide_freq * 20))
+            
+            # Pulsación de tamaño
+            pulse_factor = 1 + 0.3 * np.sin(time_factor * 4 + hash(point[2]) % 100)
+            animated_size = size * pulse_factor
+            
+            frame_data.append(go.Scatter(
+                x=[point[0]],
+                y=[point[1]],
+                mode='markers',
+                marker=dict(
+                    color=colors[point[2]],
+                    size=animated_size,
+                    symbol='circle',
+                    line=dict(color='white', width=1),
+                    opacity=0.8 + 0.2 * np.sin(time_factor * 2)
+                ),
+                showlegend=False,
+                hovertext=f"Nucleótido: {point[2]} (frame: {frame_idx})"
+            ))
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    # Crear figura base
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    # Configurar animación
+    fig.update_layout(
+        title=f"Voronoi Animado - Entropía: {entropy:.2f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Play",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 100, "redraw": True},
+                                    "fromcurrent": True, "transition": {"duration": 50}}]),
+                    dict(label="Pause",
+                         method="animate",
+                         args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                      "mode": "immediate",
+                                      "transition": {"duration": 0}}])]
+        )]
+    )
+    
+    return fig
+
+def crear_lsystem_animado(secuencia, theme='scientific', genetic_seed=None):
+    """Crea fractal L-System con crecimiento animado"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Generar parámetros L-System
+    base_ratios = genetic_seed.get('base_ratios', {})
+    gc_content = base_ratios.get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    
+    # Configurar L-System
+    if gc_content > 0.6:
+        axioma = "F+F+F+F"
+        reglas = {'F': 'F+F--F+F'}
+        angulo = 60
+        color_primary = colors['G']
+    elif gc_content < 0.4:
+        axioma = "F-F-F-F"
+        reglas = {'F': 'F-F++F-F'}
+        angulo = 90
+        color_primary = colors['A']
+    else:
+        axioma = "F+F-F"
+        reglas = {'F': 'F+F-F-F+F'}
+        angulo = 72
+        color_primary = colors['C']
+    
+    iteraciones = min(5, max(3, int(entropy * 1.5)))
+    
+    # Generar secuencia L-System completa
+    secuencia_lsystem = axioma
+    for _ in range(iteraciones):
+        nueva_secuencia = ""
+        for simbolo in secuencia_lsystem:
+            if simbolo in reglas:
+                nueva_secuencia += reglas[simbolo]
+            else:
+                nueva_secuencia += simbolo
+        secuencia_lsystem = nueva_secuencia
+    
+    # Crear frames para crecimiento progresivo
+    frames = []
+    total_symbols = len(secuencia_lsystem)
+    
+    for frame_idx in range(20):
+        # Mostrar progresivamente más símbolos
+        symbols_to_show = int((frame_idx + 1) / 20 * total_symbols)
+        partial_sequence = secuencia_lsystem[:symbols_to_show]
+        
+        # Interpretar L-System
+        x, y = 0, 0
+        angulo_actual = 90
+        stack = []
+        puntos_x = [0]
+        puntos_y = [0]
+        
+        longitud = 300 / (len(partial_sequence) ** 0.5 + 1)
+        
+        for simbolo in partial_sequence:
+            if simbolo == 'F':
+                x += longitud * np.cos(np.radians(angulo_actual))
+                y += longitud * np.sin(np.radians(angulo_actual))
+                puntos_x.append(x)
+                puntos_y.append(y)
+            elif simbolo == '+':
+                angulo_actual += angulo
+            elif simbolo == '-':
+                angulo_actual -= angulo
+            elif simbolo == '[':
+                stack.append((x, y, angulo_actual))
+            elif simbolo == ']':
+                if stack:
+                    x, y, angulo_actual = stack.pop()
+                    puntos_x.append(None)
+                    puntos_y.append(None)
+                    puntos_x.append(x)
+                    puntos_y.append(y)
+        
+        # Crear trazas con efecto de brillo
+        opacity = 0.7 + 0.3 * np.sin(frame_idx * 0.3)
+        line_width = 2 + np.sin(frame_idx * 0.2)
+        
+        frame_data = [go.Scatter(
+            x=puntos_x,
+            y=puntos_y,
+            mode='lines',
+            line=dict(
+                color=color_primary,
+                width=line_width
+            ),
+            opacity=opacity,
+            showlegend=False,
+            hoverinfo='skip'
+        )]
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    fig.update_layout(
+        title=f"L-System Animado - GC: {gc_content:.2f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Grow",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 200, "redraw": True},
+                                    "fromcurrent": True}]),
+                    dict(label="Reset",
+                         method="animate",
+                         args=[[0], {"frame": {"duration": 0, "redraw": True}}])]
+        )]
+    )
+    
+    return fig
+
+def crear_automata_animado(secuencia, theme='scientific', genetic_seed=None):
+    """Genera autómata celular con evolución temporal animada"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    width = 100
+    height = 60
+    
+    rule_number = (genetic_seed.get('primary_signature', 0) % 256)
+    rule = [(rule_number >> i) & 1 for i in range(8)]
+    
+    # Estado inicial
+    initial_state = [0] * width
+    sample_size = min(width, len(secuencia))
+    nucleotide_map = {'A': 0, 'T': 1, 'C': 0, 'G': 1}
+    
+    for i in range(sample_size):
+        if secuencia[i] in nucleotide_map:
+            initial_state[i] = nucleotide_map[secuencia[i]]
+    
+    # Generar evolución completa
+    all_generations = [initial_state[:]]
+    current = initial_state[:]
+    
+    for generation in range(height - 1):
+        next_state = [0] * width
+        for i in range(width):
+            left = current[(i - 1) % width]
+            center = current[i]
+            right = current[(i + 1) % width]
+            
+            pattern = (left << 2) | (center << 1) | right
+            next_state[i] = rule[pattern]
+        
+        current = next_state[:]
+        all_generations.append(current[:])
+    
+    # Crear frames para mostrar evolución progresiva
+    frames = []
+    
+    for frame_idx in range(height):
+        # Mostrar hasta la generación actual
+        z_data = all_generations[:frame_idx + 1]
+        
+        # Rellenar con zeros si necesario
+        while len(z_data) < height:
+            z_data.append([0] * width)
+        
+        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+        if gc_content > 0.6:
+            colorscale = [[0, '#000011'], [1, colors['G']]]
+        elif gc_content < 0.4:
+            colorscale = [[0, '#000011'], [1, colors['A']]]
+        else:
+            colorscale = [[0, '#000011'], [0.5, colors['C']], [1, colors['T']]]
+        
+        frame_data = [go.Heatmap(
+            z=z_data,
+            colorscale=colorscale,
+            showscale=False,
+            hoverinfo='skip'
+        )]
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    fig.update_layout(
+        title=f"Autómata Celular Animado - Regla: {rule_number}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Evolve",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 150, "redraw": True},
+                                    "fromcurrent": True}]),
+                    dict(label="Reset",
+                         method="animate",
+                         args=[[0], {"frame": {"duration": 0, "redraw": True}}])]
+        )]
+    )
+    
+    return fig
+
+def crear_mapa_ruido_animado(secuencia, theme='scientific', genetic_seed=None):
+    """Genera mapa de ruido con ondas dinámicas"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    seed = genetic_seed.get('primary_signature', 0) % 1000000
+    np.random.seed(seed)
+    
+    size = 100
+    scale = genetic_seed.get('entropy', 2.0) * 10
+    
+    # Crear frames con ondas temporales
+    frames = []
+    
+    for frame_idx in range(20):
+        time_offset = frame_idx * 0.2
+        
+        noise_map = np.zeros((size, size))
+        for x in range(size):
+            for y in range(size):
+                # Ruido base con componente temporal
+                noise_value = (
+                    np.sin((x + time_offset * 10) / scale) * np.cos((y + time_offset * 5) / scale) +
+                    0.5 * np.sin((x + time_offset * 15) / (scale * 0.5)) * np.cos((y + time_offset * 8) / (scale * 0.5)) +
+                    0.25 * np.sin((x + time_offset * 20) / (scale * 0.25)) * np.cos((y + time_offset * 12) / (scale * 0.25))
+                )
+                noise_map[x, y] = noise_value
+        
+        # Normalizar
+        noise_map = (noise_map - noise_map.min()) / (noise_map.max() - noise_map.min())
+        
+        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+        
+        if gc_content > 0.6:
+            colorscale = 'Greens'
+        elif gc_content < 0.4:
+            colorscale = 'Reds'
+        else:
+            colorscale = 'Blues'
+        
+        frame_data = [go.Heatmap(
+            z=noise_map,
+            colorscale=colorscale,
+            showscale=False,
+            hoverinfo='skip'
+        )]
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    fig.update_layout(
+        title=f"Mapa de Ruido Dinámico - Escala: {scale:.1f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Flow",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 100, "redraw": True},
+                                    "fromcurrent": True, "transition": {"duration": 50}}]),
+                    dict(label="Pause",
+                         method="animate",
+                         args=[[None], {"frame": {"duration": 0, "redraw": False}}])]
+        )]
+    )
+    
+    return fig
+
+def crear_arte_fluido_animado(secuencia, theme='scientific', genetic_seed=None):
+    """Crea arte fluido con partículas en movimiento"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    sample_size = min(400, len(secuencia))
+    sequence_sample = secuencia[:sample_size]
+    
+    frames = []
+    
+    for frame_idx in range(25):
+        frame_data = []
+        time_factor = frame_idx * 0.15
+        
+        # Crear partículas flotantes para cada nucleótido
+        nucleotide_positions = {'A': [], 'T': [], 'C': [], 'G': []}
+        
+        for i, nucleotide in enumerate(sequence_sample):
+            if nucleotide in nucleotide_positions:
+                # Posición base con flujo dinámico
+                base_x = (i / len(sequence_sample)) * 600 - 300
+                base_y = np.random.normal(0, 50)
+                
+                # Añadir movimiento fluido
+                flow_x = 100 * np.sin(time_factor + i * 0.01)
+                flow_y = 50 * np.cos(time_factor * 1.5 + i * 0.02)
+                
+                # Turbulencia
+                turb_x = 20 * np.sin(time_factor * 3 + i * 0.1)
+                turb_y = 20 * np.cos(time_factor * 2.5 + i * 0.1)
+                
+                final_x = base_x + flow_x + turb_x
+                final_y = base_y + flow_y + turb_y
+                
+                nucleotide_positions[nucleotide].append([final_x, final_y])
+        
+        # Crear trazas animadas
+        for nucleotide, positions in nucleotide_positions.items():
+            if positions:
+                x_vals = [pos[0] for pos in positions]
+                y_vals = [pos[1] for pos in positions]
+                
+                # Tamaño y opacidad pulsantes
+                freq = len(positions) / len(sequence_sample)
+                size = max(3, min(10, 6 + freq * 15))
+                opacity = 0.6 + 0.4 * np.sin(time_factor * 2 + hash(nucleotide) % 10)
+                
+                frame_data.append(go.Scatter(
+                    x=x_vals,
+                    y=y_vals,
+                    mode='markers',
+                    marker=dict(
+                        color=colors[nucleotide],
+                        size=size,
+                        opacity=opacity,
+                        symbol='circle'
+                    ),
+                    showlegend=False,
+                    hovertext=f"Nucleótido: {nucleotide}"
+                ))
+                
+                # Añadir conexiones fluidas entre partículas cercanas
+                if len(x_vals) > 1:
+                    frame_data.append(go.Scatter(
+                        x=x_vals,
+                        y=y_vals,
+                        mode='lines',
+                        line=dict(
+                            color=colors[nucleotide],
+                            width=1,
+                            dash='dot'
+                        ),
+                        opacity=opacity * 0.3,
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    fig.update_layout(
+        title="Arte Fluido Genético Animado",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Flow",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 120, "redraw": True},
+                                    "fromcurrent": True, "transition": {"duration": 60}}]),
+                    dict(label="Pause",
+                         method="animate",
+                         args=[[None], {"frame": {"duration": 0, "redraw": False}}])]
+        )]
+    )
+    
+    return fig
+
+def crear_visualizacion_clasica_animada(secuencia, seq_record, theme):
+    """Visualización clásica con efectos animados"""
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    sample_size = min(300, len(secuencia))
+    sequence_sample = secuencia[:sample_size]
+    
+    frames = []
+    
+    for frame_idx in range(15):
+        frame_data = []
+        time_factor = frame_idx * 0.2
+        
+        # Crear gráfico de barras animado
+        nucleotide_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
+        
+        # Revelar progresivamente la secuencia
+        reveal_length = int((frame_idx + 1) / 15 * len(sequence_sample))
+        partial_sequence = sequence_sample[:reveal_length]
+        
+        for nucleotide in partial_sequence:
+            if nucleotide in nucleotide_counts:
+                nucleotide_counts[nucleotide] += 1
+        
+        # Añadir efecto de pulso
+        pulse_factor = 1 + 0.2 * np.sin(time_factor * 4)
+        
+        frame_data.append(go.Bar(
+            x=list(nucleotide_counts.keys()),
+            y=[count * pulse_factor for count in nucleotide_counts.values()],
+            marker_color=[colors[nuc] for nuc in nucleotide_counts.keys()],
+            opacity=0.8,
+            hovertext=[f"{nuc}: {count}" for nuc, count in nucleotide_counts.items()]
+        ))
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_idx)))
+    
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    
+    fig.update_layout(
+        title="Análisis Clásico Animado",
+        xaxis_title="Nucleótido",
+        yaxis_title="Frecuencia",
+        height=600,
+        template="plotly_dark",
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[dict(label="Analyze",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 200, "redraw": True}}]),
+                    dict(label="Reset",
+                         method="animate",
+                         args=[[0], {"frame": {"duration": 0, "redraw": True}}])]
+        )]
+    )
+    
+    return fig
 
 # Configuración inicial
 st.set_page_config(
@@ -1974,26 +2538,26 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     return fig
 
 def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
-    """Crea visualización artística avanzada del ADN usando algoritmos específicos"""
+    """Crea visualización artística animada del ADN usando algoritmos específicos"""
     
     secuencia = str(seq_record.seq).upper()
     
     # Crear semilla genética única
     genetic_seed = crear_semilla_genetica(secuencia, seq_record.id)
     
-    # Seleccionar algoritmo de visualización
+    # Seleccionar algoritmo de visualización con animación
     if style == 'voronoi':
-        fig = crear_voronoi_genetico(secuencia, theme, genetic_seed)
+        fig = crear_voronoi_animado(secuencia, theme, genetic_seed)
     elif style == 'lsystem':
-        fig = crear_lsystem_fractal(secuencia, theme, genetic_seed)
+        fig = crear_lsystem_animado(secuencia, theme, genetic_seed)
     elif style == 'cellular':
-        fig = crear_automata_celular(secuencia, theme, genetic_seed)
+        fig = crear_automata_animado(secuencia, theme, genetic_seed)
     elif style == 'noise':
-        fig = crear_mapa_ruido(secuencia, theme, genetic_seed)
+        fig = crear_mapa_ruido_animado(secuencia, theme, genetic_seed)
     elif style == 'fluid':
-        fig = crear_arte_fluido(secuencia, theme, genetic_seed)
+        fig = crear_arte_fluido_animado(secuencia, theme, genetic_seed)
     else:
-        fig = crear_visualizacion_clasica(secuencia, seq_record, theme)
+        fig = crear_visualizacion_clasica_animada(secuencia, seq_record, theme)
     
     # Calcular GC content
     gc_content = gc_fraction(seq_record.seq) * 100
@@ -2752,7 +3316,7 @@ def main():
         # Método de entrada de secuencia
         input_method = st.radio(
             "Método de entrada de secuencia:",
-            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "📁 Especies precargadas", "🔬 Análisis comparativo"],
+            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "🔬 Análisis comparativo"],
             horizontal=True
         )
         
@@ -2809,49 +3373,7 @@ def main():
                     if sample_method in ["Primeros N bases", "Región específica", "Muestreo representativo"]:
                         length = st.number_input("Longitud (bases):", min_value=100, value=1000, max_value=10000)
                 
-        elif input_method == "📁 Especies precargadas":
-            st.markdown("### Especies Precargadas con Secuencias Genómicas")
-            
-            species_categories = {
-                "🦁 Mamíferos": [
-                    ("Homo sapiens", "Humano"),
-                    ("Canis lupus", "Lobo gris"),
-                    ("Panthera leo", "León"),
-                    ("Tursiops truncatus", "Delfín nariz de botella"),
-                    ("Orcinus orca", "Orca")
-                ],
-                "🐦 Aves": [
-                    ("Aquila chrysaetos", "Águila real"),
-                    ("Falco peregrinus", "Halcón peregrino"),
-                    ("Aptenodytes forsteri", "Pingüino emperador")
-                ],
-                "🐍 Reptiles & Anfibios": [
-                    ("Python bivittatus", "Pitón birmana"),
-                    ("Crocodylus niloticus", "Cocodrilo del Nilo"),
-                    ("Xenopus laevis", "Rana africana")
-                ],
-                "🌊 Vida Marina": [
-                    ("Carcharodon carcharias", "Tiburón blanco"),
-                    ("Physeter macrocephalus", "Cachalote"),
-                    ("Balaenoptera musculus", "Ballena azul")
-                ],
-                "🦴 Especies Extintas": [
-                    ("Mammuthus primigenius", "Mamut lanudo"),
-                    ("Tyrannosaurus rex", "T-Rex"),
-                    ("Homo neanderthalensis", "Neandertal")
-                ]
-            }
-            
-            selected_category = st.selectbox("Categoría:", list(species_categories.keys()))
-            
-            if selected_category:
-                species_options = species_categories[selected_category]
-                species_display = [f"{common} ({scientific})" for scientific, common in species_options]
-                
-                selected_display = st.selectbox("Selecciona una especie:", species_display)
-                
-                if selected_display:
-                    selected_species = selected_display.split("(")[1].replace(")", "")
+
         
         # Análisis comparativo
         if input_method == "🔬 Análisis comparativo":
@@ -2959,12 +3481,10 @@ def main():
             
             st.stop()
         
-        # Botón de generación universal
+        # Botón de generación optimizado
         generate_button_text = "🚀 Generar Arte Genético"
         if input_method == "📝 Pegar secuencia FASTA":
             generate_button_text = "🧬 Generar Arte desde FASTA"
-        elif input_method == "📁 Especies precargadas":
-            generate_button_text = "🔬 Generar Arte de Especie"
             
         if st.button(generate_button_text, type="primary", use_container_width=True):
             seq_record = None

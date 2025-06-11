@@ -175,20 +175,316 @@ def generar_paleta_dinamica(genetic_seed, base_theme):
     
     return unique_colors
 
+# ============ ARQUITECTURAS DE RENDER MODULARES ============
+
+def render_fractal(secuencia, colors, genetic_seed):
+    """Arquitectura fractal para secuencias con alta repetitividad"""
+    fig = go.Figure()
+    
+    # Análisis de patrones fractales
+    mandelbrot_iterations = (genetic_seed.get('fibonacci_signature', 100) % 50) + 20
+    julia_constant = complex(
+        (genetic_seed.get('prime_signature', 0) % 200 - 100) / 100,
+        (genetic_seed.get('euler_signature', 0) % 200 - 100) / 100
+    )
+    
+    # Generar conjunto fractal basado en secuencia
+    x_range = np.linspace(-2, 2, 150)
+    y_range = np.linspace(-2, 2, 150)
+    
+    fractal_data = []
+    for i, x in enumerate(x_range):
+        for j, y in enumerate(y_range):
+            c = complex(x, y)
+            z = julia_constant
+            
+            # Modular iteraciones según bases de ADN
+            base_index = (i * len(y_range) + j) % len(secuencia)
+            if base_index < len(secuencia):
+                base = secuencia[base_index]
+                iterations = {'A': 20, 'T': 30, 'C': 40, 'G': 50}.get(base, 25)
+            else:
+                iterations = 25
+            
+            escape_count = 0
+            for _ in range(iterations):
+                if abs(z) > 2:
+                    break
+                z = z*z + c
+                escape_count += 1
+            
+            fractal_data.append([x, y, escape_count])
+    
+    # Convertir a arrays para plotting
+    x_vals = [d[0] for d in fractal_data]
+    y_vals = [d[1] for d in fractal_data]
+    z_vals = [d[2] for d in fractal_data]
+    
+    fig.add_trace(go.Scatter(
+        x=x_vals,
+        y=y_vals,
+        mode='markers',
+        marker=dict(
+            color=z_vals,
+            colorscale='Viridis',
+            size=1.5,
+            opacity=0.8
+        ),
+        showlegend=False
+    ))
+    
+    return fig
+
+def render_cristal(secuencia, colors, genetic_seed):
+    """Arquitectura cristalina para secuencias con alto GC content"""
+    fig = go.Figure()
+    
+    # Parámetros cristalinos basados en genética
+    simetria = (genetic_seed.get('fibonacci_signature', 0) % 8) + 4  # 4-12 ejes
+    
+    # Generar estructura cristalina hexagonal/octogonal
+    for eje in range(simetria):
+        angle_base = (2 * np.pi * eje) / simetria
+        
+        x_coords, y_coords = [], []
+        
+        for i, base in enumerate(secuencia[:400]):  # Muestra
+            # Coordenadas cristalinas simétricas
+            distance = i * 0.8
+            angle = angle_base + (i * 0.05)
+            
+            # Modulación según base
+            base_factor = {'A': 0.7, 'T': 0.9, 'C': 1.1, 'G': 1.3}.get(base, 1.0)
+            
+            x = np.cos(angle) * distance * base_factor
+            y = np.sin(angle) * distance * base_factor
+            
+            x_coords.append(x)
+            y_coords.append(y)
+        
+        # Líneas cristalinas
+        color_key = list(colors.keys())[eje % len(colors)]
+        fig.add_trace(go.Scatter(
+            x=x_coords,
+            y=y_coords,
+            mode='lines+markers',
+            line=dict(color=colors[color_key], width=2),
+            marker=dict(size=2, symbol='diamond'),
+            showlegend=False
+        ))
+    
+    return fig
+
+def render_glitch(secuencia, colors, genetic_seed):
+    """Arquitectura glitch para secuencias con alta variabilidad"""
+    fig = go.Figure()
+    
+    # Parámetros de glitch basados en genética
+    glitch_intensity = (genetic_seed.get('euler_signature', 0) % 100) / 50
+    corruption_rate = max(5, (genetic_seed.get('fractal_signature', 0) % 30) + 10)
+    
+    # Generar arte glitch digital
+    for layer in range(6):
+        x_coords, y_coords, colors_glitch = [], [], []
+        
+        for i, base in enumerate(secuencia[::corruption_rate]):
+            # Coordenadas con corrupción digital
+            x_base = i * 3
+            y_base = layer * 60
+            
+            # Aplicar glitches aleatorios basados en base
+            if base == 'A':
+                x_glitch = x_base + (genetic_seed.get('fibonacci_signature', 0) % 40 - 20) * glitch_intensity / 50
+                y_glitch = y_base + (genetic_seed.get('prime_signature', 0) % 20 - 10) * glitch_intensity / 50
+                color = '#FF3366'
+            elif base == 'T':
+                x_glitch = x_base + (genetic_seed.get('prime_signature', 0) % 30 - 15) * glitch_intensity / 50
+                y_glitch = y_base + (genetic_seed.get('euler_signature', 0) % 25 - 12) * glitch_intensity / 50
+                color = '#33FF66'
+            elif base == 'C':
+                x_glitch = x_base + (genetic_seed.get('euler_signature', 0) % 35 - 17) * glitch_intensity / 50
+                y_glitch = y_base + (genetic_seed.get('fractal_signature', 0) % 30 - 15) * glitch_intensity / 50
+                color = '#3366FF'
+            else:  # G
+                x_glitch = x_base + (genetic_seed.get('fractal_signature', 0) % 45 - 22) * glitch_intensity / 50
+                y_glitch = y_base + (genetic_seed.get('fibonacci_signature', 0) % 40 - 20) * glitch_intensity / 50
+                color = '#FFFF33'
+            
+            x_coords.append(x_glitch)
+            y_coords.append(y_glitch)
+            colors_glitch.append(color)
+        
+        # Barras glitch
+        fig.add_trace(go.Scatter(
+            x=x_coords,
+            y=y_coords,
+            mode='lines+markers',
+            line=dict(width=8 - layer, color='rgba(255,255,255,0.1)'),
+            marker=dict(color=colors_glitch, size=4),
+            showlegend=False
+        ))
+    
+    return fig
+
+def render_neural(secuencia, colors, genetic_seed):
+    """Arquitectura de red neuronal para alta entropía"""
+    fig = go.Figure()
+    
+    # Parámetros de red neuronal
+    num_neuronas = min(30, len(secuencia) // 30)
+    num_capas = (genetic_seed.get('fibonacci_signature', 0) % 4) + 3
+    
+    # Generar neuronas
+    neuronas = []
+    for capa in range(num_capas):
+        capa_neuronas = []
+        for neurona in range(num_neuronas):
+            x = capa * 120
+            y = (neurona - num_neuronas/2) * 40
+            
+            # Activación basada en secuencia
+            seq_index = (capa * num_neuronas + neurona) % len(secuencia)
+            base = secuencia[seq_index]
+            activacion = {'A': 0.3, 'T': 0.5, 'C': 0.7, 'G': 0.9}.get(base, 0.5)
+            
+            capa_neuronas.append({'x': x, 'y': y, 'activation': activacion, 'base': base})
+        neuronas.append(capa_neuronas)
+    
+    # Dibujar conexiones
+    for i in range(len(neuronas) - 1):
+        for n1 in neuronas[i]:
+            for n2 in neuronas[i + 1]:
+                # Peso de conexión basado en bases
+                peso = 0.15 if n1['base'] == n2['base'] else 0.05
+                
+                fig.add_trace(go.Scatter(
+                    x=[n1['x'], n2['x']],
+                    y=[n1['y'], n2['y']],
+                    mode='lines',
+                    line=dict(width=peso * 15, color='rgba(120,120,120,0.3)'),
+                    showlegend=False
+                ))
+    
+    # Dibujar neuronas
+    for capa in neuronas:
+        x_vals = [n['x'] for n in capa]
+        y_vals = [n['y'] for n in capa]
+        activations = [n['activation'] for n in capa]
+        
+        fig.add_trace(go.Scatter(
+            x=x_vals,
+            y=y_vals,
+            mode='markers',
+            marker=dict(
+                size=[a * 25 + 8 for a in activations],
+                color=activations,
+                colorscale='Plasma',
+                symbol='circle'
+            ),
+            showlegend=False
+        ))
+    
+    return fig
+
+def render_organico(secuencia, colors, genetic_seed):
+    """Arquitectura orgánica por defecto - formas naturales"""
+    fig = go.Figure()
+    
+    # Parámetros orgánicos
+    ramificaciones = (genetic_seed.get('prime_signature', 0) % 6) + 4
+    crecimiento = (genetic_seed.get('fibonacci_signature', 0) % 100) / 200
+    
+    # Generar estructura tipo árbol/coral
+    for rama in range(ramificaciones):
+        angle_base = (2 * np.pi * rama) / ramificaciones
+        
+        x_coords, y_coords, sizes = [], [], []
+        x, y = 0, 0
+        
+        for i, base in enumerate(secuencia[:300]):
+            # Crecimiento orgánico
+            growth_factor = {'A': 0.9, 'T': 1.1, 'C': 1.3, 'G': 1.5}.get(base, 1.0)
+            
+            # Dirección de crecimiento con curvatura natural
+            angle = angle_base + np.sin(i * 0.08) * 0.4
+            step = growth_factor * (1.5 + crecimiento)
+            
+            x += np.cos(angle) * step
+            y += np.sin(angle) * step
+            
+            x_coords.append(x)
+            y_coords.append(y)
+            sizes.append(growth_factor * 4)
+        
+        # Estructura orgánica
+        color_key = list(colors.keys())[rama % len(colors)]
+        fig.add_trace(go.Scatter(
+            x=x_coords,
+            y=y_coords,
+            mode='lines+markers',
+            line=dict(
+                color=colors[color_key],
+                width=2.5,
+                shape='spline'
+            ),
+            marker=dict(size=sizes, opacity=0.7),
+            showlegend=False
+        ))
+    
+    return fig
+
 def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
-    """Crea arte fluido ultra-premium con máxima calidad visual y diferenciación genética"""
-    max_length = min(len(secuencia), 8000)
-    sequence_segment = secuencia[:max_length]
+    """Sistema de render modular basado en análisis genómico"""
     
-    # Generar paleta dinámica basada en firma genética
-    if genetic_seed:
-        colors = generar_paleta_dinamica(genetic_seed, theme)
-    else:
-        colors = COLOR_THEMES[theme]
-    # Valores artísticos premium para mayor expresividad
-    base_values = {'A': 1.3, 'T': 2.1, 'C': 2.7, 'G': 3.4, 'N': 0.9}
+    if not secuencia:
+        return go.Figure()
     
-    # Usar firmas matemáticas avanzadas para parámetros completamente únicos
+    # Análisis bioinformático profundo
+    analisis = analizar_estructura_genomica(secuencia)
+    
+    # Seleccionar arquitectura de render
+    arquetipo = seleccionar_arquetipo_visual(analisis)
+    
+    # DEBUG: Mostrar análisis
+    print(f"=== ANÁLISIS GENÓMICO ===")
+    print(f"GC Content: {analisis['gc_content']:.3f}")
+    print(f"Repetitividad: {analisis['repetitividad']:.3f}")
+    print(f"Shannon Entropy: {analisis['shannon_entropy']:.3f}")
+    print(f"Variabilidad: {analisis['variabilidad']:.3f}")
+    print(f"ARQUETIPO SELECCIONADO: {arquetipo.upper()}")
+    print("========================")
+    
+    # Generar paleta de colores única
+    colors = generar_paleta_dinamica(genetic_seed, theme) if genetic_seed else {
+        'A': '#FF6B6B', 'T': '#4ECDC4', 'C': '#45B7D1', 'G': '#96CEB4', 'N': '#FFEAA7'
+    }
+    
+    # Ejecutar arquitectura específica
+    if arquetipo == 'fractal':
+        fig = render_fractal(secuencia, colors, genetic_seed)
+    elif arquetipo == 'cristal':
+        fig = render_cristal(secuencia, colors, genetic_seed)
+    elif arquetipo == 'glitch':
+        fig = render_glitch(secuencia, colors, genetic_seed)
+    elif arquetipo == 'neural':
+        fig = render_neural(secuencia, colors, genetic_seed)
+    else:  # organico
+        fig = render_organico(secuencia, colors, genetic_seed)
+    
+    # Configuración final
+    fig.update_layout(
+        showlegend=False,
+        plot_bgcolor='#000000',
+        paper_bgcolor='#111111',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+    
+    return fig
+
+def analizar_estructura_genomica(secuencia):
     if genetic_seed:
         # Teoremas matemáticos como base para diferenciación total
         fibonacci_sig = genetic_seed.get('fibonacci_signature', 123456)
@@ -458,6 +754,105 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     )
     
     return fig
+
+def analizar_estructura_genomica(secuencia):
+    """Análisis bioinformático profundo para determinar arquitectura de render"""
+    
+    # 1. Análisis de codones
+    codones = {}
+    for i in range(0, len(secuencia) - 2, 3):
+        codon = secuencia[i:i+3]
+        if len(codon) == 3:
+            codones[codon] = codones.get(codon, 0) + 1
+    
+    # Diversidad de codones (Shannon entropy)
+    total_codones = sum(codones.values())
+    shannon_entropy = 0
+    if total_codones > 0:
+        for count in codones.values():
+            if count > 0:
+                p = count / total_codones
+                shannon_entropy -= p * np.log2(p)
+    
+    # 2. Detección de motivos repetidos
+    motivos = {}
+    for length in [3, 6, 9, 12, 15]:
+        for i in range(len(secuencia) - length + 1):
+            motivo = secuencia[i:i+length]
+            motivos[motivo] = motivos.get(motivo, 0) + 1
+    
+    # Calcular repetitividad
+    motivos_repetidos = {k: v for k, v in motivos.items() if v >= 3}
+    repetitividad = len(motivos_repetidos) / max(1, len(motivos))
+    
+    # 3. Análisis de composición
+    gc_content = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
+    at_content = (secuencia.count('A') + secuencia.count('T')) / len(secuencia)
+    
+    # Detección de regiones TATA
+    tata_count = secuencia.count('TATA') + secuencia.count('ATAT')
+    tata_density = tata_count / max(1, len(secuencia) // 100)
+    
+    # 4. Análisis de complejidad de Lempel-Ziv
+    def lempel_ziv_complexity(s):
+        complexity = 1
+        prefix = ""
+        for char in s:
+            prefix += char
+            found = False
+            for i in range(len(prefix)-1):
+                if prefix[i:] in prefix[:i+1]:
+                    found = True
+                    break
+            if not found:
+                complexity += 1
+                prefix = ""
+        return complexity
+    
+    lz_complexity = lempel_ziv_complexity(secuencia[:1000])  # Muestra para eficiencia
+    
+    # 5. Variabilidad posicional
+    variabilidad = 0
+    window = 100
+    if len(secuencia) > window:
+        for i in range(0, len(secuencia) - window, window):
+            ventana = secuencia[i:i+window]
+            gc_ventana = (ventana.count('G') + ventana.count('C')) / len(ventana)
+            variabilidad += abs(gc_ventana - gc_content)
+        variabilidad /= max(1, (len(secuencia) // window))
+    
+    return {
+        'shannon_entropy': shannon_entropy,
+        'repetitividad': repetitividad,
+        'gc_content': gc_content,
+        'at_content': at_content,
+        'tata_density': tata_density,
+        'lz_complexity': lz_complexity,
+        'variabilidad': variabilidad,
+        'longitud': len(secuencia),
+        'diversidad_codones': len(codones)
+    }
+
+def seleccionar_arquetipo_visual(analisis):
+    """Selecciona arquitectura de render basada en análisis genómico"""
+    
+    gc = analisis['gc_content']
+    repetitividad = analisis['repetitividad']
+    shannon = analisis['shannon_entropy']
+    variabilidad = analisis['variabilidad']
+    lz_complexity = analisis['lz_complexity']
+    
+    # Lógica de selección de arquetipo
+    if repetitividad > 0.3:
+        return 'fractal'  # Alta repetición → fractales
+    elif gc > 0.6:
+        return 'cristal'  # GC alto → estructuras cristalinas simétricas
+    elif variabilidad > 0.15:
+        return 'glitch'   # Alta variación → arte caótico
+    elif shannon > 3.5:
+        return 'neural'   # Alta entropía → red neuronal
+    else:
+        return 'organico' # Por defecto → formas orgánicas
 
 def detectar_patrones_repetitivos(secuencia):
     """Detecta patrones repetitivos en la secuencia para crear espirales"""

@@ -407,7 +407,7 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
                     shape='spline',
                     smoothing=1.3
                 ),
-                opacity=0.8 - layer * 0.1,
+                opacity=max(0.1, 0.8 - layer * 0.1),
                 showlegend=False,
                 hoverinfo='skip'
             ))

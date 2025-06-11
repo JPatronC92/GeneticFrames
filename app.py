@@ -3730,6 +3730,33 @@ def main():
                     # Mostrar arte generado
                     st.plotly_chart(fig, use_container_width=True)
                     
+                    # Visualización Canvas animada
+                    st.markdown("### 🎬 Visualización Canvas Animada")
+                    sequence_str = str(seq_record.seq)[:200]  # Limitar para rendimiento
+                    gc_percentage = int(gc)
+                    entropy_value = 2.0  # Valor por defecto
+                    
+                    # Cargar y mostrar Canvas HTML
+                    try:
+                        with open('canvas_dna_animation.html', 'r', encoding='utf-8') as f:
+                            canvas_html = f.read()
+                        
+                        # Inyectar datos de secuencia en el HTML
+                        canvas_html = canvas_html.replace(
+                            'let sequenceData = "ATCGATCGATCGTAGCTAGCTAGCTA";',
+                            f'let sequenceData = "{sequence_str}";'
+                        ).replace(
+                            'let gcContent = 50;',
+                            f'let gcContent = {gc_percentage};'
+                        ).replace(
+                            'let entropy = 2.0;',
+                            f'let entropy = {entropy_value};'
+                        )
+                        
+                        components.html(canvas_html, height=650, scrolling=False)
+                    except FileNotFoundError:
+                        st.warning("Canvas animation file not found. Showing Plotly animation only.")
+                    
                     # Botones de compartir en redes sociales
                     st.markdown("### 🚀 Compartir tu Arte Genético")
                     social_buttons = create_social_share_buttons(

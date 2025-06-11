@@ -625,125 +625,132 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Sidebar para búsqueda
-    with st.sidebar:
-        st.markdown("### 🔍 Búsqueda de Animales")
-        
-        search_engine = AnimalSearchEngine()
-        
-        search_query = st.text_input(
-            "Nombre común del animal:",
-            placeholder="ej: delfín, orca, águila"
+    # Contenido principal - búsqueda única
+    st.markdown("### 🎯 Generador de Arte Genético")
+    
+    # Crear columnas para la búsqueda
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        organism_input = st.text_input(
+            "Nombre del animal:",
+            placeholder="ej: perro, gato, león, delfín, águila, tigre",
+            help="Introduce el nombre común del animal en español o inglés"
         )
+    
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)  # Espaciado
+        search_button = st.button("🔍 Buscar", type="secondary")
+    
+    # Mostrar sugerencias cuando se escribe
+    if organism_input and len(organism_input) > 2:
+        search_engine = AnimalSearchEngine()
+        suggestions = search_engine.search_comprehensive(organism_input.lower())
         
-        if search_query:
-            suggestions = search_engine.search_comprehensive(search_query)
+        if suggestions:
+            st.markdown("**Sugerencias encontradas:**")
             
-            if suggestions:
-                st.write("**Sugerencias encontradas:**")
-                for suggestion in suggestions[:5]:
-                    if st.button(f"🔬 {suggestion['scientific_name']}", key=f"suggest_{suggestion['scientific_name']}"):
+            # Mostrar sugerencias en columnas
+            cols = st.columns(3)
+            for i, suggestion in enumerate(suggestions[:6]):
+                with cols[i % 3]:
+                    if st.button(
+                        f"🔬 {suggestion['scientific_name']}", 
+                        key=f"suggest_{i}_{suggestion['scientific_name']}"
+                    ):
+                        organism_input = suggestion['scientific_name']
                         st.session_state.selected_organism = suggestion['scientific_name']
                         st.rerun()
-            else:
-                st.warning("No se encontraron coincidencias exactas")
-                
-                # Sugerencias por similitud
-                similar = search_engine.suggest_similar_names(search_query)
-                if similar:
-                    st.write("**¿Quisiste decir?**")
-                    for name in similar[:3]:
-                        if st.button(f"💡 {name}", key=f"similar_{name}"):
+        else:
+            # Buscar sugerencias similares
+            similar = search_engine.suggest_similar_names(organism_input.lower())
+            if similar:
+                st.markdown("**¿Quisiste decir?**")
+                cols = st.columns(3)
+                for i, name in enumerate(similar[:3]):
+                    with cols[i]:
+                        if st.button(f"💡 {name}", key=f"similar_{i}_{name}"):
+                            organism_input = name
                             st.session_state.selected_organism = name
                             st.rerun()
     
-    # Contenido principal
-    st.markdown("### 🎯 Generador de Arte Genético")
-    
-    selected_organism = st.session_state.get('selected_organism', '')
-    organism_input = st.text_input(
-        "Nombre del animal:",
-        value=selected_organism,
-        placeholder="ej: delfín, orca, águila, tigre",
-        help="Introduce el nombre común del animal que quieres visualizar"
-    )
-    
     # Botón de generación
-    if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):
+    if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True) or search_button:
+        if not organism_input:
+            st.warning("Por favor, introduce el nombre de un animal.")
+            st.stop()
+        
         seq_record = None
         organism_name = ""
         
-        # Buscar organismo usando nombre común
-        if organism_input:
-            log_search(organism_input, user_session=st.session_state.session_id)
+        log_search(organism_input, user_session=st.session_state.session_id)
+        
+        loading_placeholder = st.empty()
+        loading_placeholder.markdown(
+            create_custom_loading_animation(
+                "Buscando animal",
+                "Convirtiendo nombre común a científico"
+            ),
+            unsafe_allow_html=True
+        )
+        
+        # Buscar nombre científico usando el motor de búsqueda
+        try:
+            search_engine = AnimalSearchEngine()
+            suggestions = search_engine.search_comprehensive(organism_input.lower())
             
-            loading_placeholder = st.empty()
-            loading_placeholder.markdown(
-                create_custom_loading_animation(
-                    "Buscando animal",
-                    "Convirtiendo nombre común a científico"
-                ),
-                unsafe_allow_html=True
-            )
+            if suggestions:
+                # Usar la primera sugerencia más relevante
+                scientific_name = suggestions[0]['scientific_name']
+                
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        "Conectando con NCBI GenBank",
+                        f"Obteniendo secuencia de {scientific_name}"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+                seq_record = obtener_secuencia(scientific_name)
+                organism_name = scientific_name
+                loading_placeholder.empty()
+                
+                st.success(f"Encontrado: {scientific_name}")
+                
+            else:
+                # Intentar búsqueda directa si no hay sugerencias
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        "Búsqueda directa en NCBI",
+                        "Probando con el nombre proporcionado"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+                seq_record = obtener_secuencia(organism_input)
+                organism_name = organism_input
+                loading_placeholder.empty()
             
-            # Buscar nombre científico usando el motor de búsqueda
+        except Exception as e:
+            loading_placeholder.empty()
+            st.error(f"No se pudo encontrar el animal '{organism_input}'.")
+            
+            # Mostrar sugerencias de nombres similares
             try:
                 search_engine = AnimalSearchEngine()
-                suggestions = search_engine.search_comprehensive(organism_input)
-                
-                if suggestions:
-                    # Usar la primera sugerencia más relevante
-                    scientific_name = suggestions[0]['scientific_name']
-                    
-                    loading_placeholder.markdown(
-                        create_custom_loading_animation(
-                            "Conectando con NCBI GenBank",
-                            f"Obteniendo secuencia de {scientific_name}"
-                        ),
-                        unsafe_allow_html=True
-                    )
-                    
-                    seq_record = obtener_secuencia(scientific_name)
-                    organism_name = scientific_name
-                    loading_placeholder.empty()
-                    
-                    st.info(f"✅ Encontrado: {scientific_name}")
-                    
-                else:
-                    # Intentar búsqueda directa si no hay sugerencias
-                    loading_placeholder.markdown(
-                        create_custom_loading_animation(
-                            "Búsqueda directa en NCBI",
-                            "Probando con el nombre proporcionado"
-                        ),
-                        unsafe_allow_html=True
-                    )
-                    
-                    seq_record = obtener_secuencia(organism_input)
-                    organism_name = organism_input
-                    loading_placeholder.empty()
-                
-            except Exception as e:
-                loading_placeholder.empty()
-                st.error(f"No se pudo encontrar el animal '{organism_input}'. Intenta con otro nombre.")
-                
-                # Mostrar sugerencias de nombres similares
-                try:
-                    search_engine = AnimalSearchEngine()
-                    similar = search_engine.suggest_similar_names(organism_input)
-                    if similar:
-                        st.write("**¿Quisiste decir?**")
-                        for name in similar[:3]:
-                            if st.button(f"💡 {name}", key=f"error_similar_{name}"):
+                similar = search_engine.suggest_similar_names(organism_input.lower())
+                if similar:
+                    st.write("¿Quisiste decir?")
+                    cols = st.columns(3)
+                    for i, name in enumerate(similar[:3]):
+                        with cols[i]:
+                            if st.button(f"{name}", key=f"error_similar_{i}_{name}"):
                                 st.session_state.selected_organism = name
                                 st.rerun()
-                except:
-                    pass
-                
-                log_search(organism_input, successful=False, error_message=str(e), user_session=st.session_state.session_id)
-                st.stop()
-        else:
-            st.warning("⚠️ Por favor, introduce el nombre de un animal.")
+            except:
+                pass
+            
+            log_search(organism_input, successful=False, error_message=str(e), user_session=st.session_state.session_id)
             st.stop()
             
         # Procesar secuencia obtenida

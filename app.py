@@ -953,18 +953,21 @@ def crear_voronoi_animado(secuencia, theme='scientific', sequence_data=None):
     
     return fig
 
-def crear_lsystem_animado(secuencia, theme='scientific', genetic_seed=None):
+def crear_lsystem_animado(secuencia, theme='scientific', sequence_data=None):
     """Crea fractal L-System con crecimiento animado"""
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    if not genetic_seed:
-        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    if not sequence_data:
+        sequence_data = {
+            'sequence_hash': hash(secuencia) % 1000000,
+            'gc_content': (secuencia.count('G') + secuencia.count('C')) / len(secuencia),
+            'length': len(secuencia)
+        }
     
-    # Generar parámetros L-System
-    base_ratios = genetic_seed.get('base_ratios', {})
-    gc_content = base_ratios.get('gc_content', 0.5)
-    entropy = genetic_seed.get('entropy', 2.0)
+    # Generar parámetros L-System basados en la secuencia
+    gc_content = sequence_data.get('gc_content', 0.5)
+    entropy = 2.0 + gc_content
     
     # Configurar L-System
     if gc_content > 0.6:
@@ -1078,18 +1081,18 @@ def crear_lsystem_animado(secuencia, theme='scientific', genetic_seed=None):
     
     return fig
 
-def crear_automata_animado(secuencia, theme='scientific', genetic_seed=None):
+def crear_automata_animado(secuencia, theme='scientific', sequence_data=None):
     """Genera autómata celular con evolución temporal animada"""
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    if not genetic_seed:
-        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    if not sequence_data:
+        sequence_data = {'sequence_hash': hash(secuencia) % 1000000}
     
     width = 100
     height = 60
     
-    rule_number = (genetic_seed.get('primary_signature', 0) % 256)
+    rule_number = (sequence_data.get('sequence_hash', 0) % 256)
     rule = [(rule_number >> i) & 1 for i in range(8)]
     
     # Estado inicial
@@ -1129,7 +1132,7 @@ def crear_automata_animado(secuencia, theme='scientific', genetic_seed=None):
         while len(z_data) < height:
             z_data.append([0] * width)
         
-        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+        gc_content = sequence_data.get('gc_content', 0.5)
         if gc_content > 0.6:
             colorscale = [[0, '#000011'], [1, colors['G']]]
         elif gc_content < 0.4:
@@ -1171,13 +1174,13 @@ def crear_automata_animado(secuencia, theme='scientific', genetic_seed=None):
     
     return fig
 
-def crear_mapa_ruido_animado(secuencia, theme='scientific', genetic_seed=None):
+def crear_mapa_ruido_animado(secuencia, theme='scientific', sequence_data=None):
     """Genera mapa de ruido con ondas dinámicas"""
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    if not genetic_seed:
-        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    if not sequence_data:
+        sequence_data = {'sequence_hash': hash(secuencia) % 1000000}
     
     seed = genetic_seed.get('primary_signature', 0) % 1000000
     np.random.seed(seed)

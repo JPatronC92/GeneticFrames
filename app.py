@@ -454,26 +454,7 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         height=600,
-        margin=dict(l=40, r=40, t=80, b=40),
-        title={
-            'text': f"GeneticFrames - Arte de ADN Único",
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 16, 'color': 'rgba(50,50,50,0.8)'}
-        },
-        annotations=[
-            dict(
-                text=f"<b>Species:</b> <i>{sequence_id.split('.')[0] if '.' in sequence_id else 'Unknown'}</i><br><b>GenBank ID:</b> {sequence_id}<br><b>Bases:</b> {len(sequence_segment):,}",
-                xref="paper", yref="paper",
-                x=0.02, y=0.98, xanchor="left", yanchor="top",
-                showarrow=False,
-                font=dict(size=11, color="rgba(50,50,50,0.8)", family="Arial"),
-                bgcolor="rgba(255,255,255,0.9)",
-                bordercolor="rgba(200,200,200,0.6)",
-                borderwidth=1,
-                borderpad=8
-            )
-        ]
+        margin=dict(l=0, r=0, t=0, b=0)
     )
     
     return fig

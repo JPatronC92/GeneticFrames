@@ -1138,9 +1138,29 @@ def main():
     if 'session_id' not in st.session_state:
         st.session_state.session_id = str(uuid.uuid4())
     
-    # Header principal
-    st.title("🧬 GeneticFrames")
-    st.markdown("### *Plataforma de Arte Genético NFT Basado en Análisis Bioinformático*")
+    # Header principal con mejor diseño
+    col_logo, col_title = st.columns([1, 4])
+    
+    with col_logo:
+        st.markdown("""
+        <div style="font-size: 4rem; text-align: center; margin-top: 10px;">
+            🧬
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_title:
+        st.markdown("""
+        <div style="margin-top: 15px;">
+            <h1 style="margin-bottom: 0; color: #ffffff; text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);">
+                GeneticFrames
+            </h1>
+            <p style="font-size: 1.2rem; color: #aaaaaa; margin-top: 5px; font-style: italic;">
+                Plataforma de Arte Genético NFT • Análisis Bioinformático Avanzado
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
     
     # Sidebar
     with st.sidebar:
@@ -1223,20 +1243,34 @@ def main():
         except:
             st.write("Cargando organismos populares...")
     
-    # Main content
-    col1, col2 = st.columns([2, 1])
+    # Main content con pestañas organizadas
+    tab1, tab2, tab3 = st.tabs(["🎯 Generador", "📊 Análisis", "🏆 Galería NFT"])
     
-    with col1:
-        st.subheader("🎯 Generar Arte Genético")
+    with tab1:
+        # Input principal mejorado
+        st.markdown("""
+        <div style="background: rgba(26, 26, 46, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+            <h3 style="color: #00ff88; margin-bottom: 15px;">🎯 Generador de Arte Genético</h3>
+            <p style="color: #cccccc; margin-bottom: 0;">
+                Transforma secuencias de ADN reales en arte único mediante algoritmos bioinformáticos avanzados
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Input de organismo
-        selected_organism = st.session_state.get('selected_organism', '')
-        organism_input = st.text_input(
-            "Nombre científico del organismo:",
-            value=selected_organism,
-            placeholder="ej: Tursiops truncatus (delfín)",
-            help="Introduce el nombre científico completo del organismo"
-        )
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Input de organismo mejorado
+            selected_organism = st.session_state.get('selected_organism', '')
+            organism_input = st.text_input(
+                "Nombre científico del organismo:",
+                value=selected_organism,
+                placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
+                help="Introduce el nombre científico completo del organismo"
+            )
+        
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)  # Espaciado
         
         # Botón de generación
         if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):
@@ -1317,33 +1351,181 @@ def main():
             else:
                 st.warning("⚠️ Por favor, introduce el nombre de un organismo.")
     
-    with col2:
-        st.subheader("📋 Actividad Reciente")
+    with tab2:
+        st.markdown("""
+        <div style="background: rgba(26, 26, 46, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+            <h3 style="color: #00ff88; margin-bottom: 15px;">📊 Análisis Bioinformático</h3>
+            <p style="color: #cccccc; margin-bottom: 0;">
+                Dashboard de análisis genómico y estadísticas de la plataforma
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
+        # Panel de control dividido
+        col_stats, col_activity = st.columns([1, 1])
+        
+        with col_stats:
+            st.subheader("📈 Estadísticas Globales")
+            try:
+                from database import get_database_stats
+                stats = get_database_stats()
+                
+                # Métricas en un grid
+                metric_col1, metric_col2 = st.columns(2)
+                with metric_col1:
+                    st.metric("Secuencias Almacenadas", f"{stats['total_sequences']:,}")
+                    st.metric("Organismos Únicos", f"{stats['unique_organisms']:,}")
+                with metric_col2:
+                    st.metric("Búsquedas Exitosas", f"{stats['successful_searches']:,}")
+                    st.metric("Tasa de Éxito", f"{stats['success_rate']:.1f}%")
+                
+            except Exception as e:
+                st.info("Inicializando estadísticas...")
+        
+        with col_activity:
+            st.subheader("🔬 Actividad Reciente")
+            try:
+                recent = get_recent_sequences(8)
+                if recent:
+                    for seq in recent:
+                        with st.container():
+                            col_name, col_metrics = st.columns([2, 1])
+                            with col_name:
+                                st.markdown(f"**🧬 {seq.organism_name[:35]}**")
+                                st.caption(f"ID: {seq.ncbi_id}")
+                            with col_metrics:
+                                st.metric("GC%", f"{seq.gc_content:.1f}")
+                                st.caption(f"Longitud: {seq.sequence_length:,}")
+                            st.divider()
+                else:
+                    st.info("No hay actividad reciente")
+            except Exception as e:
+                st.info("Cargando actividad...")
+        
+        # Análisis de distribución de especies
+        st.subheader("🌍 Distribución de Especies")
         try:
-            recent = get_recent_sequences(5)
-            if recent:
-                for seq in recent:
-                    with st.container():
-                        st.write(f"🧬 **{seq.organism_name[:30]}**")
-                        st.write(f"GC: {seq.gc_content:.1f}% | Longitud: {seq.sequence_length:,}")
-                        st.write(f"Accesos: {seq.accessed_count}")
-                        st.divider()
+            popular = get_popular_organisms(10)
+            if popular:
+                # Crear gráfico de barras
+                import plotly.express as px
+                organisms = [org.organism_name[:30] for org in popular]
+                counts = [org.accessed_count for org in popular]
+                
+                fig_pop = px.bar(
+                    x=counts, 
+                    y=organisms,
+                    orientation='h',
+                    title="Especies Más Consultadas",
+                    color=counts,
+                    color_continuous_scale="Viridis"
+                )
+                fig_pop.update_layout(
+                    height=400,
+                    template="plotly_dark",
+                    showlegend=False
+                )
+                st.plotly_chart(fig_pop, use_container_width=True)
             else:
-                st.write("No hay secuencias recientes")
-        except:
-            st.write("Cargando actividad...")
+                st.info("Generando datos de distribución...")
+        except Exception as e:
+            st.info("Cargando análisis de distribución...")
+    
+    with tab3:
+        st.markdown("""
+        <div style="background: rgba(26, 26, 46, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+            <h3 style="color: #00ff88; margin-bottom: 15px;">🏆 Galería NFT y Colecciones</h3>
+            <p style="color: #cccccc; margin-bottom: 0;">
+                Explora colecciones exclusivas y gestiona tus NFTs genéticos
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Stats de la base de datos
-        st.subheader("📈 Estadísticas")
-        try:
-            from database import get_database_stats
-            stats = get_database_stats()
-            st.metric("Secuencias almacenadas", stats['total_sequences'])
-            st.metric("Búsquedas exitosas", stats['successful_searches'])
-            st.metric("Organismos únicos", stats['unique_organisms'])
-        except:
-            st.write("Cargando estadísticas...")
+        # Secciones de la galería
+        nft_tab1, nft_tab2, nft_tab3 = st.tabs(["🔥 Destacados", "🦕 Extintos", "⚙️ Blockchain"])
+        
+        with nft_tab1:
+            st.subheader("Arte Genético Destacado")
+            
+            # Grid de especies destacadas para NFT
+            featured_cols = st.columns(3)
+            featured_species = [
+                ("Tursiops truncatus", "Delfín Nariz de Botella", "🐬"),
+                ("Panthera leo", "León Africano", "🦁"),
+                ("Aquila chrysaetos", "Águila Real", "🦅")
+            ]
+            
+            for i, (scientific, common, emoji) in enumerate(featured_species):
+                with featured_cols[i % 3]:
+                    st.markdown(f"""
+                    <div style="background: rgba(15, 15, 15, 0.9); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid rgba(0, 255, 136, 0.3);">
+                        <div style="font-size: 2rem;">{emoji}</div>
+                        <h4 style="color: #00ff88; margin: 10px 0;">{common}</h4>
+                        <p style="color: #aaa; font-size: 0.9rem; font-style: italic;">{scientific}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button(f"Generar NFT {common}", key=f"nft_{scientific}"):
+                        st.session_state.selected_organism = scientific
+                        st.switch_page("main")
+        
+        with nft_tab2:
+            st.subheader("Colección Especies Extintas")
+            
+            try:
+                from extinct_species_catalog import get_collection_tiers
+                collection_tiers = get_collection_tiers()
+                
+                for tier_name, species_list in collection_tiers.items():
+                    with st.expander(f"🏛️ {tier_name}"):
+                        st.write(f"**{len(species_list)} especies en esta colección**")
+                        
+                        for species in species_list[:5]:  # Mostrar primeras 5
+                            col_spec, col_btn = st.columns([3, 1])
+                            with col_spec:
+                                st.write(f"🦕 **{species}**")
+                            with col_btn:
+                                if st.button("NFT", key=f"extinct_{species}"):
+                                    st.session_state.selected_organism = species
+                                    st.switch_page("main")
+                        
+                        if len(species_list) > 5:
+                            st.caption(f"... y {len(species_list) - 5} especies más")
+            
+            except Exception as e:
+                st.info("Cargando colecciones de especies extintas...")
+        
+        with nft_tab3:
+            st.subheader("Estado del Blockchain")
+            
+            try:
+                nft_manager = DNANFTManager()
+                status = nft_manager.get_blockchain_status()
+                
+                if status['connected']:
+                    st.success("✅ Blockchain conectado")
+                    st.write(f"**Red:** {status['network']}")
+                    st.write(f"**Dirección del contrato:** `{status.get('contract_address', 'No configurado')}`")
+                else:
+                    st.warning("⚠️ Blockchain no configurado")
+                    st.info("Para habilitar NFTs, configura las claves API de blockchain en la configuración.")
+                
+            except Exception as e:
+                st.error("Error al verificar estado del blockchain")
+            
+            # Configuración rápida
+            st.subheader("Configuración Rápida")
+            
+            st.markdown("""
+            **Para habilitar funcionalidad completa de NFT:**
+            1. Configura una wallet de Ethereum
+            2. Obtén claves API de Infura
+            3. Configura cuenta de Pinata para IPFS
+            4. Despliega el contrato ERC-721
+            """)
+            
+            if st.button("📋 Guía de Configuración Completa"):
+                st.info("Consulta el archivo DEPLOYMENT_GUIDE.md para instrucciones detalladas.")
 
 if __name__ == "__main__":
     main()

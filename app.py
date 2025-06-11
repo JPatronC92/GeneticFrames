@@ -125,6 +125,31 @@ COLOR_THEMES = {
     }
 }
 
+def hsl_to_hex(h, s, l):
+    """Convierte HSL a hexadecimal"""
+    h = h / 360.0
+    s = s / 100.0
+    l = l / 100.0
+    
+    def hue_to_rgb(p, q, t):
+        if t < 0: t += 1
+        if t > 1: t -= 1
+        if t < 1/6: return p + (q - p) * 6 * t
+        if t < 1/2: return q
+        if t < 2/3: return p + (q - p) * (2/3 - t) * 6
+        return p
+    
+    if s == 0:
+        r = g = b = l  # achromatic
+    else:
+        q = l * (1 + s) if l < 0.5 else l + s - l * s
+        p = 2 * l - q
+        r = hue_to_rgb(p, q, h + 1/3)
+        g = hue_to_rgb(p, q, h)
+        b = hue_to_rgb(p, q, h - 1/3)
+    
+    return f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
+
 def generar_paleta_dinamica(genetic_seed, base_theme):
     """Genera paleta de colores única basada en firmas genéticas"""
     fibonacci_sig = genetic_seed.get('fibonacci_signature', 123456)
@@ -145,8 +170,8 @@ def generar_paleta_dinamica(genetic_seed, base_theme):
     for i, base in enumerate(base_names):
         hue = (hue_seed + i * 72) % 360  # Separación de 72 grados
         lightness = lightness_base + (i * 5)  # Variación de luminosidad
-        color_hsl = f"hsl({hue}, {saturation}%, {lightness}%)"
-        unique_colors[base] = color_hsl
+        hex_color = hsl_to_hex(hue, saturation, lightness)
+        unique_colors[base] = hex_color
     
     return unique_colors
 

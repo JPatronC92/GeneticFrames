@@ -324,7 +324,9 @@ def limpiar_nombre_cientifico(nombre):
 
 def obtener_secuencia(organismo):
     """Obtiene secuencia de ADN desde NCBI"""
-    Entrez.email = "user@example.com"
+    import os
+    Entrez.email = os.getenv('ENTREZ_EMAIL', 'user@example.com')
+    Entrez.api_key = os.getenv('NCBI_API_KEY')
     
     try:
         nombre_busqueda = limpiar_nombre_cientifico(organismo)
@@ -333,12 +335,12 @@ def obtener_secuencia(organismo):
         search_results = Entrez.read(handle)
         handle.close()
         
-        if not search_results["IdList"]:
+        if not search_results.get("IdList"):
             handle = Entrez.esearch(db="nucleotide", term=f"{nombre_busqueda}[ORGN]", retmax=10)
             search_results = Entrez.read(handle)
             handle.close()
         
-        if search_results["IdList"]:
+        if search_results.get("IdList"):
             seq_id = search_results["IdList"][0]
             
             handle = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")

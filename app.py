@@ -147,29 +147,37 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
         fractal_sig = genetic_seed.get('fractal_signature', 890123)
         stirling_sig = genetic_seed.get('stirling_signature', 901234)
         
+        # DEBUG: Mostrar valores específicos
+        print(f"FIBONACCI: {fibonacci_sig}, PRIME: {prime_sig}, EULER: {euler_sig}")
+        
         # Semillas basadas en teoremas específicos
         np.random.seed(fibonacci_sig % 2147483647)
         random.seed(prime_sig % 2147483647)
         
-        # Parámetros únicos derivados de análisis matemático avanzado
-        unique_frequency_base = (fibonacci_sig % 10000) / 100000 + 0.005
-        complexity_multiplier = (catalan_sig % 5000) / 10000 + 0.5
+        # MODIFICACIÓN EXTREMA: Parámetros con rangos amplios para máxima diferenciación
+        unique_frequency_base = (fibonacci_sig % 50000) / 500000 + 0.001  # Rango 0.001-0.101
+        complexity_multiplier = (catalan_sig % 8000) / 4000 + 0.2  # Rango 0.2-2.2
         
-        # Factores visuales basados en diferentes teoremas
-        color_shift = (euler_sig % 360) / 360  # Función totiente para rotación
-        pattern_intensity = 0.3 + (taylor_sig % 700) / 1400  # Serie de Taylor
-        layer_count_modifier = (stirling_sig % 8) + 3  # Números de Bell para capas
-        wave_modifier = 0.5 + (fourier_sig % 1000) / 2000  # Análisis espectral
-        amplitude_multiplier = 0.6 + (pythagorean_sig % 800) / 2000  # Distancias euclidianas
+        # Factores visuales con diferencias extremas
+        color_shift = (euler_sig % 360) / 360  # Rotación completa 0-1
+        pattern_intensity = 0.1 + (taylor_sig % 1800) / 2000  # Rango 0.1-1.0  
+        layer_count_modifier = (stirling_sig % 12) + 2  # 2-14 capas (muy variable)
+        wave_modifier = 0.2 + (fourier_sig % 1600) / 1000  # Rango 0.2-1.8
+        amplitude_multiplier = 0.3 + (pythagorean_sig % 1400) / 1000  # Rango 0.3-1.7
         
-        # Modulación avanzada usando geometría fractal
-        fractal_modulation = (fractal_sig % 1000) / 1000
-        prime_modulation = (prime_sig % 2000) / 2000
+        # Modulación extrema para máxima diferenciación visual
+        fractal_modulation = (fractal_sig % 2000) / 2000  # 0-1 rango completo
+        prime_modulation = (prime_sig % 3000) / 3000  # 0-1 rango completo
         
-        # Factores de diferenciación matemática extrema
-        mathematical_phase = (fibonacci_sig * prime_sig) % 628318 / 100000  # 2π * 100
-        harmonic_factor = (catalan_sig + taylor_sig) % 1000 / 1000
-        spectral_shift = (fourier_sig + euler_sig) % 2000 / 2000
+        # Factores de diferenciación matemática extrema con amplificación
+        mathematical_phase = (fibonacci_sig * prime_sig) % 628318 / 50000  # Amplificar fase
+        harmonic_factor = (catalan_sig + taylor_sig) % 2000 / 2000  # Rango completo
+        spectral_shift = (fourier_sig + euler_sig) % 4000 / 4000  # Rango completo
+        
+        # DEBUG: Mostrar parámetros calculados
+        print(f"FREQ: {unique_frequency_base:.6f}, COMPLEXITY: {complexity_multiplier:.3f}")
+        print(f"COLOR_SHIFT: {color_shift:.3f}, PATTERN: {pattern_intensity:.3f}")
+        print(f"LAYERS: {layer_count_modifier}, WAVE: {wave_modifier:.3f}")
         
     else:
         unique_frequency_base = 0.01
@@ -1323,6 +1331,16 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     # Crear semilla única basada en el ID de la secuencia y primeras bases
     sequence_id = str(seq_record.id)
     genetic_seed = crear_semilla_genetica(secuencia, sequence_id)
+    
+    # Debug: Mostrar firmas únicas generadas
+    if genetic_seed:
+        print(f"\n=== DEBUG FIRMAS PARA {sequence_id} ===")
+        print(f"Fibonacci: {genetic_seed.get('fibonacci_signature', 'N/A')}")
+        print(f"Prime: {genetic_seed.get('prime_signature', 'N/A')}")
+        print(f"Catalan: {genetic_seed.get('catalan_signature', 'N/A')}")
+        print(f"Taylor: {genetic_seed.get('taylor_signature', 'N/A')}")
+        print(f"Master: {genetic_seed.get('master_signature', 'N/A')}")
+        print("=" * 40)
     
     if style == 'fluid':
         fig = crear_arte_fluido(secuencia, theme, genetic_seed)

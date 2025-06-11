@@ -849,13 +849,17 @@ def create_comparative_scatter(sequence, colors, genetic_seed, subplot_num):
     
     return traces
 
-def crear_voronoi_animado(secuencia, theme='scientific', genetic_seed=None):
+def crear_voronoi_animado(secuencia, theme='scientific', sequence_data=None):
     """Genera diagrama de Voronoi con animación de partículas"""
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    if not genetic_seed:
-        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    if not sequence_data:
+        sequence_data = {
+            'sequence_hash': hash(secuencia) % 1000000,
+            'gc_content': (secuencia.count('G') + secuencia.count('C')) / len(secuencia),
+            'length': len(secuencia)
+        }
     
     # Generar múltiples frames para animación
     frames = []
@@ -871,8 +875,8 @@ def crear_voronoi_animado(secuencia, theme='scientific', genetic_seed=None):
         points = []
         nucleotide_map = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
         
-        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
-        entropy = genetic_seed.get('entropy', 2.0)
+        gc_content = sequence_data.get('gc_content', 0.5)
+        entropy = 2.0 + gc_content  # Simple entropy calculation
         
         for i in range(0, len(sequence_sample), max(1, len(sequence_sample) // 50)):
             nucleotide = sequence_sample[i]
@@ -2538,24 +2542,30 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     return fig
 
 def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
-    """Crea visualización artística animada del ADN usando algoritmos específicos"""
+    """Crea visualización artística animada del ADN usando características directas de la secuencia"""
     
     secuencia = str(seq_record.seq).upper()
     
-    # Crear semilla genética única
-    genetic_seed = crear_semilla_genetica(secuencia, seq_record.id)
+    # Usar características directas de la secuencia sin semillas complejas
+    sequence_data = {
+        'sequence': secuencia,
+        'length': len(secuencia),
+        'gc_content': (secuencia.count('G') + secuencia.count('C')) / len(secuencia),
+        'sequence_hash': hash(secuencia) % 1000000,
+        'organism_id': seq_record.id
+    }
     
     # Seleccionar algoritmo de visualización con animación
     if style == 'voronoi':
-        fig = crear_voronoi_animado(secuencia, theme, genetic_seed)
+        fig = crear_voronoi_animado(secuencia, theme, sequence_data)
     elif style == 'lsystem':
-        fig = crear_lsystem_animado(secuencia, theme, genetic_seed)
+        fig = crear_lsystem_animado(secuencia, theme, sequence_data)
     elif style == 'cellular':
-        fig = crear_automata_animado(secuencia, theme, genetic_seed)
+        fig = crear_automata_animado(secuencia, theme, sequence_data)
     elif style == 'noise':
-        fig = crear_mapa_ruido_animado(secuencia, theme, genetic_seed)
+        fig = crear_mapa_ruido_animado(secuencia, theme, sequence_data)
     elif style == 'fluid':
-        fig = crear_arte_fluido_animado(secuencia, theme, genetic_seed)
+        fig = crear_arte_fluido_animado(secuencia, theme, sequence_data)
     else:
         fig = crear_visualizacion_clasica_animada(secuencia, seq_record, theme)
     
@@ -2565,9 +2575,9 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     return fig, gc_content
 
 def crear_semilla_genetica(secuencia, sequence_id):
-    """Genera parámetros únicos basados en análisis profundo de la secuencia genética"""
+    """Genera firmas genéticas únicas que diferencian dramáticamente cada especie"""
     
-    if not secuencia or len(secuencia) < 100:
+    if not secuencia or len(secuencia) < 50:
         return None
     
     # Análisis de composición base
@@ -3293,12 +3303,31 @@ def main():
         st.subheader("📈 Populares")
         try:
             popular = get_popular_organisms(5)
-            for org in popular:
-                if st.button(f"🔥 {org.organism_name}", key=f"popular_{org.organism_name}"):
-                    st.session_state.selected_organism = org.organism_name
+            if popular:
+                for org in popular:
+                    if hasattr(org, 'organism_name'):
+                        if st.button(f"🔥 {org.organism_name}", key=f"popular_{org.organism_name}"):
+                            st.session_state.selected_organism = org.organism_name
+                            st.rerun()
+                    else:
+                        if st.button(f"🔥 {org}", key=f"popular_{org}"):
+                            st.session_state.selected_organism = org
+                            st.rerun()
+            else:
+                st.write("No hay organismos populares disponibles")
+        except Exception as e:
+            # Fallback con organismos comunes
+            common_organisms = [
+                "Homo sapiens", 
+                "Canis lupus", 
+                "Panthera tigris",
+                "Tursiops truncatus", 
+                "Orcinus orca"
+            ]
+            for org in common_organisms:
+                if st.button(f"🔥 {org}", key=f"fallback_{org}"):
+                    st.session_state.selected_organism = org
                     st.rerun()
-        except:
-            st.write("Cargando organismos populares...")
     
     # Main content con pestañas organizadas
     tab1, tab2, tab3 = st.tabs(["🎯 Generador", "📊 Análisis", "🏆 Galería NFT"])
@@ -3315,9 +3344,8 @@ def main():
         
         # Método de entrada simplificado
         st.markdown("### 🔍 Búsqueda de Organismo")
-        input_method = "🔍 Buscar por organismo"
         
-        col1, col2 = st.columns([3, 1])
+        col1, col2 = st.columns([2, 1])
         
         with col1:
             selected_organism = st.session_state.get('selected_organism', '')
@@ -3329,7 +3357,28 @@ def main():
             )
         
         with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("**Opciones de Arte:**")
+            art_style = st.selectbox(
+                "Estilo:",
+                ['voronoi', 'lsystem', 'cellular', 'noise', 'fluid'],
+                format_func=lambda x: {
+                    'voronoi': '🔷 Voronoi Animado',
+                    'lsystem': '🌿 L-System Creciente', 
+                    'cellular': '🔲 Autómata Evolutivo',
+                    'noise': '🌊 Ondas Dinámicas',
+                    'fluid': '💧 Arte Fluido'
+                }[x]
+            )
+            
+            color_theme = st.selectbox(
+                "Tema:",
+                ['scientific', 'natural', 'cosmic'],
+                format_func=lambda x: {
+                    'scientific': '🔬 Científico',
+                    'natural': '🌿 Natural', 
+                    'cosmic': '🌌 Cósmico'
+                }[x]
+            )
         
         # Botón de generación
         if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):

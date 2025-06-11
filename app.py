@@ -379,7 +379,7 @@ def generate_evolutionary_insights(analysis1, analysis2, organism1, organism2):
     return insights
 
 def create_comparative_visualization(seq1, seq2, organism1, organism2, style='voronoi', theme='scientific'):
-    """Crea visualización comparativa que resalta diferencias entre especies"""
+    """Crea visualización comparativa que resalta diferencias dramáticas entre especies"""
     
     # Análisis comparativo
     comparison = compare_sequences_biology(seq1, seq2, organism1, organism2)
@@ -387,7 +387,7 @@ def create_comparative_visualization(seq1, seq2, organism1, organism2, style='vo
     # Crear visualización lado a lado
     fig = make_subplots(
         rows=1, cols=2,
-        subplot_titles=[f"{organism1}", f"{organism2}"],
+        subplot_titles=[f"🧬 {organism1}", f"🧬 {organism2}"],
         specs=[[{"type": "scatter"}, {"type": "scatter"}]]
     )
     
@@ -397,15 +397,28 @@ def create_comparative_visualization(seq1, seq2, organism1, organism2, style='vo
     genetic_seed1 = crear_semilla_genetica(seq1, organism1)
     genetic_seed2 = crear_semilla_genetica(seq2, organism2)
     
-    # Crear visualizaciones individuales
+    # Amplificar diferencias visuales basadas en análisis biológico
+    differences = comparison['differences']
+    gc_diff = differences['gc_content']['difference']
+    complexity_diff = differences['complexity']['difference']
+    
+    # Modificar colores y patrones según diferencias genéticas
+    enhanced_colors1 = enhance_colors_for_species(colors, genetic_seed1, organism1, gc_diff)
+    enhanced_colors2 = enhance_colors_for_species(colors, genetic_seed2, organism2, gc_diff)
+    
+    # Crear visualizaciones con diferencias amplificadas
     if style == 'voronoi':
-        # Simplificado para comparación
-        fig1_data = create_comparative_voronoi(seq1, colors, genetic_seed1, 1)
-        fig2_data = create_comparative_voronoi(seq2, colors, genetic_seed2, 2)
+        fig1_data = create_enhanced_comparative_voronoi(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
+        fig2_data = create_enhanced_comparative_voronoi(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
+    elif style == 'lsystem':
+        fig1_data = create_enhanced_comparative_lsystem(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
+        fig2_data = create_enhanced_comparative_lsystem(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
+    elif style == 'cellular':
+        fig1_data = create_enhanced_comparative_cellular(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
+        fig2_data = create_enhanced_comparative_cellular(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
     else:
-        # Usar otros estilos adaptados para comparación
-        fig1_data = create_comparative_scatter(seq1, colors, genetic_seed1, 1)
-        fig2_data = create_comparative_scatter(seq2, colors, genetic_seed2, 2)
+        fig1_data = create_enhanced_comparative_scatter(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
+        fig2_data = create_enhanced_comparative_scatter(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
     
     # Agregar datos a subplots
     for trace in fig1_data:
@@ -414,14 +427,17 @@ def create_comparative_visualization(seq1, seq2, organism1, organism2, style='vo
     for trace in fig2_data:
         fig.add_trace(trace, row=1, col=2)
     
-    # Configurar layout
+    # Configurar layout con título informativo
+    title_text = f"Diferencias Genéticas Visualizadas: {organism1} vs {organism2}<br>"
+    title_text += f"<sub>GC Diff: {gc_diff:.3f} | Complexity Diff: {complexity_diff:.3f}</sub>"
+    
     fig.update_layout(
-        title=f"Análisis Comparativo: {organism1} vs {organism2}",
+        title=title_text,
         showlegend=False,
         plot_bgcolor='#000011',
         paper_bgcolor='#000011',
-        height=600,
-        margin=dict(l=0, r=0, t=60, b=0)
+        height=700,
+        margin=dict(l=0, r=0, t=80, b=0)
     )
     
     # Actualizar ejes
@@ -429,6 +445,322 @@ def create_comparative_visualization(seq1, seq2, organism1, organism2, style='vo
     fig.update_yaxes(visible=False)
     
     return fig, comparison
+
+def enhance_colors_for_species(base_colors, genetic_seed, organism, gc_diff):
+    """Modifica colores según características genéticas específicas de la especie"""
+    enhanced = base_colors.copy()
+    
+    # Modificar colores según contenido GC
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    
+    # Felinos (tigers, lions) - colores más cálidos y saturados
+    if 'tiger' in organism.lower() or 'panthera' in organism.lower():
+        enhanced['A'] = '#FF4500'  # Naranja brillante
+        enhanced['T'] = '#FFD700'  # Dorado
+        enhanced['C'] = '#FF6347'  # Rojo tomate
+        enhanced['G'] = '#FF8C00'  # Naranja oscuro
+        
+    # Cánidos (wolves, dogs) - colores más fríos y azulados
+    elif 'wolf' in organism.lower() or 'canis' in organism.lower():
+        enhanced['A'] = '#4169E1'  # Azul real
+        enhanced['T'] = '#00CED1'  # Turquesa
+        enhanced['C'] = '#1E90FF'  # Azul dodger
+        enhanced['G'] = '#6495ED'  # Azul acero
+        
+    # Humanos - colores violetas/púrpuras
+    elif 'human' in organism.lower() or 'sapiens' in organism.lower():
+        enhanced['A'] = '#9370DB'  # Violeta medio
+        enhanced['T'] = '#8A2BE2'  # Violeta azul
+        enhanced['C'] = '#9932CC'  # Orquídea oscura
+        enhanced['G'] = '#BA55D3'  # Orquídea media
+        
+    # Marinos - colores azul-verde
+    elif 'tursiops' in organism.lower() or 'orcinus' in organism.lower():
+        enhanced['A'] = '#20B2AA'  # Verde azulado claro
+        enhanced['T'] = '#008B8B'  # Cian oscuro
+        enhanced['C'] = '#00FFFF'  # Cian
+        enhanced['G'] = '#48D1CC'  # Turquesa medio
+        
+    # Amplificar diferencias según GC content
+    if gc_content > 0.6:  # Alto GC - colores más intensos
+        for nucleotide in enhanced:
+            color = enhanced[nucleotide]
+            if color.startswith('#'):
+                # Aumentar saturación
+                enhanced[nucleotide] = color.replace('#', '#FF')[:7] if len(color) == 7 else color
+    
+    return enhanced
+
+def create_enhanced_comparative_voronoi(sequence, colors, genetic_seed, organism, comparison):
+    """Voronoi con diferencias amplificadas"""
+    traces = []
+    
+    sample_size = min(300, len(sequence))
+    sequence_sample = sequence[:sample_size]
+    
+    points = []
+    nucleotide_map = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
+    
+    # Usar características genéticas para patrones únicos
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    
+    # Amplificar diferencias de posicionamiento según especie
+    position_amplifier = 1.0
+    if 'tiger' in organism.lower() or 'panthera' in organism.lower():
+        position_amplifier = 1.5  # Patrones más dispersos (comportamiento solitario)
+    elif 'wolf' in organism.lower() or 'canis' in organism.lower():
+        position_amplifier = 0.8  # Patrones más agrupados (comportamiento de manada)
+    
+    for i in range(0, len(sequence_sample), max(1, len(sequence_sample) // 50)):
+        nucleotide = sequence_sample[i]
+        if nucleotide in nucleotide_map:
+            # Posición base
+            base_x = (i / len(sequence_sample)) * 400 - 200
+            base_y = (nucleotide_map[nucleotide] * 100) - 150
+            
+            # Modificación específica por especie
+            species_mod_x = (genetic_seed.get('pattern_signature', 0) % 1000) * 0.1 * np.sin(i * entropy * 0.1) * position_amplifier
+            species_mod_y = (genetic_seed.get('positional_signature', 0) % 1000) * 0.1 * np.cos(i * gc_content * 0.1) * position_amplifier
+            
+            x = base_x + species_mod_x
+            y = base_y + species_mod_y
+            
+            points.append([x, y, nucleotide])
+    
+    # Crear puntos con tamaños variables según importancia genética
+    for point in points:
+        # Tamaño basado en rareza del nucleótido en la secuencia
+        nucleotide_freq = sequence_sample.count(point[2]) / len(sequence_sample)
+        size = max(4, min(12, 10 * (1 - nucleotide_freq) + 6))
+        
+        traces.append(go.Scatter(
+            x=[point[0]],
+            y=[point[1]],
+            mode='markers',
+            marker=dict(
+                color=colors[point[2]],
+                size=size,
+                symbol='circle',
+                line=dict(color='white', width=1),
+                opacity=0.9
+            ),
+            showlegend=False,
+            hovertext=f"{organism}: {point[2]} (freq: {nucleotide_freq:.3f})"
+        ))
+    
+    return traces
+
+def create_enhanced_comparative_lsystem(sequence, colors, genetic_seed, organism, comparison):
+    """L-System con diferencias estructurales amplificadas"""
+    traces = []
+    
+    # Parámetros únicos según especie y análisis genético
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    
+    # Reglas específicas por especie
+    if 'tiger' in organism.lower() or 'panthera' in organism.lower():
+        # Felinos: patrones más complejos y ramificados
+        axioma = "F+F+F+F"
+        reglas = {'F': 'F+F-F-F+F+F-F+F-F-F+F'}
+        angulo = 60
+        color_primary = colors['G']
+    elif 'wolf' in organism.lower() or 'canis' in organism.lower():
+        # Cánidos: patrones más lineales y organizados
+        axioma = "F-F-F-F"
+        reglas = {'F': 'F-F+F+F-F-F+F-F+F+F-F'}
+        angulo = 90
+        color_primary = colors['A']
+    else:
+        # Otros: patrones intermedios
+        axioma = "F+F-F"
+        reglas = {'F': 'F+F-F-F+F'}
+        angulo = 72
+        color_primary = colors['C']
+    
+    # Generar L-System
+    secuencia_lsystem = axioma
+    iteraciones = min(5, max(3, int(entropy * 1.5)))
+    
+    for _ in range(iteraciones):
+        nueva_secuencia = ""
+        for simbolo in secuencia_lsystem:
+            if simbolo in reglas:
+                nueva_secuencia += reglas[simbolo]
+            else:
+                nueva_secuencia += simbolo
+        secuencia_lsystem = nueva_secuencia
+    
+    # Interpretar y dibujar
+    x, y = 0, 0
+    angulo_actual = 90
+    stack = []
+    puntos_x = [0]
+    puntos_y = [0]
+    
+    longitud_base = 200 / (len(secuencia_lsystem) ** 0.4)
+    
+    for simbolo in secuencia_lsystem:
+        if simbolo == 'F':
+            x += longitud_base * np.cos(np.radians(angulo_actual))
+            y += longitud_base * np.sin(np.radians(angulo_actual))
+            puntos_x.append(x)
+            puntos_y.append(y)
+        elif simbolo == '+':
+            angulo_actual += angulo
+        elif simbolo == '-':
+            angulo_actual -= angulo
+        elif simbolo == '[':
+            stack.append((x, y, angulo_actual))
+        elif simbolo == ']':
+            if stack:
+                x, y, angulo_actual = stack.pop()
+                puntos_x.append(None)
+                puntos_y.append(None)
+                puntos_x.append(x)
+                puntos_y.append(y)
+    
+    traces.append(go.Scatter(
+        x=puntos_x,
+        y=puntos_y,
+        mode='lines',
+        line=dict(
+            color=color_primary,
+            width=3
+        ),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+    
+    return traces
+
+def create_enhanced_comparative_cellular(sequence, colors, genetic_seed, organism, comparison):
+    """Autómata celular con reglas específicas por especie"""
+    traces = []
+    
+    width = 80
+    height = 40
+    
+    # Regla específica por especie basada en características genéticas
+    base_rule = genetic_seed.get('primary_signature', 0) % 256
+    
+    # Modificar regla según especie
+    if 'tiger' in organism.lower():
+        rule_number = (base_rule + 30) % 256  # Reglas más complejas
+    elif 'wolf' in organism.lower():
+        rule_number = (base_rule + 110) % 256  # Reglas conocidas por generar patrones interesantes
+    else:
+        rule_number = base_rule
+    
+    rule = [(rule_number >> i) & 1 for i in range(8)]
+    
+    # Estado inicial específico por especie
+    initial_state = [0] * width
+    sample_size = min(width, len(sequence))
+    
+    # Mapeo específico por características genéticas
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    if gc_content > 0.6:
+        nucleotide_map = {'A': 0, 'T': 1, 'C': 1, 'G': 1}  # Más activación
+    else:
+        nucleotide_map = {'A': 1, 'T': 0, 'C': 0, 'G': 1}  # Patrón diferente
+    
+    for i in range(sample_size):
+        if sequence[i] in nucleotide_map:
+            initial_state[i] = nucleotide_map[sequence[i]]
+    
+    # Generar evolución
+    grid = [initial_state[:]]
+    current = initial_state[:]
+    
+    for generation in range(height - 1):
+        next_state = [0] * width
+        for i in range(width):
+            left = current[(i - 1) % width]
+            center = current[i]
+            right = current[(i + 1) % width]
+            
+            pattern = (left << 2) | (center << 1) | right
+            next_state[i] = rule[pattern]
+        
+        current = next_state[:]
+        grid.append(current[:])
+    
+    # Colorear según especie
+    if 'tiger' in organism.lower():
+        colorscale = [[0, '#000011'], [1, colors['G']]]
+    elif 'wolf' in organism.lower():
+        colorscale = [[0, '#000011'], [1, colors['A']]]
+    else:
+        colorscale = [[0, '#000011'], [0.5, colors['C']], [1, colors['T']]]
+    
+    traces.append(go.Heatmap(
+        z=grid,
+        colorscale=colorscale,
+        showscale=False,
+        hoverinfo='skip'
+    ))
+    
+    return traces
+
+def create_enhanced_comparative_scatter(sequence, colors, genetic_seed, organism, comparison):
+    """Scatter plot con patrones únicos amplificados por especie"""
+    traces = []
+    
+    sample_size = min(400, len(sequence))
+    sequence_sample = sequence[:sample_size]
+    
+    # Agrupar por nucleótidos con patrones específicos
+    nucleotide_positions = {'A': [], 'T': [], 'C': [], 'G': []}
+    
+    # Parámetros únicos por especie
+    if 'tiger' in organism.lower():
+        # Tigres: patrones más dispersos y agresivos
+        spread_factor = 2.0
+        vertical_offset = 20
+    elif 'wolf' in organism.lower():
+        # Lobos: patrones más agrupados y organizados
+        spread_factor = 0.8
+        vertical_offset = -20
+    else:
+        spread_factor = 1.0
+        vertical_offset = 0
+    
+    for i, nucleotide in enumerate(sequence_sample):
+        if nucleotide in nucleotide_positions:
+            # Posición modulada por características genéticas y especie
+            x = i + (genetic_seed.get('primary_signature', 0) % 100) * 0.02 * np.sin(i * 0.1) * spread_factor
+            y = genetic_seed.get('entropy', 2.0) * 25 + np.random.normal(0, 8) + vertical_offset
+            
+            nucleotide_positions[nucleotide].append([x, y])
+    
+    # Crear trazas con tamaños y opacidades variables
+    for nucleotide, positions in nucleotide_positions.items():
+        if positions:
+            x_vals = [pos[0] for pos in positions]
+            y_vals = [pos[1] for pos in positions]
+            
+            # Tamaño según frecuencia del nucleótido
+            freq = len(positions) / len(sequence_sample)
+            size = max(3, min(8, 6 + freq * 10))
+            
+            traces.append(go.Scatter(
+                x=x_vals,
+                y=y_vals,
+                mode='markers',
+                marker=dict(
+                    color=colors[nucleotide],
+                    size=size,
+                    opacity=0.8,
+                    symbol='diamond' if 'tiger' in organism.lower() else 'circle'
+                ),
+                name=f"{nucleotide} ({organism})",
+                showlegend=False,
+                hovertext=f"{organism}: {nucleotide} (freq: {freq:.3f})"
+            ))
+    
+    return traces
 
 def create_comparative_voronoi(sequence, colors, genetic_seed, subplot_num):
     """Versión simplificada de Voronoi para comparación"""

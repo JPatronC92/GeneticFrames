@@ -2477,7 +2477,7 @@ def main():
                     if sample_method in ["Primeros N bases", "Región específica", "Muestreo representativo"]:
                         length = st.number_input("Longitud (bases):", min_value=100, value=1000, max_value=10000)
                 
-        else:  # Especies precargadas
+        elif input_method == "📁 Especies precargadas":
             st.markdown("### Especies Precargadas con Secuencias Genómicas")
             
             species_categories = {
@@ -2520,47 +2520,6 @@ def main():
                 
                 if selected_display:
                     selected_species = selected_display.split("(")[1].replace(")", "")
-                    
-        elif input_method == "🔬 Análisis comparativo":  # Análisis comparativo
-            st.markdown("### 🔬 Análisis Comparativo de Especies")
-            st.info("Compara patrones genéticos únicos entre diferentes especies para identificar firmas evolutivas")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**Primera Especie:**")
-                species1 = st.selectbox(
-                    "Selecciona primera especie:",
-                    ["Panthera tigris (Tigre)", "Canis lupus (Lobo)", "Homo sapiens (Humano)", 
-                     "Tursiops truncatus (Delfín)", "Orcinus orca (Orca)", "Aquila chrysaetos (Águila)"],
-                    key="species1"
-                )
-                
-            with col2:
-                st.markdown("**Segunda Especie:**")
-                species2 = st.selectbox(
-                    "Selecciona segunda especie:",
-                    ["Canis lupus (Lobo)", "Panthera tigris (Tigre)", "Homo sapiens (Humano)",
-                     "Tursiops truncatus (Delfín)", "Orcinus orca (Orca)", "Aquila chrysaetos (Águila)"],
-                    key="species2"
-                )
-            
-            # Opciones de comparación
-            st.markdown("**Tipo de Análisis Comparativo:**")
-            comparison_type = st.radio(
-                "Enfoque:",
-                ["Secuencias homólogas", "Genes específicos", "Regiones conservadas", "Patrones únicos"],
-                horizontal=True,
-                help="Homólogas: mismos genes en ambas especies, Específicos: genes característicos, Conservadas: regiones evolutivamente estables"
-            )
-            
-            if comparison_type == "Genes específicos":
-                gene_focus = st.selectbox(
-                    "Gen de interés:",
-                    ["COX1 (Respiración celular)", "Citocromo B (Metabolismo)", "16S rRNA (Ribosoma)", 
-                     "BRCA1 (Reparación DNA)", "Melanina (Pigmentación)", "Hemoglobina (Transporte O2)"],
-                    help="Genes con funciones biológicas específicas para análisis dirigido"
-                )
         
         # Botón de generación universal
         generate_button_text = "🚀 Generar Arte Genético"

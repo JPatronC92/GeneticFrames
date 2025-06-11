@@ -396,32 +396,37 @@ def create_comparative_visualization(seq1, seq2, organism1, organism2, style='vo
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    # Generar semillas genéticas para cada especie
-    genetic_seed1 = crear_semilla_genetica(seq1, organism1)
-    genetic_seed2 = crear_semilla_genetica(seq2, organism2)
+    # Generar datos de secuencia para cada especie
+    sequence_data1 = {
+        'sequence_hash': hash(seq1) % 1000000,
+        'gc_content': (seq1.count('G') + seq1.count('C')) / len(seq1),
+        'length': len(seq1)
+    }
+    sequence_data2 = {
+        'sequence_hash': hash(seq2) % 1000000,
+        'gc_content': (seq2.count('G') + seq2.count('C')) / len(seq2),
+        'length': len(seq2)
+    }
     
     # Amplificar diferencias visuales basadas en análisis biológico
     differences = comparison['differences']
     gc_diff = differences['gc_content']['difference']
     complexity_diff = differences['complexity']['difference']
     
-    # Modificar colores y patrones según diferencias genéticas
-    enhanced_colors1 = enhance_colors_for_species(colors, genetic_seed1, organism1, gc_diff)
-    enhanced_colors2 = enhance_colors_for_species(colors, genetic_seed2, organism2, gc_diff)
+    # Usar características directas de la secuencia
+    enhanced_colors1 = colors  # Use default colors
+    enhanced_colors2 = colors  # Use default colors
     
-    # Crear visualizaciones con diferencias amplificadas
+    # Crear visualizaciones simplificadas
     if style == 'voronoi':
-        fig1_data = create_enhanced_comparative_voronoi(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
-        fig2_data = create_enhanced_comparative_voronoi(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
-    elif style == 'lsystem':
-        fig1_data = create_enhanced_comparative_lsystem(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
-        fig2_data = create_enhanced_comparative_lsystem(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
-    elif style == 'cellular':
-        fig1_data = create_enhanced_comparative_cellular(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
-        fig2_data = create_enhanced_comparative_cellular(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
+        fig1_data = crear_comparative_voronoi(seq1, enhanced_colors1, sequence_data1, 1)
+        fig2_data = crear_comparative_voronoi(seq2, enhanced_colors2, sequence_data2, 2)
+    elif style == 'scatter':
+        fig1_data = crear_comparative_scatter(seq1, enhanced_colors1, sequence_data1, 1)
+        fig2_data = crear_comparative_scatter(seq2, enhanced_colors2, sequence_data2, 2)
     else:
-        fig1_data = create_enhanced_comparative_scatter(seq1, enhanced_colors1, genetic_seed1, organism1, comparison)
-        fig2_data = create_enhanced_comparative_scatter(seq2, enhanced_colors2, genetic_seed2, organism2, comparison)
+        fig1_data = crear_comparative_voronoi(seq1, enhanced_colors1, sequence_data1, 1)
+        fig2_data = crear_comparative_voronoi(seq2, enhanced_colors2, sequence_data2, 2)
     
     # Agregar datos a subplots
     for trace in fig1_data:
@@ -2578,124 +2583,6 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     return fig, gc_content
 
 # Genetic seed algorithm removed - using direct sequence characteristics instead
-
-def crear_semilla_genetica_removida(secuencia, sequence_id):
-    """Genera firmas genéticas únicas que diferencian dramáticamente cada especie"""
-    
-    if not secuencia or len(secuencia) < 50:
-        return None
-    
-    # Análisis de composición base
-    base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
-    for base in secuencia:
-        if base in base_counts:
-            base_counts[base] += 1
-    
-    total = sum(base_counts.values())
-    if total == 0:
-        return None
-    
-    # 1. Análisis de dinucleótidos y trinucleótidos para patrones únicos
-    dinucs = {}
-    trinucs = {}
-    for i in range(len(secuencia) - 2):
-        dinuc = secuencia[i:i+2]
-        trinuc = secuencia[i:i+3]
-        if len(dinuc) == 2:
-            dinucs[dinuc] = dinucs.get(dinuc, 0) + 1
-        if len(trinuc) == 3:
-            trinucs[trinuc] = trinucs.get(trinuc, 0) + 1
-    
-    # 2. Análisis de periodicidad y repeticiones
-    sequence_length = len(secuencia)
-    repetition_pattern = 0
-    for window in [3, 6, 9, 12]:  # Detectar repeticiones de diferentes tamaños
-        if sequence_length > window * 2:
-            pattern = secuencia[:window]
-            count = secuencia.count(pattern)
-            repetition_pattern += count * window
-    
-    # 3. Skew y bias direccional
-    gc_skew = (base_counts['G'] - base_counts['C']) / (base_counts['G'] + base_counts['C']) if (base_counts['G'] + base_counts['C']) > 0 else 0
-    at_skew = (base_counts['A'] - base_counts['T']) / (base_counts['A'] + base_counts['T']) if (base_counts['A'] + base_counts['T']) > 0 else 0
-    
-    # 4. Análisis posicional - primer, medio y final de la secuencia
-    third = len(secuencia) // 3
-    start_gc = secuencia[:third].count('G') + secuencia[:third].count('C')
-    middle_gc = secuencia[third:2*third].count('G') + secuencia[third:2*third].count('C')
-    end_gc = secuencia[2*third:].count('G') + secuencia[2*third:].count('C')
-    
-    positional_variance = abs(start_gc - middle_gc) + abs(middle_gc - end_gc) + abs(start_gc - end_gc)
-    
-    # 5. Complejidad de secuencia usando entropía de Shannon
-    from collections import Counter
-    def shannon_entropy(sequence_part):
-        counter = Counter(sequence_part)
-        total = len(sequence_part)
-        if total == 0:
-            return 0
-        entropy = 0
-        for count in counter.values():
-            if count > 0:
-                p = count / total
-                entropy -= p * math.log2(p) if p > 0 else 0
-        return entropy
-    
-    entropy = shannon_entropy(secuencia[:1000])  # Primeros 1000 bases
-    
-    # 6. Hash único de la secuencia completa
-    sequence_hash = hash(secuencia) % 2147483647  # Usar la secuencia completa, no solo el ID
-    
-    # 7. Análisis de codones (si es múltiplo de 3)
-    codon_diversity = 0
-    if len(secuencia) >= 99:  # Al menos 33 codones
-        codons = set()
-        for i in range(0, len(secuencia) - 2, 3):
-            codon = secuencia[i:i+3]
-            if len(codon) == 3:
-                codons.add(codon)
-        codon_diversity = len(codons)
-    
-    # 8. Dinucleótido más frecuente y su frecuencia relativa
-    most_common_dinuc = max(dinucs.items(), key=lambda x: x[1]) if dinucs else ('AT', 1)
-    dinuc_dominance = most_common_dinuc[1] / len(dinucs) if dinucs else 0
-    
-    # Crear firmas únicas combinando todos los análisis
-    primary_signature = int(abs(sequence_hash))
-    gc_signature = int((base_counts['G'] + base_counts['C']) * 10000 / total)
-    skew_signature = int((gc_skew + 1) * 50000) + int((at_skew + 1) * 50000)
-    complexity_signature = int(entropy * 100000)
-    pattern_signature = repetition_pattern % 100000
-    positional_signature = positional_variance % 50000
-    codon_signature = codon_diversity * 1000
-    dominance_signature = int(dinuc_dominance * 100000)
-    
-    return {
-        'primary_signature': primary_signature,
-        'gc_signature': gc_signature,
-        'skew_signature': skew_signature,
-        'complexity_signature': complexity_signature,
-        'pattern_signature': pattern_signature,
-        'positional_signature': positional_signature,
-        'codon_signature': codon_signature,
-        'dominance_signature': dominance_signature,
-        'sequence_length': len(secuencia),
-        'base_ratios': {
-            'gc_content': (base_counts['G'] + base_counts['C']) / total,
-            'at_content': (base_counts['A'] + base_counts['T']) / total,
-            'gc_skew': gc_skew,
-            'at_skew': at_skew,
-            'a_ratio': base_counts['A'] / total,
-            't_ratio': base_counts['T'] / total,
-            'c_ratio': base_counts['C'] / total,
-            'g_ratio': base_counts['G'] / total
-        },
-        'dinuc_profile': most_common_dinuc[0],
-        'codon_diversity': codon_diversity,
-        'repetition_score': repetition_pattern,
-        'positional_variance': positional_variance,
-        'entropy': entropy
-    }
 
 def crear_voronoi_genetico(secuencia, theme='scientific', genetic_seed=None):
     """Genera diagrama de Voronoi único basado en características genéticas"""

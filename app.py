@@ -1290,6 +1290,361 @@ def crear_semilla_genetica(secuencia, sequence_id):
         'entropy': entropy
     }
 
+def crear_voronoi_genetico(secuencia, theme='scientific', genetic_seed=None):
+    """Genera diagrama de Voronoi único basado en características genéticas"""
+    
+    fig = go.Figure()
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Generar puntos únicos basados en secuencia genética
+    sample_size = min(500, len(secuencia))
+    sequence_sample = secuencia[:sample_size]
+    
+    # Crear puntos semilla para Voronoi basados en nucleótidos
+    points = []
+    nucleotide_map = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
+    
+    # Distribución basada en firmas genéticas
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    pattern_sig = genetic_seed.get('pattern_signature', 0)
+    
+    # Generar puntos con distribución única por especie
+    for i in range(0, len(sequence_sample), max(1, len(sequence_sample) // 50)):
+        nucleotide = sequence_sample[i]
+        if nucleotide in nucleotide_map:
+            # Posición base modulada por características genéticas
+            base_x = (i / len(sequence_sample)) * 400 - 200
+            base_y = (nucleotide_map[nucleotide] * 100) - 150
+            
+            # Variación única por especie
+            species_mod_x = (pattern_sig % 1000) * 0.1 * np.sin(i * entropy * 0.1)
+            species_mod_y = (genetic_seed.get('positional_signature', 0) % 1000) * 0.1 * np.cos(i * gc_content * 0.1)
+            
+            x = base_x + species_mod_x
+            y = base_y + species_mod_y
+            
+            points.append([x, y, nucleotide])
+    
+    if len(points) < 4:
+        # Fallback si muy pocos puntos
+        return crear_visualizacion_clasica(sequence_sample, None, theme)
+    
+    # Crear diagrama de Voronoi
+    point_coords = np.array([[p[0], p[1]] for p in points])
+    vor = Voronoi(point_coords)
+    
+    # Dibujar regiones de Voronoi
+    for pointidx, simplex in zip(vor.ridge_points, vor.ridge_vertices):
+        if np.all(np.array(simplex) >= 0):
+            # Obtener vértices de la arista
+            vertices = vor.vertices[simplex]
+            
+            # Color basado en nucleótido dominante
+            nucleotide1 = points[pointidx[0]][2]
+            nucleotide2 = points[pointidx[1]][2]
+            
+            # Determinar color de la región
+            if nucleotide1 == nucleotide2:
+                color = colors[nucleotide1]
+                opacity = 0.6
+            else:
+                # Mezcla de colores para transiciones
+                color = colors[nucleotide1]
+                opacity = 0.3
+            
+            fig.add_trace(go.Scatter(
+                x=vertices[:, 0].tolist() + [vertices[0, 0]],
+                y=vertices[:, 1].tolist() + [vertices[0, 1]],
+                fill='toself',
+                fillcolor=color,
+                opacity=opacity,
+                line=dict(color='rgba(255,255,255,0.2)', width=1),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+    
+    # Agregar puntos semilla
+    for point in points:
+        fig.add_trace(go.Scatter(
+            x=[point[0]],
+            y=[point[1]],
+            mode='markers',
+            marker=dict(
+                color=colors[point[2]],
+                size=8,
+                symbol='circle',
+                line=dict(color='white', width=1)
+            ),
+            name=point[2],
+            showlegend=False,
+            hovertext=f"Nucleótido: {point[2]}"
+        ))
+    
+    fig.update_layout(
+        title=f"Diagrama Voronoi - Entropía: {entropy:.2f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    
+    return fig
+
+def crear_lsystem_fractal(secuencia, theme='scientific', genetic_seed=None):
+    """Crea fractal L-System único basado en secuencia genética"""
+    
+    fig = go.Figure()
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Generar parámetros L-System únicos por especie
+    base_ratios = genetic_seed.get('base_ratios', {})
+    gc_content = base_ratios.get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    
+    # Axioma basado en nucleótido dominante
+    a_ratio = base_ratios.get('a_ratio', 0.25)
+    dominant_nucleotide = max(['A', 'T', 'C', 'G'], 
+                             key=lambda n: base_ratios.get(f'{n.lower()}_ratio', 0.25))
+    
+    if dominant_nucleotide == 'A':
+        axioma = "F"
+    elif dominant_nucleotide == 'T':
+        axioma = "F+F"
+    elif dominant_nucleotide == 'C':
+        axioma = "F-F"
+    else:
+        axioma = "F+F-F"
+    
+    # Reglas únicas basadas en características genéticas
+    if gc_content > 0.6:  # Alto GC
+        reglas = {'F': 'F+F--F+F'}
+        angulo = 60
+    elif gc_content < 0.4:  # Alto AT
+        reglas = {'F': 'F-F++F-F'}
+        angulo = 90
+    else:  # Balanceado
+        reglas = {'F': 'F+F-F-F+F'}
+        angulo = int(72 + (entropy * 10))
+    
+    # Iteraciones basadas en complejidad
+    iteraciones = min(6, max(3, int(entropy * 2)))
+    
+    # Generar L-System
+    secuencia_lsystem = axioma
+    for _ in range(iteraciones):
+        nueva_secuencia = ""
+        for simbolo in secuencia_lsystem:
+            if simbolo in reglas:
+                nueva_secuencia += reglas[simbolo]
+            else:
+                nueva_secuencia += simbolo
+        secuencia_lsystem = nueva_secuencia
+    
+    # Interpretar L-System en coordenadas
+    x, y = 0, 0
+    angulo_actual = 90
+    stack = []
+    puntos_x = [0]
+    puntos_y = [0]
+    
+    longitud = 300 / (len(secuencia_lsystem) ** 0.5)  # Escalar según complejidad
+    
+    for simbolo in secuencia_lsystem:
+        if simbolo == 'F':
+            x += longitud * np.cos(np.radians(angulo_actual))
+            y += longitud * np.sin(np.radians(angulo_actual))
+            puntos_x.append(x)
+            puntos_y.append(y)
+        elif simbolo == '+':
+            angulo_actual += angulo
+        elif simbolo == '-':
+            angulo_actual -= angulo
+        elif simbolo == '[':
+            stack.append((x, y, angulo_actual))
+        elif simbolo == ']':
+            if stack:
+                x, y, angulo_actual = stack.pop()
+                puntos_x.append(None)  # Separador para nuevas líneas
+                puntos_y.append(None)
+                puntos_x.append(x)
+                puntos_y.append(y)
+    
+    # Dibujar fractal
+    fig.add_trace(go.Scatter(
+        x=puntos_x,
+        y=puntos_y,
+        mode='lines',
+        line=dict(
+            color=colors['G'] if gc_content > 0.5 else colors['A'],
+            width=2
+        ),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+    
+    fig.update_layout(
+        title=f"L-System Fractal - GC: {gc_content:.2f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    
+    return fig
+
+def crear_automata_celular(secuencia, theme='scientific', genetic_seed=None):
+    """Genera autómata celular basado en secuencia genética"""
+    
+    fig = go.Figure()
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Configuración del autómata basada en características genéticas
+    width = 100
+    height = 50
+    
+    # Regla única basada en firmas genéticas
+    rule_number = (genetic_seed.get('primary_signature', 0) % 256)
+    rule = [(rule_number >> i) & 1 for i in range(8)]
+    
+    # Estado inicial basado en secuencia
+    initial_state = [0] * width
+    sample_size = min(width, len(secuencia))
+    nucleotide_map = {'A': 0, 'T': 1, 'C': 0, 'G': 1}
+    
+    for i in range(sample_size):
+        if secuencia[i] in nucleotide_map:
+            initial_state[i] = nucleotide_map[secuencia[i]]
+    
+    # Generar evolución del autómata
+    grid = [initial_state[:]]
+    current = initial_state[:]
+    
+    for generation in range(height - 1):
+        next_state = [0] * width
+        for i in range(width):
+            left = current[(i - 1) % width]
+            center = current[i]
+            right = current[(i + 1) % width]
+            
+            # Aplicar regla
+            pattern = (left << 2) | (center << 1) | right
+            next_state[i] = rule[pattern]
+        
+        current = next_state[:]
+        grid.append(current[:])
+    
+    # Convertir a imagen
+    z_data = []
+    for row in grid:
+        z_data.append(row)
+    
+    # Color basado en características genéticas
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    if gc_content > 0.6:
+        colorscale = [[0, '#000011'], [1, colors['G']]]
+    elif gc_content < 0.4:
+        colorscale = [[0, '#000011'], [1, colors['A']]]
+    else:
+        colorscale = [[0, '#000011'], [0.5, colors['C']], [1, colors['T']]]
+    
+    fig.add_trace(go.Heatmap(
+        z=z_data,
+        colorscale=colorscale,
+        showscale=False,
+        hoverinfo='skip'
+    ))
+    
+    fig.update_layout(
+        title=f"Autómata Celular - Regla: {rule_number}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    
+    return fig
+
+def crear_mapa_ruido(secuencia, theme='scientific', genetic_seed=None):
+    """Genera mapa de ruido Perlin basado en secuencia genética"""
+    
+    fig = go.Figure()
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    if not genetic_seed:
+        genetic_seed = {'primary_signature': hash(secuencia) % 1000000}
+    
+    # Parámetros de ruido únicos por especie
+    seed = genetic_seed.get('primary_signature', 0) % 1000000
+    np.random.seed(seed)
+    
+    size = 100
+    scale = genetic_seed.get('entropy', 2.0) * 10
+    octaves = min(6, max(2, genetic_seed.get('codon_diversity', 20) // 10))
+    
+    # Generar ruido simple (simulando Perlin)
+    def simple_noise(x, y, scale):
+        return np.sin(x / scale) * np.cos(y / scale) + \
+               0.5 * np.sin(x / (scale * 0.5)) * np.cos(y / (scale * 0.5)) + \
+               0.25 * np.sin(x / (scale * 0.25)) * np.cos(y / (scale * 0.25))
+    
+    # Generar mapa de altura
+    noise_map = np.zeros((size, size))
+    for x in range(size):
+        for y in range(size):
+            noise_map[x, y] = simple_noise(x, y, scale)
+    
+    # Normalizar
+    noise_map = (noise_map - noise_map.min()) / (noise_map.max() - noise_map.min())
+    
+    # Aplicar características genéticas al colormap
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    
+    if gc_content > 0.6:
+        colorscale = 'Greens'
+    elif gc_content < 0.4:
+        colorscale = 'Reds'
+    else:
+        colorscale = 'Blues'
+    
+    fig.add_trace(go.Heatmap(
+        z=noise_map,
+        colorscale=colorscale,
+        showscale=False,
+        hoverinfo='skip'
+    ))
+    
+    fig.update_layout(
+        title=f"Mapa de Ruido - Escala: {scale:.1f}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        height=600,
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    
+    return fig
+
 def crear_visualizacion_clasica(secuencia, seq_record, theme):
     """Visualización clásica mejorada"""
     fig = go.Figure()

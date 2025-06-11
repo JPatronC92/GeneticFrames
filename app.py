@@ -14,6 +14,9 @@ from animal_search import AnimalSearchEngine
 from blockchain_nft import DNANFTManager
 import uuid
 import urllib.parse
+import math
+from scipy.spatial import Voronoi, voronoi_plot_2d
+from scipy.spatial.distance import cdist
 
 # Configuración inicial
 st.set_page_config(
@@ -1142,18 +1145,26 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     
     return fig
 
-def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
-    """Crea visualización artística avanzada del ADN"""
+def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
+    """Crea visualización artística avanzada del ADN usando algoritmos específicos"""
     
     secuencia = str(seq_record.seq).upper()
     
     # Crear semilla genética única
     genetic_seed = crear_semilla_genetica(secuencia, seq_record.id)
     
-    if style == 'fluid':
+    # Seleccionar algoritmo de visualización
+    if style == 'voronoi':
+        fig = crear_voronoi_genetico(secuencia, theme, genetic_seed)
+    elif style == 'lsystem':
+        fig = crear_lsystem_fractal(secuencia, theme, genetic_seed)
+    elif style == 'cellular':
+        fig = crear_automata_celular(secuencia, theme, genetic_seed)
+    elif style == 'noise':
+        fig = crear_mapa_ruido(secuencia, theme, genetic_seed)
+    elif style == 'fluid':
         fig = crear_arte_fluido(secuencia, theme, genetic_seed)
     else:
-        # Mantener visualización clásica como respaldo
         fig = crear_visualizacion_clasica(secuencia, seq_record, theme)
     
     # Calcular GC content
@@ -1162,12 +1173,12 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     return fig, gc_content
 
 def crear_semilla_genetica(secuencia, sequence_id):
-    """Genera parámetros simples únicos basados en características básicas del ADN"""
+    """Genera parámetros únicos basados en análisis profundo de la secuencia genética"""
     
-    if not secuencia:
+    if not secuencia or len(secuencia) < 100:
         return None
     
-    # Análisis básico de composición
+    # Análisis de composición base
     base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
     for base in secuencia:
         if base in base_counts:
@@ -1177,35 +1188,106 @@ def crear_semilla_genetica(secuencia, sequence_id):
     if total == 0:
         return None
     
-    # Firmas simples basadas en la secuencia real
-    gc_content = (base_counts['G'] + base_counts['C']) / total
-    at_content = (base_counts['A'] + base_counts['T']) / total
-    
-    # Hash simple del sequence_id para reproducibilidad
-    id_hash = hash(sequence_id) % 1000000
-    
-    # Análisis de dinucleótidos
+    # 1. Análisis de dinucleótidos y trinucleótidos para patrones únicos
     dinucs = {}
-    for i in range(len(secuencia) - 1):
+    trinucs = {}
+    for i in range(len(secuencia) - 2):
         dinuc = secuencia[i:i+2]
+        trinuc = secuencia[i:i+3]
         if len(dinuc) == 2:
             dinucs[dinuc] = dinucs.get(dinuc, 0) + 1
+        if len(trinuc) == 3:
+            trinucs[trinuc] = trinucs.get(trinuc, 0) + 1
     
-    # Firma basada en el dinucleótido más común
-    top_dinuc = max(dinucs.items(), key=lambda x: x[1])[0] if dinucs else 'AT'
-    dinuc_signature = sum(ord(c) for c in top_dinuc) * 1000
+    # 2. Análisis de periodicidad y repeticiones
+    sequence_length = len(secuencia)
+    repetition_pattern = 0
+    for window in [3, 6, 9, 12]:  # Detectar repeticiones de diferentes tamaños
+        if sequence_length > window * 2:
+            pattern = secuencia[:window]
+            count = secuencia.count(pattern)
+            repetition_pattern += count * window
     
-    # Firmas simples
-    simple_signature = int(gc_content * 1000000) + id_hash
-    pattern_signature = dinuc_signature + (len(secuencia) % 10000)
+    # 3. Skew y bias direccional
+    gc_skew = (base_counts['G'] - base_counts['C']) / (base_counts['G'] + base_counts['C']) if (base_counts['G'] + base_counts['C']) > 0 else 0
+    at_skew = (base_counts['A'] - base_counts['T']) / (base_counts['A'] + base_counts['T']) if (base_counts['A'] + base_counts['T']) > 0 else 0
+    
+    # 4. Análisis posicional - primer, medio y final de la secuencia
+    third = len(secuencia) // 3
+    start_gc = secuencia[:third].count('G') + secuencia[:third].count('C')
+    middle_gc = secuencia[third:2*third].count('G') + secuencia[third:2*third].count('C')
+    end_gc = secuencia[2*third:].count('G') + secuencia[2*third:].count('C')
+    
+    positional_variance = abs(start_gc - middle_gc) + abs(middle_gc - end_gc) + abs(start_gc - end_gc)
+    
+    # 5. Complejidad de secuencia usando entropía de Shannon
+    from collections import Counter
+    def shannon_entropy(sequence_part):
+        counter = Counter(sequence_part)
+        total = len(sequence_part)
+        if total == 0:
+            return 0
+        entropy = 0
+        for count in counter.values():
+            if count > 0:
+                p = count / total
+                entropy -= p * math.log2(p) if p > 0 else 0
+        return entropy
+    
+    entropy = shannon_entropy(secuencia[:1000])  # Primeros 1000 bases
+    
+    # 6. Hash único de la secuencia completa
+    sequence_hash = hash(secuencia) % 2147483647  # Usar la secuencia completa, no solo el ID
+    
+    # 7. Análisis de codones (si es múltiplo de 3)
+    codon_diversity = 0
+    if len(secuencia) >= 99:  # Al menos 33 codones
+        codons = set()
+        for i in range(0, len(secuencia) - 2, 3):
+            codon = secuencia[i:i+3]
+            if len(codon) == 3:
+                codons.add(codon)
+        codon_diversity = len(codons)
+    
+    # 8. Dinucleótido más frecuente y su frecuencia relativa
+    most_common_dinuc = max(dinucs.items(), key=lambda x: x[1]) if dinucs else ('AT', 1)
+    dinuc_dominance = most_common_dinuc[1] / len(dinucs) if dinucs else 0
+    
+    # Crear firmas únicas combinando todos los análisis
+    primary_signature = int(abs(sequence_hash))
+    gc_signature = int((base_counts['G'] + base_counts['C']) * 10000 / total)
+    skew_signature = int((gc_skew + 1) * 50000) + int((at_skew + 1) * 50000)
+    complexity_signature = int(entropy * 100000)
+    pattern_signature = repetition_pattern % 100000
+    positional_signature = positional_variance % 50000
+    codon_signature = codon_diversity * 1000
+    dominance_signature = int(dinuc_dominance * 100000)
     
     return {
-        'fibonacci_signature': simple_signature % 1000000,
-        'prime_signature': pattern_signature % 1000000,
-        'catalan_signature': int(at_content * 1000000) % 1000000,
-        'euler_signature': (id_hash * 7) % 1000000,
-        'fractal_signature': (len(secuencia) * int(gc_content * 1000)) % 1000000,
-        'complexity_score': min(10, len(set(secuencia[:100])))
+        'primary_signature': primary_signature,
+        'gc_signature': gc_signature,
+        'skew_signature': skew_signature,
+        'complexity_signature': complexity_signature,
+        'pattern_signature': pattern_signature,
+        'positional_signature': positional_signature,
+        'codon_signature': codon_signature,
+        'dominance_signature': dominance_signature,
+        'sequence_length': len(secuencia),
+        'base_ratios': {
+            'gc_content': (base_counts['G'] + base_counts['C']) / total,
+            'at_content': (base_counts['A'] + base_counts['T']) / total,
+            'gc_skew': gc_skew,
+            'at_skew': at_skew,
+            'a_ratio': base_counts['A'] / total,
+            't_ratio': base_counts['T'] / total,
+            'c_ratio': base_counts['C'] / total,
+            'g_ratio': base_counts['G'] / total
+        },
+        'dinuc_profile': most_common_dinuc[0],
+        'codon_diversity': codon_diversity,
+        'repetition_score': repetition_pattern,
+        'positional_variance': positional_variance,
+        'entropy': entropy
     }
 
 def crear_visualizacion_clasica(secuencia, seq_record, theme):
@@ -1397,9 +1479,9 @@ def main():
         # Estilo de visualización
         art_style = st.selectbox(
             "Estilo de arte:",
-            ['fluid', 'mandala', 'galaxy', 'classic'],
+            ['voronoi', 'lsystem', 'cellular', 'noise', 'fluid', 'classic'],
             index=0,
-            help="Selecciona el algoritmo de visualización"
+            help="Algoritmo de visualización genética"
         )
         
         # Tema de colores

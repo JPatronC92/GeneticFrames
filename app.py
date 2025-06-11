@@ -3313,187 +3313,32 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # Método de entrada de secuencia
-        input_method = st.radio(
-            "Método de entrada de secuencia:",
-            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "🔬 Análisis comparativo"],
-            horizontal=True
-        )
+        # Método de entrada simplificado
+        st.markdown("### 🔍 Búsqueda de Organismo")
+        input_method = "🔍 Buscar por organismo"
         
-        organism_input = None
-        fasta_sequence = None
-        selected_species = None
-        sample_method = "Completa"
-        start_pos = 1
-        length = 1000
-        species1 = None
-        species2 = None
+        col1, col2 = st.columns([3, 1])
         
-        if input_method == "🔍 Buscar por organismo":
-            col1, col2 = st.columns([3, 1])
-            
-            with col1:
-                selected_organism = st.session_state.get('selected_organism', '')
-                organism_input = st.text_input(
-                    "Nombre científico del organismo:",
-                    value=selected_organism,
-                    placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
-                    help="Introduce el nombre científico completo del organismo"
-                )
-            
-            with col2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-        elif input_method == "📝 Pegar secuencia FASTA":
-            st.markdown("### Importar Secuencia FASTA")
-            fasta_sequence = st.text_area(
-                "Pega tu secuencia FASTA aquí:",
-                height=150,
-                placeholder=">Mi_Secuencia_ADN | Organismo: Ejemplo\nATGCAGCTTGCAATCGACTGCAGCTTGCAATCGACT...",
-                help="Formato FASTA estándar con encabezado (>nombre) seguido de la secuencia"
+        with col1:
+            selected_organism = st.session_state.get('selected_organism', '')
+            organism_input = st.text_input(
+                "Nombre científico del organismo:",
+                value=selected_organism,
+                placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
+                help="Introduce el nombre científico completo del organismo"
             )
-            
-            # Opciones de procesamiento para secuencias largas
-            if fasta_sequence and len(fasta_sequence) > 100:
-                st.markdown("### Opciones de Procesamiento de Secuencias Largas")
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    sample_method = st.selectbox(
-                        "Método de muestreo:",
-                        ["Completa", "Primeros N bases", "Región específica", "Muestreo representativo"],
-                        help="Completa: toda la secuencia (máx. 10k bases), Muestreo: selección representativa"
-                    )
-                
-                with col2:
-                    if sample_method in ["Primeros N bases", "Región específica"]:
-                        start_pos = st.number_input("Posición inicial:", min_value=1, value=1)
-                        
-                with col3:
-                    if sample_method in ["Primeros N bases", "Región específica", "Muestreo representativo"]:
-                        length = st.number_input("Longitud (bases):", min_value=100, value=1000, max_value=10000)
-                
-
         
-        # Análisis comparativo
-        if input_method == "🔬 Análisis comparativo":
-            st.markdown("### 🔬 Análisis Comparativo de Especies")
-            st.info("Compara patrones genéticos únicos entre diferentes especies para identificar firmas evolutivas")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**Primera Especie:**")
-                species1 = st.selectbox(
-                    "Selecciona primera especie:",
-                    ["Panthera tigris", "Canis lupus", "Homo sapiens", "Tursiops truncatus", "Orcinus orca"],
-                    key="species1"
-                )
-                
-            with col2:
-                st.markdown("**Segunda Especie:**")
-                species2 = st.selectbox(
-                    "Selecciona segunda especie:",
-                    ["Canis lupus", "Panthera tigris", "Homo sapiens", "Tursiops truncatus", "Orcinus orca"],
-                    key="species2"
-                )
-            
-            if st.button("🔬 Comparar Especies", type="primary", use_container_width=True):
-                if species1 == species2:
-                    st.warning("Selecciona dos especies diferentes para la comparación")
-                else:
-                    # Realizar análisis comparativo
-                    loading_placeholder = st.empty()
-                    loading_placeholder.markdown(
-                        create_custom_loading_animation(
-                            f"Análisis comparativo: {species1} vs {species2}",
-                            "Obteniendo y comparando secuencias genéticas"
-                        ),
-                        unsafe_allow_html=True
-                    )
-                    
-                    try:
-                        # Obtener secuencias de ambas especies
-                        seq_record1 = obtener_secuencia(species1)
-                        seq_record2 = obtener_secuencia(species2)
-                        
-                        seq1 = str(seq_record1.seq)
-                        seq2 = str(seq_record2.seq)
-                        
-                        loading_placeholder.empty()
-                        
-                        # Crear visualización comparativa
-                        fig, comparison_data = create_comparative_visualization(
-                            seq1, seq2, species1, species2, art_style, color_theme
-                        )
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Mostrar análisis comparativo detallado
-                        st.markdown("### 🔬 Análisis Comparativo Detallado")
-                        
-                        differences = comparison_data['differences']
-                        
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            gc_diff = differences['gc_content']
-                            st.metric(
-                                "Diferencia GC", 
-                                f"{gc_diff['difference']:.3f}",
-                                delta=f"{gc_diff['significance']} significancia"
-                            )
-                        
-                        with col2:
-                            complexity_diff = differences['complexity']
-                            st.metric(
-                                "Diferencia Complejidad",
-                                f"{complexity_diff['difference']:.3f}",
-                                delta="Shannon entropy"
-                            )
-                        
-                        with col3:
-                            coding_diff = differences['coding_potential']
-                            orfs_diff = coding_diff['orfs_count'][0] - coding_diff['orfs_count'][1]
-                            st.metric(
-                                "Diferencia ORFs",
-                                f"{abs(orfs_diff)}",
-                                delta=f"{'Mayor' if orfs_diff > 0 else 'Menor'} en {species1}"
-                            )
-                        
-                        # Insights evolutivos
-                        insights = comparison_data['evolutionary_insights']
-                        if insights:
-                            st.markdown("### 🌳 Insights Evolutivos")
-                            for insight in insights:
-                                st.info(insight)
-                        
-                        # Guardar datos comparativos
-                        st.session_state.last_comparison_data = {
-                            'species': [species1, species2],
-                            'sequences': [seq1, seq2],
-                            'comparison': comparison_data
-                        }
-                        
-                    except Exception as e:
-                        loading_placeholder.empty()
-                        st.error(f"Error en análisis comparativo: {str(e)}")
-            
-            st.stop()
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)
         
-        # Botón de generación optimizado
-        generate_button_text = "🚀 Generar Arte Genético"
-        if input_method == "📝 Pegar secuencia FASTA":
-            generate_button_text = "🧬 Generar Arte desde FASTA"
-            
-        if st.button(generate_button_text, type="primary", use_container_width=True):
+        # Botón de generación
+        if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):
             seq_record = None
             processed_sequence = None
             organism_name = ""
             
-            # Procesar según el método de entrada
-            if input_method == "🔍 Buscar por organismo" and organism_input:
-                # Método original de búsqueda NCBI
+            # Buscar organismo en NCBI
+            if organism_input:
                 log_search(organism_input, user_session=st.session_state.session_id)
                 
                 loading_placeholder = st.empty()
@@ -3515,304 +3360,124 @@ def main():
                     st.error(f"Error al obtener secuencia: {str(e)}")
                     log_search(organism_input, successful=False, error_message=str(e), user_session=st.session_state.session_id)
                     st.stop()
-                    
-            elif input_method == "📝 Pegar secuencia FASTA" and fasta_sequence:
-                # Procesar secuencia FASTA
-                try:
-                    fasta_data = parse_fasta_sequence(fasta_sequence)
-                    raw_sequence = fasta_data['sequence']
-                    organism_name = fasta_data['organism_name']
-                    
-                    if len(raw_sequence) < 50:
-                        st.error("La secuencia debe tener al menos 50 nucleótidos válidos (A, T, C, G)")
-                        st.stop()
-                    
-                    # Procesar región según método seleccionado
-                    processed_sequence = process_sequence_region(raw_sequence, sample_method, start_pos, length)
-                    
-                    # Crear objeto SeqRecord temporal para compatibilidad
-                    from Bio.Seq import Seq
-                    from Bio.SeqRecord import SeqRecord
-                    
-                    seq_record = SeqRecord(
-                        Seq(processed_sequence),
-                        id=fasta_data['organism_name'].replace(' ', '_'),
-                        description=fasta_data['gene_info']
-                    )
-                    
-                    st.success(f"Secuencia FASTA procesada: {len(processed_sequence)} nucleótidos ({sample_method})")
-                    
-                except Exception as e:
-                    st.error(f"Error al procesar secuencia FASTA: {str(e)}")
-                    st.stop()
-                    
-            elif input_method == "📁 Especies precargadas" and selected_species:
-                # Usar especie precargada (buscar en NCBI)
-                organism_input = selected_species
-                organism_name = selected_species
-                
-                loading_placeholder = st.empty()
-                loading_placeholder.markdown(
-                    create_custom_loading_animation(
-                        f"Cargando {selected_species}",
-                        "Obteniendo secuencias genómicas de referencia"
-                    ),
-                    unsafe_allow_html=True
-                )
-                
-                try:
-                    seq_record = obtener_secuencia(selected_species)
-                    loading_placeholder.empty()
-                    
-                except Exception as e:
-                    loading_placeholder.empty()
-                    st.error(f"Error al cargar {selected_species}: {str(e)}")
-                    st.stop()
-                    
-            elif input_method == "🔬 Análisis comparativo" and species1 and species2:
-                # Análisis comparativo entre dos especies
-                if species1 == species2:
-                    st.warning("Selecciona dos especies diferentes para la comparación")
-                    st.stop()
-                
-                # Extraer nombres científicos
-                organism1 = species1.split("(")[1].replace(")", "")
-                organism2 = species2.split("(")[1].replace(")", "")
-                
-                loading_placeholder = st.empty()
-                loading_placeholder.markdown(
-                    create_custom_loading_animation(
-                        f"Análisis comparativo: {organism1} vs {organism2}",
-                        "Obteniendo secuencias genéticas de ambas especies"
-                    ),
-                    unsafe_allow_html=True
-                )
-                
-                try:
-                    # Obtener secuencias de ambas especies
-                    seq_record1 = obtener_secuencia(organism1)
-                    seq_record2 = obtener_secuencia(organism2)
-                    
-                    loading_placeholder.empty()
-                    
-                    # Crear visualización comparativa
-                    comparison_loading = st.empty()
-                    comparison_loading.markdown(
-                        create_custom_loading_animation(
-                            "Generando análisis comparativo",
-                            "Identificando diferencias genéticas específicas"
-                        ),
-                        unsafe_allow_html=True
-                    )
-                    
-                    # Análisis comparativo
-                    seq1 = str(seq_record1.seq)
-                    seq2 = str(seq_record2.seq)
-                    
-                    # Crear visualización comparativa
-                    fig, comparison_data = create_comparative_visualization(
-                        seq1, seq2, organism1, organism2, art_style, color_theme
-                    )
-                    
-                    comparison_loading.empty()
-                    
-                    # Mostrar visualización
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Mostrar análisis comparativo detallado
-                    st.markdown("### 🔬 Análisis Comparativo Detallado")
-                    
-                    # Diferencias principales
-                    differences = comparison_data['differences']
-                    
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        gc_diff = differences['gc_content']
-                        st.metric(
-                            "Diferencia GC", 
-                            f"{gc_diff['difference']:.3f}",
-                            delta=f"{gc_diff['significance']} significancia"
-                        )
-                    
-                    with col2:
-                        complexity_diff = differences['complexity']
-                        st.metric(
-                            "Diferencia Complejidad",
-                            f"{complexity_diff['difference']:.3f}",
-                            delta=f"Shannon entropy"
-                        )
-                    
-                    with col3:
-                        coding_diff = differences['coding_potential']
-                        orfs_diff = coding_diff['orfs_count'][0] - coding_diff['orfs_count'][1]
-                        st.metric(
-                            "Diferencia ORFs",
-                            f"{abs(orfs_diff)}",
-                            delta=f"{'Mayor' if orfs_diff > 0 else 'Menor'} en {organism1}"
-                        )
-                    
-                    # Insights evolutivos
-                    insights = comparison_data['evolutionary_insights']
-                    if insights:
-                        st.markdown("### 🌳 Insights Evolutivos")
-                        for insight in insights:
-                            st.info(insight)
-                    
-                    # Guardar datos comparativos en sesión
-                    st.session_state.last_comparison_data = {
-                        'species': [organism1, organism2],
-                        'sequences': [seq1, seq2],
-                        'comparison': comparison_data,
-                        'style': art_style,
-                        'theme': color_theme
-                    }
-                    
-                    # Salir del flujo normal
-                    st.stop()
-                    
-                except Exception as e:
-                    loading_placeholder.empty()
-                    st.error(f"Error en análisis comparativo: {str(e)}")
-                    st.stop()
-            
             else:
-                st.warning("Por favor selecciona un método de entrada válido")
+                st.warning("⚠️ Por favor, introduce el nombre de un organismo.")
                 st.stop()
-            
-            # Continuar con la generación de arte si tenemos seq_record válido
-            if seq_record:
-                # Log de búsqueda
-                log_search(organism_input, user_session=st.session_state.session_id)
                 
-                # Animación de carga personalizada para obtención de secuencia
-                loading_placeholder = st.empty()
-                loading_placeholder.markdown(
+            # Procesar secuencia obtenida
+            if seq_record:
+                st.success(f"✅ Secuencia obtenida: {seq_record.description[:80]}...")
+                
+                # Guardar en base de datos
+                secuencia = str(seq_record.seq).upper()
+                gc_content = gc_fraction(seq_record.seq) * 100
+                base_counts = {
+                    'A': secuencia.count('A'),
+                    'T': secuencia.count('T'),
+                    'C': secuencia.count('C'),
+                    'G': secuencia.count('G'),
+                    'N': secuencia.count('N')
+                }
+                
+                save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
+                
+                # Animación de carga para generación de arte
+                art_loading_placeholder = st.empty()
+                art_loading_placeholder.markdown(
                     create_custom_loading_animation(
-                        "Conectando con NCBI GenBank",
-                        f"Obteniendo secuencia genética de {organism_input}"
+                        "Generando Arte Genético",
+                        f"Aplicando algoritmos {art_style} con tema {color_theme}"
                     ), 
                     unsafe_allow_html=True
                 )
                 
-                seq_record = obtener_secuencia(organism_input)
-                loading_placeholder.empty()
+                fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
+                art_loading_placeholder.empty()
                 
-                if seq_record:
-                    st.success(f"✅ Secuencia obtenida: {seq_record.description[:80]}...")
+                # Mostrar arte generado
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Visualización Canvas animada
+                st.markdown("### 🎬 Visualización Canvas Animada")
+                sequence_str = str(seq_record.seq)[:200]  # Limitar para rendimiento
+                gc_percentage = int(gc)
+                entropy_value = 2.0  # Valor por defecto
+                
+                # Cargar y mostrar Canvas HTML
+                try:
+                    with open('canvas_dna_animation.html', 'r', encoding='utf-8') as f:
+                        canvas_html = f.read()
                     
-                    # Guardar en base de datos
-                    secuencia = str(seq_record.seq).upper()
-                    gc_content = gc_fraction(seq_record.seq) * 100
-                    base_counts = {
-                        'A': secuencia.count('A'),
-                        'T': secuencia.count('T'),
-                        'C': secuencia.count('C'),
-                        'G': secuencia.count('G'),
-                        'N': secuencia.count('N')
-                    }
-                    
-                    save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
-                    
-                    # Animación de carga para generación de arte
-                    art_loading_placeholder = st.empty()
-                    art_loading_placeholder.markdown(
-                        create_custom_loading_animation(
-                            "Generando Arte Genético",
-                            f"Aplicando algoritmos {art_style} con tema {color_theme}"
-                        ), 
-                        unsafe_allow_html=True
+                    # Inyectar datos de secuencia en el HTML
+                    canvas_html = canvas_html.replace(
+                        'let sequenceData = "ATCGATCGATCGTAGCTAGCTAGCTA";',
+                        f'let sequenceData = "{sequence_str}";'
+                    ).replace(
+                        'let gcContent = 50;',
+                        f'let gcContent = {gc_percentage};'
+                    ).replace(
+                        'let entropy = 2.0;',
+                        f'let entropy = {entropy_value};'
                     )
                     
-                    fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
-                    art_loading_placeholder.empty()
+                    components.html(canvas_html, height=650, scrolling=False)
+                except FileNotFoundError:
+                    st.warning("Canvas animation file not found. Showing Plotly animation only.")
+                
+                # Botones de compartir en redes sociales
+                st.markdown("### 🚀 Compartir tu Arte Genético")
+                social_buttons = create_social_share_buttons(
+                    organism_input, 
+                    f"Arte único generado desde el ADN de {organism_input} usando algoritmos bioinformáticos avanzados"
+                )
+                st.markdown(social_buttons, unsafe_allow_html=True)
+                
+                # Mostrar estadísticas
+                with st.expander("📊 Estadísticas de la Secuencia", expanded=False):
+                    base_counts = mostrar_estadisticas_secuencia(seq_record)
+                
+                # Información de especies
+                species_info = get_species_info(organism_input)
+                if species_info:
+                    with st.expander("🦎 Información de la Especie", expanded=False):
+                        st.write(f"**Estado de conservación:** {species_info.get('conservation_status', 'No disponible')}")
+                        st.write(f"**Historia:** {species_info.get('story', 'No disponible')}")
+                
+                # Opciones NFT
+                with st.expander("🎨 Generar NFT", expanded=False):
+                    st.write("**Crear NFT exclusivo de esta visualización genética**")
                     
-                    # Mostrar arte generado
-                    st.plotly_chart(fig, use_container_width=True)
+                    wallet_address = st.text_input("Dirección de wallet:", placeholder="0x...")
                     
-                    # Visualización Canvas animada
-                    st.markdown("### 🎬 Visualización Canvas Animada")
-                    sequence_str = str(seq_record.seq)[:200]  # Limitar para rendimiento
-                    gc_percentage = int(gc)
-                    entropy_value = 2.0  # Valor por defecto
-                    
-                    # Cargar y mostrar Canvas HTML
-                    try:
-                        with open('canvas_dna_animation.html', 'r', encoding='utf-8') as f:
-                            canvas_html = f.read()
+                    if st.button("💎 Crear NFT"):
+                        nft_manager = DNANFTManager()
                         
-                        # Inyectar datos de secuencia en el HTML
-                        canvas_html = canvas_html.replace(
-                            'let sequenceData = "ATCGATCGATCGTAGCTAGCTAGCTA";',
-                            f'let sequenceData = "{sequence_str}";'
-                        ).replace(
-                            'let gcContent = 50;',
-                            f'let gcContent = {gc_percentage};'
-                        ).replace(
-                            'let entropy = 2.0;',
-                            f'let entropy = {entropy_value};'
-                        )
-                        
-                        components.html(canvas_html, height=650, scrolling=False)
-                    except FileNotFoundError:
-                        st.warning("Canvas animation file not found. Showing Plotly animation only.")
-                    
-                    # Botones de compartir en redes sociales
-                    st.markdown("### 🚀 Compartir tu Arte Genético")
-                    social_buttons = create_social_share_buttons(
-                        organism_input, 
-                        f"Arte único generado desde el ADN de {organism_input} usando algoritmos bioinformáticos avanzados"
-                    )
-                    st.markdown(social_buttons, unsafe_allow_html=True)
-                    
-                    # Mostrar estadísticas
-                    with st.expander("📊 Estadísticas de la Secuencia", expanded=False):
-                        base_counts = mostrar_estadisticas_secuencia(seq_record)
-                    
-                    # Información de especies
-                    species_info = get_species_info(organism_input)
-                    if species_info:
-                        with st.expander("🦎 Información de la Especie", expanded=False):
-                            st.write(f"**Estado de conservación:** {species_info.get('conservation_status', 'No disponible')}")
-                            st.write(f"**Historia:** {species_info.get('story', 'No disponible')}")
-                    
-                    # Opciones NFT
-                    with st.expander("🎨 Generar NFT", expanded=False):
-                        st.write("**Crear NFT exclusivo de esta visualización genética**")
-                        
-                        wallet_address = st.text_input("Dirección de wallet:", placeholder="0x...")
-                        
-                        if st.button("💎 Crear NFT"):
-                            nft_manager = DNANFTManager()
+                        if nft_manager.get_blockchain_status()['connected']:
+                            with st.spinner("Preparando NFT..."):
+                                nft_package = nft_manager.prepare_nft_package(
+                                    seq_record, organism_input, gc, base_counts, fig
+                                )
                             
-                            if nft_manager.get_blockchain_status()['connected']:
-                                with st.spinner("Preparando NFT..."):
-                                    nft_package = nft_manager.prepare_nft_package(
-                                        seq_record, organism_input, gc, base_counts, fig
-                                    )
+                            if nft_package:
+                                st.success("✅ NFT preparado exitosamente!")
+                                st.json(nft_package['metadata'])
                                 
-                                if nft_package:
-                                    st.success("✅ NFT preparado exitosamente!")
-                                    st.json(nft_package['metadata'])
-                                    
-                                    if wallet_address:
-                                        result = nft_manager.mint_nft(wallet_address, nft_package['metadata_uri'])
-                                        if result:
-                                            st.success(f"🎉 NFT minteado! TX: {result['transaction_hash']}")
-                                        else:
-                                            st.error("Error al mintear NFT")
-                                else:
-                                    st.error("Error preparando NFT")
+                                if wallet_address:
+                                    result = nft_manager.mint_nft(wallet_address, nft_package['metadata_uri'])
+                                    if result:
+                                        st.success(f"🎉 NFT minteado! TX: {result['transaction_hash']}")
+                                    else:
+                                        st.error("Error al mintear NFT")
                             else:
-                                st.warning("⚠️ Blockchain no disponible. NFT se generará cuando se configure.")
-                
-                else:
-                    st.error("❌ No se pudo obtener la secuencia. Verifica el nombre científico.")
-                    log_search(organism_input, successful=False, 
-                             error_message="Secuencia no encontrada", 
-                             user_session=st.session_state.session_id)
+                                st.error("Error preparando NFT")
+                        else:
+                            st.warning("⚠️ Blockchain no disponible. NFT se generará cuando se configure.")
+            
             else:
-                st.warning("⚠️ Por favor, introduce el nombre de un organismo.")
+                st.error("❌ No se pudo obtener la secuencia. Verifica el nombre científico.")
+                log_search(organism_input, successful=False, 
+                         error_message="Secuencia no encontrada", 
+                         user_session=st.session_state.session_id)
     
     with tab2:
         st.markdown("""

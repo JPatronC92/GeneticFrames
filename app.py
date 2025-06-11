@@ -13,6 +13,7 @@ from species_catalog import get_species_info, get_featured_categories, suggest_s
 from animal_search import AnimalSearchEngine
 from blockchain_nft import DNANFTManager
 import uuid
+import urllib.parse
 
 # Configuración inicial
 st.set_page_config(
@@ -189,6 +190,162 @@ st.markdown("""
     @keyframes pulse {
         0%, 100% { opacity: 0.2; }
         50% { opacity: 0.6; }
+    }
+    
+    /* Botones de redes sociales */
+    .social-share-container {
+        display: flex;
+        gap: 10px;
+        margin: 15px 0;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .social-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 25px;
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        gap: 8px;
+    }
+    
+    .social-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .social-btn.twitter {
+        background: linear-gradient(45deg, #1da1f2, #0d8bd9);
+    }
+    
+    .social-btn.facebook {
+        background: linear-gradient(45deg, #4267b2, #365899);
+    }
+    
+    .social-btn.instagram {
+        background: linear-gradient(45deg, #e4405f, #833ab4, #fccc63);
+    }
+    
+    .social-btn.linkedin {
+        background: linear-gradient(45deg, #0077b5, #005885);
+    }
+    
+    .social-btn.whatsapp {
+        background: linear-gradient(45deg, #25d366, #128c7e);
+    }
+    
+    /* Animaciones de carga */
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: rgba(15, 15, 15, 0.9);
+        border-radius: 15px;
+        border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+    
+    .dna-loader {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .dna-strand {
+        position: absolute;
+        width: 4px;
+        height: 80px;
+        background: linear-gradient(180deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+        border-radius: 2px;
+        animation: dnaRotate 2s linear infinite;
+    }
+    
+    .dna-strand:nth-child(1) {
+        left: 20px;
+        animation-delay: 0s;
+    }
+    
+    .dna-strand:nth-child(2) {
+        right: 20px;
+        animation-delay: 0.5s;
+    }
+    
+    .dna-base {
+        position: absolute;
+        width: 40px;
+        height: 2px;
+        background: rgba(0, 255, 136, 0.6);
+        left: 20px;
+        animation: dnaConnect 2s ease-in-out infinite;
+    }
+    
+    .dna-base:nth-child(3) { top: 10px; animation-delay: 0.1s; }
+    .dna-base:nth-child(4) { top: 25px; animation-delay: 0.2s; }
+    .dna-base:nth-child(5) { top: 40px; animation-delay: 0.3s; }
+    .dna-base:nth-child(6) { top: 55px; animation-delay: 0.4s; }
+    .dna-base:nth-child(7) { top: 70px; animation-delay: 0.5s; }
+    
+    @keyframes dnaRotate {
+        0% { transform: rotateY(0deg); }
+        100% { transform: rotateY(360deg); }
+    }
+    
+    @keyframes dnaConnect {
+        0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
+        50% { opacity: 1; transform: scaleX(1); }
+    }
+    
+    .loading-text {
+        color: #00ff88;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px;
+        animation: textPulse 2s ease-in-out infinite;
+    }
+    
+    .loading-subtitle {
+        color: #aaaaaa;
+        font-size: 14px;
+        text-align: center;
+        animation: textPulse 2s ease-in-out infinite 0.5s;
+    }
+    
+    @keyframes textPulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+    }
+    
+    /* Animación de progreso */
+    .progress-bar {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 15px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff88, #00ccaa);
+        border-radius: 2px;
+        animation: progressMove 3s ease-in-out infinite;
+    }
+    
+    @keyframes progressMove {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1087,6 +1244,73 @@ def crear_visualizacion_clasica(secuencia, seq_record, theme):
     
     return fig
 
+def create_custom_loading_animation(message="Generando arte genético", subtitle="Analizando secuencia de ADN"):
+    """Crea una animación de carga personalizada con tema ADN"""
+    return f"""
+    <div class="loading-container">
+        <div class="dna-loader">
+            <div class="dna-strand"></div>
+            <div class="dna-strand"></div>
+            <div class="dna-base"></div>
+            <div class="dna-base"></div>
+            <div class="dna-base"></div>
+            <div class="dna-base"></div>
+            <div class="dna-base"></div>
+        </div>
+        <div class="loading-text">{message}</div>
+        <div class="loading-subtitle">{subtitle}</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    </div>
+    """
+
+def create_social_share_buttons(organism_name, description="Arte genético único generado desde secuencias de ADN reales"):
+    """Crea botones de compartir en redes sociales"""
+    base_url = "https://geneticframes.replit.app"  # URL base de la aplicación
+    title = f"🧬 Arte Genético de {organism_name}"
+    
+    # URLs de compartir
+    twitter_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(f'{title} - {description}')}&url={urllib.parse.quote(base_url)}&hashtags=GeneticArt,NFT,DNA,Bioinformatics"
+    
+    facebook_url = f"https://www.facebook.com/sharer/sharer.php?u={urllib.parse.quote(base_url)}&quote={urllib.parse.quote(f'{title} - {description}')}"
+    
+    linkedin_url = f"https://www.linkedin.com/sharing/share-offsite/?url={urllib.parse.quote(base_url)}&title={urllib.parse.quote(title)}&summary={urllib.parse.quote(description)}"
+    
+    whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(f'{title} - {description} {base_url}')}"
+    
+    instagram_text = f"📋 Texto para Instagram: {title} - {description} #GeneticArt #NFT #DNA #Bioinformatics"
+    
+    return f"""
+    <div class="social-share-container">
+        <a href="{twitter_url}" target="_blank" class="social-btn twitter">
+            🐦 Twitter
+        </a>
+        <a href="{facebook_url}" target="_blank" class="social-btn facebook">
+            📘 Facebook
+        </a>
+        <a href="{linkedin_url}" target="_blank" class="social-btn linkedin">
+            💼 LinkedIn
+        </a>
+        <a href="{whatsapp_url}" target="_blank" class="social-btn whatsapp">
+            💬 WhatsApp
+        </a>
+        <button onclick="copyInstagramText()" class="social-btn instagram">
+            📸 Instagram
+        </button>
+    </div>
+    
+    <script>
+    function copyInstagramText() {{
+        navigator.clipboard.writeText(`{instagram_text}`).then(function() {{
+            alert('✅ Texto copiado al portapapeles. Pégalo en tu post de Instagram.');
+        }}, function(err) {{
+            console.error('Error al copiar: ', err);
+        }});
+    }}
+    </script>
+    """
+
 def mostrar_estadisticas_secuencia(seq_record):
     """Muestra estadísticas detalladas de la secuencia"""
     secuencia = str(seq_record.seq).upper()
@@ -1282,8 +1506,18 @@ def main():
                 # Log de búsqueda
                 log_search(organism_input, user_session=st.session_state.session_id)
                 
-                with st.spinner(f"Obteniendo secuencia genética de {organism_input}..."):
-                    seq_record = obtener_secuencia(organism_input)
+                # Animación de carga personalizada para obtención de secuencia
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        "Conectando con NCBI GenBank",
+                        f"Obteniendo secuencia genética de {organism_input}"
+                    ), 
+                    unsafe_allow_html=True
+                )
+                
+                seq_record = obtener_secuencia(organism_input)
+                loading_placeholder.empty()
                 
                 if seq_record:
                     st.success(f"✅ Secuencia obtenida: {seq_record.description[:80]}...")
@@ -1301,10 +1535,29 @@ def main():
                     
                     save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
                     
-                    with st.spinner("Generando visualización artística..."):
-                        fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
+                    # Animación de carga para generación de arte
+                    art_loading_placeholder = st.empty()
+                    art_loading_placeholder.markdown(
+                        create_custom_loading_animation(
+                            "Generando Arte Genético",
+                            f"Aplicando algoritmos {art_style} con tema {color_theme}"
+                        ), 
+                        unsafe_allow_html=True
+                    )
                     
+                    fig, gc = generar_visualizacion(seq_record, style=art_style, theme=color_theme)
+                    art_loading_placeholder.empty()
+                    
+                    # Mostrar arte generado
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Botones de compartir en redes sociales
+                    st.markdown("### 🚀 Compartir tu Arte Genético")
+                    social_buttons = create_social_share_buttons(
+                        organism_input, 
+                        f"Arte único generado desde el ADN de {organism_input} usando algoritmos bioinformáticos avanzados"
+                    )
+                    st.markdown(social_buttons, unsafe_allow_html=True)
                     
                     # Mostrar estadísticas
                     with st.expander("📊 Estadísticas de la Secuencia", expanded=False):
@@ -1469,9 +1722,18 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"Generar NFT {common}", key=f"nft_{scientific}"):
-                        st.session_state.selected_organism = scientific
-                        st.switch_page("main")
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
+                        if st.button(f"Generar", key=f"nft_{scientific}"):
+                            st.session_state.selected_organism = scientific
+                            st.rerun()
+                    with col_btn2:
+                        if st.button(f"Compartir", key=f"share_{scientific}"):
+                            share_buttons = create_social_share_buttons(
+                                scientific,
+                                f"Descubre el arte genético único de {common} en GeneticFrames"
+                            )
+                            st.markdown(share_buttons, unsafe_allow_html=True)
         
         with nft_tab2:
             st.subheader("Colección Especies Extintas")
@@ -1489,9 +1751,18 @@ def main():
                             with col_spec:
                                 st.write(f"🦕 **{species}**")
                             with col_btn:
-                                if st.button("NFT", key=f"extinct_{species}"):
-                                    st.session_state.selected_organism = species
-                                    st.switch_page("main")
+                                col_gen, col_share = st.columns(2)
+                                with col_gen:
+                                    if st.button("🧬", key=f"extinct_{species}", help="Generar arte"):
+                                        st.session_state.selected_organism = species
+                                        st.rerun()
+                                with col_share:
+                                    if st.button("📤", key=f"extinct_share_{species}", help="Compartir"):
+                                        extinct_share = create_social_share_buttons(
+                                            species,
+                                            f"Arte genético de especie extinta: {species} - Preservando la biodiversidad a través del arte"
+                                        )
+                                        st.markdown(extinct_share, unsafe_allow_html=True)
                         
                         if len(species_list) > 5:
                             st.caption(f"... y {len(species_list) - 5} especies más")

@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 from Bio import Entrez, SeqIO
 from Bio.SeqUtils import gc_fraction
 import io
@@ -245,6 +246,273 @@ def find_genetic_motifs(sequence):
             }
     
     return motifs
+
+def compare_sequences_biology(seq1, seq2, organism1, organism2):
+    """Análisis comparativo completo entre dos secuencias"""
+    analysis1 = analyze_sequence_biology(seq1, organism1)
+    analysis2 = analyze_sequence_biology(seq2, organism2)
+    
+    comparison = {
+        'species': [organism1, organism2],
+        'sequences': [seq1, seq2],
+        'individual_analysis': [analysis1, analysis2],
+        'differences': {},
+        'similarities': {},
+        'evolutionary_insights': {}
+    }
+    
+    # Comparar composición de bases
+    if 'base_composition' in analysis1 and 'base_composition' in analysis2:
+        base_diff = {}
+        for base in ['A', 'T', 'C', 'G']:
+            diff = abs(analysis1['base_composition'][base] - analysis2['base_composition'][base])
+            base_diff[base] = {
+                'difference': diff,
+                'species1': analysis1['base_composition'][base],
+                'species2': analysis2['base_composition'][base]
+            }
+        comparison['differences']['base_composition'] = base_diff
+    
+    # Comparar contenido GC
+    gc_diff = abs(analysis1.get('gc_content', 0) - analysis2.get('gc_content', 0))
+    comparison['differences']['gc_content'] = {
+        'difference': gc_diff,
+        'species1': analysis1.get('gc_content', 0),
+        'species2': analysis2.get('gc_content', 0),
+        'significance': 'Alta' if gc_diff > 0.1 else 'Media' if gc_diff > 0.05 else 'Baja'
+    }
+    
+    # Comparar complejidad
+    complexity_diff = abs(analysis1.get('complexity', 0) - analysis2.get('complexity', 0))
+    comparison['differences']['complexity'] = {
+        'difference': complexity_diff,
+        'species1': analysis1.get('complexity', 0),
+        'species2': analysis2.get('complexity', 0)
+    }
+    
+    # Comparar patrones de dinucleótidos
+    dinuc1 = analysis1.get('dinucleotide_patterns', {})
+    dinuc2 = analysis2.get('dinucleotide_patterns', {})
+    
+    dinuc_comparison = {}
+    all_dinucs = set(dinuc1.keys()) | set(dinuc2.keys())
+    
+    for dinuc in all_dinucs:
+        freq1 = dinuc1.get(dinuc, 0)
+        freq2 = dinuc2.get(dinuc, 0)
+        dinuc_comparison[dinuc] = {
+            'species1': freq1,
+            'species2': freq2,
+            'difference': abs(freq1 - freq2)
+        }
+    
+    comparison['differences']['dinucleotide_patterns'] = dinuc_comparison
+    
+    # Análisis de ORFs
+    orfs1 = analysis1.get('orf_analysis', [])
+    orfs2 = analysis2.get('orf_analysis', [])
+    
+    comparison['differences']['coding_potential'] = {
+        'orfs_count': [len(orfs1), len(orfs2)],
+        'avg_orf_length': [
+            sum(orf['length'] for orf in orfs1) / len(orfs1) if orfs1 else 0,
+            sum(orf['length'] for orf in orfs2) / len(orfs2) if orfs2 else 0
+        ]
+    }
+    
+    # Motivos conservados
+    motifs1 = set(analysis1.get('genetic_motifs', {}).keys())
+    motifs2 = set(analysis2.get('genetic_motifs', {}).keys())
+    
+    comparison['similarities']['shared_motifs'] = list(motifs1 & motifs2)
+    comparison['differences']['unique_motifs'] = {
+        'species1_only': list(motifs1 - motifs2),
+        'species2_only': list(motifs2 - motifs1)
+    }
+    
+    # Insights evolutivos
+    comparison['evolutionary_insights'] = generate_evolutionary_insights(analysis1, analysis2, organism1, organism2)
+    
+    return comparison
+
+def generate_evolutionary_insights(analysis1, analysis2, organism1, organism2):
+    """Genera insights evolutivos basados en diferencias genómicas"""
+    insights = []
+    
+    gc1 = analysis1.get('gc_content', 0)
+    gc2 = analysis2.get('gc_content', 0)
+    
+    # Análisis de contenido GC
+    if abs(gc1 - gc2) > 0.05:
+        if gc1 > gc2:
+            insights.append(f"{organism1} muestra mayor contenido GC ({gc1:.2%} vs {gc2:.2%}), sugiriendo adaptación a ambientes de mayor estabilidad térmica")
+        else:
+            insights.append(f"{organism2} presenta mayor contenido GC ({gc2:.2%} vs {gc1:.2%}), indicando posible adaptación termófila")
+    
+    # Análisis de complejidad
+    comp1 = analysis1.get('complexity', 0)
+    comp2 = analysis2.get('complexity', 0)
+    
+    if abs(comp1 - comp2) > 0.2:
+        if comp1 > comp2:
+            insights.append(f"{organism1} exhibe mayor complejidad genómica (Shannon: {comp1:.3f}), sugiriendo mayor diversidad funcional")
+        else:
+            insights.append(f"{organism2} muestra mayor complejidad genómica (Shannon: {comp2:.3f}), indicando diversificación evolutiva")
+    
+    # Análisis de ORFs
+    orfs1 = len(analysis1.get('orf_analysis', []))
+    orfs2 = len(analysis2.get('orf_analysis', []))
+    
+    if abs(orfs1 - orfs2) > 2:
+        if orfs1 > orfs2:
+            insights.append(f"{organism1} presenta {orfs1} ORFs vs {orfs2} en {organism2}, indicando mayor densidad de regiones codificantes")
+        else:
+            insights.append(f"{organism2} muestra {orfs2} ORFs vs {orfs1} en {organism1}, sugiriendo región más rica en genes")
+    
+    # Análisis filogenético
+    if "tiger" in organism1.lower() and "wolf" in organism2.lower():
+        insights.append("Comparación Carnívora: Tigre (Felidae) vs Lobo (Canidae) - divergencia evolutiva ~55 millones de años")
+        insights.append("Diferencias esperadas en genes de visión nocturna, estructura muscular y patrones de caza")
+    elif "human" in organism1.lower() or "human" in organism2.lower():
+        insights.append("Comparación con Homo sapiens: diferencias en capacidad cognitiva, metabolismo y adaptaciones específicas")
+    
+    return insights
+
+def create_comparative_visualization(seq1, seq2, organism1, organism2, style='voronoi', theme='scientific'):
+    """Crea visualización comparativa que resalta diferencias entre especies"""
+    
+    # Análisis comparativo
+    comparison = compare_sequences_biology(seq1, seq2, organism1, organism2)
+    
+    # Crear visualización lado a lado
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=[f"{organism1}", f"{organism2}"],
+        specs=[[{"type": "scatter"}, {"type": "scatter"}]]
+    )
+    
+    colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
+    
+    # Generar semillas genéticas para cada especie
+    genetic_seed1 = crear_semilla_genetica(seq1, organism1)
+    genetic_seed2 = crear_semilla_genetica(seq2, organism2)
+    
+    # Crear visualizaciones individuales
+    if style == 'voronoi':
+        # Simplificado para comparación
+        fig1_data = create_comparative_voronoi(seq1, colors, genetic_seed1, 1)
+        fig2_data = create_comparative_voronoi(seq2, colors, genetic_seed2, 2)
+    else:
+        # Usar otros estilos adaptados para comparación
+        fig1_data = create_comparative_scatter(seq1, colors, genetic_seed1, 1)
+        fig2_data = create_comparative_scatter(seq2, colors, genetic_seed2, 2)
+    
+    # Agregar datos a subplots
+    for trace in fig1_data:
+        fig.add_trace(trace, row=1, col=1)
+    
+    for trace in fig2_data:
+        fig.add_trace(trace, row=1, col=2)
+    
+    # Configurar layout
+    fig.update_layout(
+        title=f"Análisis Comparativo: {organism1} vs {organism2}",
+        showlegend=False,
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
+        height=600,
+        margin=dict(l=0, r=0, t=60, b=0)
+    )
+    
+    # Actualizar ejes
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    
+    return fig, comparison
+
+def create_comparative_voronoi(sequence, colors, genetic_seed, subplot_num):
+    """Versión simplificada de Voronoi para comparación"""
+    traces = []
+    
+    sample_size = min(200, len(sequence))
+    sequence_sample = sequence[:sample_size]
+    
+    points = []
+    nucleotide_map = {'A': 0, 'T': 1, 'C': 2, 'G': 3}
+    
+    gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+    entropy = genetic_seed.get('entropy', 2.0)
+    
+    for i in range(0, len(sequence_sample), max(1, len(sequence_sample) // 30)):
+        nucleotide = sequence_sample[i]
+        if nucleotide in nucleotide_map:
+            base_x = (i / len(sequence_sample)) * 200 - 100
+            base_y = (nucleotide_map[nucleotide] * 50) - 75
+            
+            species_mod_x = (genetic_seed.get('pattern_signature', 0) % 1000) * 0.05 * np.sin(i * entropy * 0.1)
+            species_mod_y = (genetic_seed.get('positional_signature', 0) % 1000) * 0.05 * np.cos(i * gc_content * 0.1)
+            
+            x = base_x + species_mod_x
+            y = base_y + species_mod_y
+            
+            points.append([x, y, nucleotide])
+    
+    # Crear puntos scattered únicos por especie
+    for point in points:
+        traces.append(go.Scatter(
+            x=[point[0]],
+            y=[point[1]],
+            mode='markers',
+            marker=dict(
+                color=colors[point[2]],
+                size=6,
+                symbol='circle',
+                line=dict(color='white', width=0.5),
+                opacity=0.8
+            ),
+            showlegend=False,
+            hovertext=f"Nucleótido: {point[2]}"
+        ))
+    
+    return traces
+
+def create_comparative_scatter(sequence, colors, genetic_seed, subplot_num):
+    """Visualización scatter comparativa"""
+    traces = []
+    
+    sample_size = min(300, len(sequence))
+    sequence_sample = sequence[:sample_size]
+    
+    # Agrupar por nucleótidos
+    nucleotide_positions = {'A': [], 'T': [], 'C': [], 'G': []}
+    
+    for i, nucleotide in enumerate(sequence_sample):
+        if nucleotide in nucleotide_positions:
+            # Posición modulada por características genéticas únicas
+            x = i + (genetic_seed.get('primary_signature', 0) % 100) * 0.01 * np.sin(i * 0.1)
+            y = genetic_seed.get('entropy', 2.0) * 20 + np.random.normal(0, 5)
+            nucleotide_positions[nucleotide].append([x, y])
+    
+    # Crear trazas por nucleótido
+    for nucleotide, positions in nucleotide_positions.items():
+        if positions:
+            x_vals = [pos[0] for pos in positions]
+            y_vals = [pos[1] for pos in positions]
+            
+            traces.append(go.Scatter(
+                x=x_vals,
+                y=y_vals,
+                mode='markers',
+                marker=dict(
+                    color=colors[nucleotide],
+                    size=4,
+                    opacity=0.7
+                ),
+                name=nucleotide,
+                showlegend=False
+            ))
+    
+    return traces
 
 # Configuración inicial
 st.set_page_config(
@@ -2152,7 +2420,7 @@ def main():
         # Método de entrada de secuencia
         input_method = st.radio(
             "Método de entrada de secuencia:",
-            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "📁 Especies precargadas"],
+            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "📁 Especies precargadas", "🔬 Análisis comparativo"],
             horizontal=True
         )
         
@@ -2162,6 +2430,8 @@ def main():
         sample_method = "Completa"
         start_pos = 1
         length = 1000
+        species1 = None
+        species2 = None
         
         if input_method == "🔍 Buscar por organismo":
             col1, col2 = st.columns([3, 1])
@@ -2250,6 +2520,47 @@ def main():
                 
                 if selected_display:
                     selected_species = selected_display.split("(")[1].replace(")", "")
+                    
+        elif input_method == "🔬 Análisis comparativo":  # Análisis comparativo
+            st.markdown("### 🔬 Análisis Comparativo de Especies")
+            st.info("Compara patrones genéticos únicos entre diferentes especies para identificar firmas evolutivas")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Primera Especie:**")
+                species1 = st.selectbox(
+                    "Selecciona primera especie:",
+                    ["Panthera tigris (Tigre)", "Canis lupus (Lobo)", "Homo sapiens (Humano)", 
+                     "Tursiops truncatus (Delfín)", "Orcinus orca (Orca)", "Aquila chrysaetos (Águila)"],
+                    key="species1"
+                )
+                
+            with col2:
+                st.markdown("**Segunda Especie:**")
+                species2 = st.selectbox(
+                    "Selecciona segunda especie:",
+                    ["Canis lupus (Lobo)", "Panthera tigris (Tigre)", "Homo sapiens (Humano)",
+                     "Tursiops truncatus (Delfín)", "Orcinus orca (Orca)", "Aquila chrysaetos (Águila)"],
+                    key="species2"
+                )
+            
+            # Opciones de comparación
+            st.markdown("**Tipo de Análisis Comparativo:**")
+            comparison_type = st.radio(
+                "Enfoque:",
+                ["Secuencias homólogas", "Genes específicos", "Regiones conservadas", "Patrones únicos"],
+                horizontal=True,
+                help="Homólogas: mismos genes en ambas especies, Específicos: genes característicos, Conservadas: regiones evolutivamente estables"
+            )
+            
+            if comparison_type == "Genes específicos":
+                gene_focus = st.selectbox(
+                    "Gen de interés:",
+                    ["COX1 (Respiración celular)", "Citocromo B (Metabolismo)", "16S rRNA (Ribosoma)", 
+                     "BRCA1 (Reparación DNA)", "Melanina (Pigmentación)", "Hemoglobina (Transporte O2)"],
+                    help="Genes con funciones biológicas específicas para análisis dirigido"
+                )
         
         # Botón de generación universal
         generate_button_text = "🚀 Generar Arte Genético"
@@ -2339,6 +2650,113 @@ def main():
                 except Exception as e:
                     loading_placeholder.empty()
                     st.error(f"Error al cargar {selected_species}: {str(e)}")
+                    st.stop()
+                    
+            elif input_method == "🔬 Análisis comparativo" and species1 and species2:
+                # Análisis comparativo entre dos especies
+                if species1 == species2:
+                    st.warning("Selecciona dos especies diferentes para la comparación")
+                    st.stop()
+                
+                # Extraer nombres científicos
+                organism1 = species1.split("(")[1].replace(")", "")
+                organism2 = species2.split("(")[1].replace(")", "")
+                
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        f"Análisis comparativo: {organism1} vs {organism2}",
+                        "Obteniendo secuencias genéticas de ambas especies"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+                try:
+                    # Obtener secuencias de ambas especies
+                    seq_record1 = obtener_secuencia(organism1)
+                    seq_record2 = obtener_secuencia(organism2)
+                    
+                    loading_placeholder.empty()
+                    
+                    # Crear visualización comparativa
+                    comparison_loading = st.empty()
+                    comparison_loading.markdown(
+                        create_custom_loading_animation(
+                            "Generando análisis comparativo",
+                            "Identificando diferencias genéticas específicas"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                    
+                    # Análisis comparativo
+                    seq1 = str(seq_record1.seq)
+                    seq2 = str(seq_record2.seq)
+                    
+                    # Crear visualización comparativa
+                    fig, comparison_data = create_comparative_visualization(
+                        seq1, seq2, organism1, organism2, art_style, color_theme
+                    )
+                    
+                    comparison_loading.empty()
+                    
+                    # Mostrar visualización
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Mostrar análisis comparativo detallado
+                    st.markdown("### 🔬 Análisis Comparativo Detallado")
+                    
+                    # Diferencias principales
+                    differences = comparison_data['differences']
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        gc_diff = differences['gc_content']
+                        st.metric(
+                            "Diferencia GC", 
+                            f"{gc_diff['difference']:.3f}",
+                            delta=f"{gc_diff['significance']} significancia"
+                        )
+                    
+                    with col2:
+                        complexity_diff = differences['complexity']
+                        st.metric(
+                            "Diferencia Complejidad",
+                            f"{complexity_diff['difference']:.3f}",
+                            delta=f"Shannon entropy"
+                        )
+                    
+                    with col3:
+                        coding_diff = differences['coding_potential']
+                        orfs_diff = coding_diff['orfs_count'][0] - coding_diff['orfs_count'][1]
+                        st.metric(
+                            "Diferencia ORFs",
+                            f"{abs(orfs_diff)}",
+                            delta=f"{'Mayor' if orfs_diff > 0 else 'Menor'} en {organism1}"
+                        )
+                    
+                    # Insights evolutivos
+                    insights = comparison_data['evolutionary_insights']
+                    if insights:
+                        st.markdown("### 🌳 Insights Evolutivos")
+                        for insight in insights:
+                            st.info(insight)
+                    
+                    # Guardar datos comparativos en sesión
+                    st.session_state.last_comparison_data = {
+                        'species': [organism1, organism2],
+                        'sequences': [seq1, seq2],
+                        'comparison': comparison_data,
+                        'style': art_style,
+                        'theme': color_theme
+                    }
+                    
+                    # Salir del flujo normal
+                    st.stop()
+                    
+                except Exception as e:
+                    loading_placeholder.empty()
+                    st.error(f"Error en análisis comparativo: {str(e)}")
                     st.stop()
             
             else:

@@ -437,14 +437,43 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     if spiral_data:
         fig = agregar_espirales_geneticas(fig, spiral_data, colors, complexity)
     
+    # Generar fondo gradiente dinámico basado en firmas genéticas
+    if genetic_seed:
+        bg_hue_1 = (genetic_seed.get('fibonacci_signature', 123456) % 360)
+        bg_hue_2 = (genetic_seed.get('prime_signature', 234567) % 360)
+        bg_color_1 = hsl_to_hex(bg_hue_1, 25, 95)
+        bg_color_2 = hsl_to_hex(bg_hue_2, 20, 98)
+    else:
+        bg_color_1 = "#f8f8f8"
+        bg_color_2 = "#ffffff"
+    
     fig.update_layout(
         showlegend=False,
-        plot_bgcolor='rgba(0,0,0,1)',
-        paper_bgcolor='rgba(0,0,0,1)',
+        plot_bgcolor=bg_color_1,
+        paper_bgcolor=bg_color_2,
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         height=600,
-        margin=dict(l=0, r=0, t=0, b=0)
+        margin=dict(l=40, r=40, t=80, b=40),
+        title={
+            'text': f"GeneticFrames - Arte de ADN Único",
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 16, 'color': 'rgba(50,50,50,0.8)'}
+        },
+        annotations=[
+            dict(
+                text=f"<b>Species:</b> <i>{sequence_id.split('.')[0] if '.' in sequence_id else 'Unknown'}</i><br><b>GenBank ID:</b> {sequence_id}<br><b>Bases:</b> {len(sequence_segment):,}",
+                xref="paper", yref="paper",
+                x=0.02, y=0.98, xanchor="left", yanchor="top",
+                showarrow=False,
+                font=dict(size=11, color="rgba(50,50,50,0.8)", family="Arial"),
+                bgcolor="rgba(255,255,255,0.9)",
+                bordercolor="rgba(200,200,200,0.6)",
+                borderwidth=1,
+                borderpad=8
+            )
+        ]
     )
     
     return fig
@@ -1413,6 +1442,17 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     # Crear semilla única basada en el ID de la secuencia y primeras bases
     sequence_id = str(seq_record.id)
     genetic_seed = crear_semilla_genetica(secuencia, sequence_id)
+    
+    # Buscar nombre de especie en la descripción
+    species_name = "Unknown Species"
+    if hasattr(seq_record, 'description') and seq_record.description:
+        # Extraer nombre científico de la descripción
+        desc = seq_record.description
+        import re
+        # Buscar patrón de nombre científico (Genus species)
+        species_match = re.search(r'\b([A-Z][a-z]+\s+[a-z]+)\b', desc)
+        if species_match:
+            species_name = species_match.group(1)
     
     # Debug: Mostrar firmas únicas generadas
     if genetic_seed:

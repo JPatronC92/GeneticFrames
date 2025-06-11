@@ -17,6 +17,233 @@ import urllib.parse
 import math
 from scipy.spatial import Voronoi, voronoi_plot_2d
 from scipy.spatial.distance import cdist
+import re
+from collections import Counter
+
+# =============== FASTA PROCESSING & BIOLOGICAL ANALYSIS ===============
+
+def parse_fasta_sequence(fasta_text):
+    """Parsea texto FASTA y retorna secuencia limpia con metadatos"""
+    lines = fasta_text.strip().split('\n')
+    header = ""
+    sequence = ""
+    
+    for line in lines:
+        if line.startswith('>'):
+            header = line[1:].strip()
+        else:
+            sequence += line.strip().upper()
+    
+    clean_sequence = re.sub(r'[^ATCGN]', '', sequence)
+    
+    organism_name = "Secuencia personalizada"
+    gene_info = ""
+    
+    if header:
+        parts = header.split(' ')
+        if len(parts) >= 2:
+            organism_name = f"{parts[0]} {parts[1]}"
+        gene_info = header
+    
+    return {
+        'sequence': clean_sequence,
+        'header': header,
+        'organism_name': organism_name,
+        'gene_info': gene_info,
+        'length': len(clean_sequence)
+    }
+
+def process_sequence_region(sequence, method, start_pos=1, length=1000):
+    """Procesa región específica según método seleccionado"""
+    seq_len = len(sequence)
+    
+    if method == "Completa":
+        if seq_len > 10000:
+            return sample_representative_sequence(sequence, 5000)
+        return sequence
+    elif method == "Primeros N bases":
+        return sequence[:length]
+    elif method == "Región específica":
+        start_idx = max(0, start_pos - 1)
+        end_idx = min(seq_len, start_idx + length)
+        return sequence[start_idx:end_idx]
+    elif method == "Muestreo representativo":
+        return sample_representative_sequence(sequence, length)
+    
+    return sequence
+
+def sample_representative_sequence(sequence, target_length):
+    """Genera muestra representativa manteniendo características"""
+    seq_len = len(sequence)
+    if seq_len <= target_length:
+        return sequence
+    
+    segment_size = seq_len // (target_length // 100)
+    sampled = ""
+    
+    for i in range(0, seq_len, segment_size):
+        end = min(i + 100, seq_len)
+        sampled += sequence[i:end]
+        if len(sampled) >= target_length:
+            break
+    
+    return sampled[:target_length]
+
+def analyze_sequence_biology(sequence, organism_name=""):
+    """Análisis biológico avanzado de la secuencia"""
+    analysis = {}
+    seq_len = len(sequence)
+    
+    base_counts = {
+        'A': sequence.count('A'),
+        'T': sequence.count('T'),
+        'C': sequence.count('C'),
+        'G': sequence.count('G'),
+        'N': sequence.count('N')
+    }
+    
+    total_known = sum([base_counts[b] for b in 'ATCG'])
+    
+    if total_known > 0:
+        analysis['base_composition'] = {
+            'A': base_counts['A'] / total_known,
+            'T': base_counts['T'] / total_known,
+            'C': base_counts['C'] / total_known,
+            'G': base_counts['G'] / total_known
+        }
+        
+        analysis['gc_content'] = (base_counts['C'] + base_counts['G']) / total_known
+        analysis['at_content'] = (base_counts['A'] + base_counts['T']) / total_known
+        analysis['gc_skew'] = (base_counts['G'] - base_counts['C']) / (base_counts['G'] + base_counts['C']) if (base_counts['G'] + base_counts['C']) > 0 else 0
+        analysis['at_skew'] = (base_counts['A'] - base_counts['T']) / (base_counts['A'] + base_counts['T']) if (base_counts['A'] + base_counts['T']) > 0 else 0
+    
+    analysis['length'] = seq_len
+    analysis['complexity'] = calculate_sequence_complexity(sequence)
+    analysis['repetitiveness'] = calculate_repetitiveness(sequence)
+    analysis['dinucleotide_patterns'] = analyze_dinucleotide_patterns(sequence)
+    analysis['orf_analysis'] = analyze_open_reading_frames(sequence)
+    analysis['genetic_motifs'] = find_genetic_motifs(sequence)
+    
+    return analysis
+
+def calculate_sequence_complexity(sequence):
+    """Calcula complejidad usando entropía de Shannon"""
+    if not sequence:
+        return 0
+    
+    counts = Counter(sequence)
+    total = len(sequence)
+    entropy = 0
+    
+    for count in counts.values():
+        p = count / total
+        if p > 0:
+            entropy -= p * math.log2(p)
+    
+    return entropy
+
+def calculate_repetitiveness(sequence):
+    """Calcula nivel de repetitividad"""
+    if len(sequence) < 10:
+        return 0
+    
+    repeat_score = 0
+    window_sizes = [2, 3, 4, 5, 6]
+    
+    for window_size in window_sizes:
+        if len(sequence) < window_size * 2:
+            continue
+            
+        patterns = {}
+        for i in range(len(sequence) - window_size + 1):
+            pattern = sequence[i:i + window_size]
+            patterns[pattern] = patterns.get(pattern, 0) + 1
+        
+        repeated = sum(1 for count in patterns.values() if count > 1)
+        repeat_score += repeated / len(patterns) if patterns else 0
+    
+    return repeat_score / len(window_sizes)
+
+def analyze_dinucleotide_patterns(sequence):
+    """Analiza patrones de dinucleótidos"""
+    dinucleotides = {}
+    
+    for i in range(len(sequence) - 1):
+        dinuc = sequence[i:i+2]
+        if len(dinuc) == 2 and all(base in 'ATCG' for base in dinuc):
+            dinucleotides[dinuc] = dinucleotides.get(dinuc, 0) + 1
+    
+    total = sum(dinucleotides.values())
+    if total > 0:
+        for dinuc in dinucleotides:
+            dinucleotides[dinuc] = dinucleotides[dinuc] / total
+    
+    return dinucleotides
+
+def analyze_open_reading_frames(sequence):
+    """Análisis básico de marcos de lectura abiertos"""
+    start_codons = ['ATG']
+    stop_codons = ['TAA', 'TAG', 'TGA']
+    orfs = []
+    
+    for frame in range(3):
+        i = frame
+        while i < len(sequence) - 2:
+            codon = sequence[i:i+3]
+            
+            if codon in start_codons:
+                start_pos = i
+                j = i + 3
+                
+                while j < len(sequence) - 2:
+                    stop_codon = sequence[j:j+3]
+                    if stop_codon in stop_codons:
+                        orf_length = j - start_pos + 3
+                        if orf_length >= 150:
+                            orfs.append({
+                                'start': start_pos,
+                                'end': j + 3,
+                                'length': orf_length,
+                                'frame': frame + 1
+                            })
+                        break
+                    j += 3
+                
+                i = j if j < len(sequence) else len(sequence)
+            else:
+                i += 3
+    
+    return orfs
+
+def find_genetic_motifs(sequence):
+    """Busca motivos genéticos comunes"""
+    motifs = {}
+    
+    common_motifs = {
+        'TATA_box': 'TATAAA',
+        'Kozak_sequence': 'CCACCATGG',
+        'Poly_A_signal': 'AATAAA',
+        'CpG_island': 'CG',
+        'CAAT_box': 'CAAT'
+    }
+    
+    for motif_name, motif_seq in common_motifs.items():
+        count = 0
+        positions = []
+        
+        for i in range(len(sequence) - len(motif_seq) + 1):
+            if sequence[i:i+len(motif_seq)] == motif_seq:
+                count += 1
+                positions.append(i)
+        
+        if count > 0:
+            motifs[motif_name] = {
+                'count': count,
+                'positions': positions[:10],
+                'frequency': count / (len(sequence) - len(motif_seq) + 1)
+            }
+    
+    return motifs
 
 # Configuración inicial
 st.set_page_config(
@@ -1912,7 +2139,6 @@ def main():
     tab1, tab2, tab3 = st.tabs(["🎯 Generador", "📊 Análisis", "🏆 Galería NFT"])
     
     with tab1:
-        # Input principal mejorado
         st.markdown("""
         <div style="background: rgba(26, 26, 46, 0.8); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
             <h3 style="color: #00ff88; margin-bottom: 15px;">🎯 Generador de Arte Genético</h3>
@@ -1922,24 +2148,204 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns([3, 1])
+        # Método de entrada de secuencia
+        input_method = st.radio(
+            "Método de entrada de secuencia:",
+            ["🔍 Buscar por organismo", "📝 Pegar secuencia FASTA", "📁 Especies precargadas"],
+            horizontal=True
+        )
         
-        with col1:
-            # Input de organismo mejorado
-            selected_organism = st.session_state.get('selected_organism', '')
-            organism_input = st.text_input(
-                "Nombre científico del organismo:",
-                value=selected_organism,
-                placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
-                help="Introduce el nombre científico completo del organismo"
+        organism_input = None
+        fasta_sequence = None
+        selected_species = None
+        sample_method = "Completa"
+        start_pos = 1
+        length = 1000
+        
+        if input_method == "🔍 Buscar por organismo":
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                selected_organism = st.session_state.get('selected_organism', '')
+                organism_input = st.text_input(
+                    "Nombre científico del organismo:",
+                    value=selected_organism,
+                    placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
+                    help="Introduce el nombre científico completo del organismo"
+                )
+            
+            with col2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+        elif input_method == "📝 Pegar secuencia FASTA":
+            st.markdown("### Importar Secuencia FASTA")
+            fasta_sequence = st.text_area(
+                "Pega tu secuencia FASTA aquí:",
+                height=150,
+                placeholder=">Mi_Secuencia_ADN | Organismo: Ejemplo\nATGCAGCTTGCAATCGACTGCAGCTTGCAATCGACT...",
+                help="Formato FASTA estándar con encabezado (>nombre) seguido de la secuencia"
             )
+            
+            # Opciones de procesamiento para secuencias largas
+            if fasta_sequence and len(fasta_sequence) > 100:
+                st.markdown("### Opciones de Procesamiento de Secuencias Largas")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    sample_method = st.selectbox(
+                        "Método de muestreo:",
+                        ["Completa", "Primeros N bases", "Región específica", "Muestreo representativo"],
+                        help="Completa: toda la secuencia (máx. 10k bases), Muestreo: selección representativa"
+                    )
+                
+                with col2:
+                    if sample_method in ["Primeros N bases", "Región específica"]:
+                        start_pos = st.number_input("Posición inicial:", min_value=1, value=1)
+                        
+                with col3:
+                    if sample_method in ["Primeros N bases", "Región específica", "Muestreo representativo"]:
+                        length = st.number_input("Longitud (bases):", min_value=100, value=1000, max_value=10000)
+                
+        else:  # Especies precargadas
+            st.markdown("### Especies Precargadas con Secuencias Genómicas")
+            
+            species_categories = {
+                "🦁 Mamíferos": [
+                    ("Homo sapiens", "Humano"),
+                    ("Canis lupus", "Lobo gris"),
+                    ("Panthera leo", "León"),
+                    ("Tursiops truncatus", "Delfín nariz de botella"),
+                    ("Orcinus orca", "Orca")
+                ],
+                "🐦 Aves": [
+                    ("Aquila chrysaetos", "Águila real"),
+                    ("Falco peregrinus", "Halcón peregrino"),
+                    ("Aptenodytes forsteri", "Pingüino emperador")
+                ],
+                "🐍 Reptiles & Anfibios": [
+                    ("Python bivittatus", "Pitón birmana"),
+                    ("Crocodylus niloticus", "Cocodrilo del Nilo"),
+                    ("Xenopus laevis", "Rana africana")
+                ],
+                "🌊 Vida Marina": [
+                    ("Carcharodon carcharias", "Tiburón blanco"),
+                    ("Physeter macrocephalus", "Cachalote"),
+                    ("Balaenoptera musculus", "Ballena azul")
+                ],
+                "🦴 Especies Extintas": [
+                    ("Mammuthus primigenius", "Mamut lanudo"),
+                    ("Tyrannosaurus rex", "T-Rex"),
+                    ("Homo neanderthalensis", "Neandertal")
+                ]
+            }
+            
+            selected_category = st.selectbox("Categoría:", list(species_categories.keys()))
+            
+            if selected_category:
+                species_options = species_categories[selected_category]
+                species_display = [f"{common} ({scientific})" for scientific, common in species_options]
+                
+                selected_display = st.selectbox("Selecciona una especie:", species_display)
+                
+                if selected_display:
+                    selected_species = selected_display.split("(")[1].replace(")", "")
         
-        with col2:
-            st.markdown("<br>", unsafe_allow_html=True)  # Espaciado
-        
-        # Botón de generación
-        if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):
-            if organism_input:
+        # Botón de generación universal
+        generate_button_text = "🚀 Generar Arte Genético"
+        if input_method == "📝 Pegar secuencia FASTA":
+            generate_button_text = "🧬 Generar Arte desde FASTA"
+        elif input_method == "📁 Especies precargadas":
+            generate_button_text = "🔬 Generar Arte de Especie"
+            
+        if st.button(generate_button_text, type="primary", use_container_width=True):
+            seq_record = None
+            processed_sequence = None
+            organism_name = ""
+            
+            # Procesar según el método de entrada
+            if input_method == "🔍 Buscar por organismo" and organism_input:
+                # Método original de búsqueda NCBI
+                log_search(organism_input, user_session=st.session_state.session_id)
+                
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        "Conectando con NCBI GenBank",
+                        "Buscando secuencias genéticas auténticas"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+                try:
+                    seq_record = obtener_secuencia(organism_input)
+                    organism_name = organism_input
+                    loading_placeholder.empty()
+                    
+                except Exception as e:
+                    loading_placeholder.empty()
+                    st.error(f"Error al obtener secuencia: {str(e)}")
+                    log_search(organism_input, successful=False, error_message=str(e), user_session=st.session_state.session_id)
+                    st.stop()
+                    
+            elif input_method == "📝 Pegar secuencia FASTA" and fasta_sequence:
+                # Procesar secuencia FASTA
+                try:
+                    fasta_data = parse_fasta_sequence(fasta_sequence)
+                    raw_sequence = fasta_data['sequence']
+                    organism_name = fasta_data['organism_name']
+                    
+                    if len(raw_sequence) < 50:
+                        st.error("La secuencia debe tener al menos 50 nucleótidos válidos (A, T, C, G)")
+                        st.stop()
+                    
+                    # Procesar región según método seleccionado
+                    processed_sequence = process_sequence_region(raw_sequence, sample_method, start_pos, length)
+                    
+                    # Crear objeto SeqRecord temporal para compatibilidad
+                    from Bio.Seq import Seq
+                    from Bio.SeqRecord import SeqRecord
+                    
+                    seq_record = SeqRecord(
+                        Seq(processed_sequence),
+                        id=fasta_data['organism_name'].replace(' ', '_'),
+                        description=fasta_data['gene_info']
+                    )
+                    
+                    st.success(f"Secuencia FASTA procesada: {len(processed_sequence)} nucleótidos ({sample_method})")
+                    
+                except Exception as e:
+                    st.error(f"Error al procesar secuencia FASTA: {str(e)}")
+                    st.stop()
+                    
+            elif input_method == "📁 Especies precargadas" and selected_species:
+                # Usar especie precargada (buscar en NCBI)
+                organism_input = selected_species
+                organism_name = selected_species
+                
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown(
+                    create_custom_loading_animation(
+                        f"Cargando {selected_species}",
+                        "Obteniendo secuencias genómicas de referencia"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+                try:
+                    seq_record = obtener_secuencia(selected_species)
+                    loading_placeholder.empty()
+                    
+                except Exception as e:
+                    loading_placeholder.empty()
+                    st.error(f"Error al cargar {selected_species}: {str(e)}")
+                    st.stop()
+            
+            else:
+                st.warning("Por favor selecciona un método de entrada válido")
+                st.stop()
+            
+            # Continuar con la generación de arte si tenemos seq_record válido
+            if seq_record:
                 # Log de búsqueda
                 log_search(organism_input, user_session=st.session_state.session_id)
                 

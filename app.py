@@ -107,31 +107,203 @@ st.markdown("""
         color: white;
     }
     
-    /* Partículas flotantes de fondo */
-    .stApp::before {
-        content: '';
+    /* Contenedor de partículas ADN */
+    #dna-particles {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-image: 
-            radial-gradient(2px 2px at 20px 30px, rgba(0, 255, 136, 0.1), transparent),
-            radial-gradient(2px 2px at 40px 70px, rgba(0, 255, 136, 0.1), transparent),
-            radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.1), transparent),
-            radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.1), transparent);
-        background-repeat: repeat;
-        background-size: 75px 100px;
-        animation: sparkle 25s linear infinite;
-        pointer-events: none;
         z-index: -1;
+        pointer-events: none;
+        overflow: hidden;
     }
     
-    @keyframes sparkle {
-        from { transform: translateY(0px); }
-        to { transform: translateY(-100px); }
+    /* Partículas individuales tipo ADN */
+    .dna-particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: rgba(0, 255, 136, 0.6);
+        border-radius: 50%;
+        animation: float 15s infinite linear;
+    }
+    
+    .dna-particle::before {
+        content: '';
+        position: absolute;
+        width: 2px;
+        height: 20px;
+        background: rgba(0, 255, 136, 0.3);
+        left: 1px;
+        top: -8px;
+        border-radius: 1px;
+    }
+    
+    .dna-particle.adenine {
+        background: rgba(255, 68, 68, 0.6);
+        box-shadow: 0 0 6px rgba(255, 68, 68, 0.4);
+    }
+    
+    .dna-particle.thymine {
+        background: rgba(68, 68, 255, 0.6);
+        box-shadow: 0 0 6px rgba(68, 68, 255, 0.4);
+    }
+    
+    .dna-particle.cytosine {
+        background: rgba(68, 255, 68, 0.6);
+        box-shadow: 0 0 6px rgba(68, 255, 68, 0.4);
+    }
+    
+    .dna-particle.guanine {
+        background: rgba(255, 255, 68, 0.6);
+        box-shadow: 0 0 6px rgba(255, 255, 68, 0.4);
+    }
+    
+    @keyframes float {
+        from {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        to {
+            transform: translateY(-20px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+    
+    /* Conexiones entre partículas */
+    .dna-connection {
+        position: absolute;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+        animation: pulse 3s ease-in-out infinite;
+        pointer-events: none;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 0.2; }
+        50% { opacity: 0.6; }
     }
 </style>
+""", unsafe_allow_html=True)
+
+# Sistema de partículas ADN animadas
+st.markdown("""
+<div id="dna-particles"></div>
+
+<script>
+class DNAParticleSystem {
+    constructor() {
+        this.container = document.getElementById('dna-particles');
+        this.particles = [];
+        this.connections = [];
+        this.nucleotides = ['adenine', 'thymine', 'cytosine', 'guanine'];
+        this.maxParticles = 50;
+        this.init();
+    }
+    
+    init() {
+        if (!this.container) {
+            setTimeout(() => this.init(), 100);
+            return;
+        }
+        this.createParticles();
+        this.animateConnections();
+    }
+    
+    createParticles() {
+        setInterval(() => {
+            if (this.particles.length < this.maxParticles) {
+                this.addParticle();
+            }
+        }, 800);
+    }
+    
+    addParticle() {
+        const particle = document.createElement('div');
+        const nucleotide = this.nucleotides[Math.floor(Math.random() * this.nucleotides.length)];
+        
+        particle.className = `dna-particle ${nucleotide}`;
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 5 + 's';
+        particle.style.animationDuration = (12 + Math.random() * 8) + 's';
+        
+        this.container.appendChild(particle);
+        this.particles.push(particle);
+        
+        // Remover partícula cuando termine la animación
+        setTimeout(() => {
+            if (particle.parentNode) {
+                particle.parentNode.removeChild(particle);
+                this.particles = this.particles.filter(p => p !== particle);
+            }
+        }, 20000);
+    }
+    
+    animateConnections() {
+        setInterval(() => {
+            if (this.particles.length >= 2) {
+                this.createConnection();
+            }
+        }, 2000);
+    }
+    
+    createConnection() {
+        const particle1 = this.particles[Math.floor(Math.random() * this.particles.length)];
+        const particle2 = this.particles[Math.floor(Math.random() * this.particles.length)];
+        
+        if (particle1 === particle2) return;
+        
+        const rect1 = particle1.getBoundingClientRect();
+        const rect2 = particle2.getBoundingClientRect();
+        
+        const distance = Math.sqrt(
+            Math.pow(rect2.left - rect1.left, 2) + 
+            Math.pow(rect2.top - rect1.top, 2)
+        );
+        
+        if (distance < 200) {
+            const connection = document.createElement('div');
+            connection.className = 'dna-connection';
+            
+            const angle = Math.atan2(rect2.top - rect1.top, rect2.left - rect1.left);
+            
+            connection.style.left = rect1.left + 'px';
+            connection.style.top = rect1.top + 'px';
+            connection.style.width = distance + 'px';
+            connection.style.transform = `rotate(${angle}rad)`;
+            connection.style.transformOrigin = '0 0';
+            
+            this.container.appendChild(connection);
+            
+            setTimeout(() => {
+                if (connection.parentNode) {
+                    connection.parentNode.removeChild(connection);
+                }
+            }, 3000);
+        }
+    }
+}
+
+// Inicializar sistema de partículas cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    new DNAParticleSystem();
+});
+
+// También inicializar después de un delay para asegurar que Streamlit haya terminado
+setTimeout(() => {
+    if (!window.dnaParticleSystemInitialized) {
+        new DNAParticleSystem();
+        window.dnaParticleSystemInitialized = true;
+    }
+}, 2000);
+</script>
 """, unsafe_allow_html=True)
 
 # Temas de colores predefinidos

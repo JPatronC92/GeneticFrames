@@ -335,13 +335,15 @@ def obtener_secuencia(organismo):
         search_results = Entrez.read(handle)
         handle.close()
         
-        if not search_results.get("IdList"):
+        id_list = search_results.get("IdList", []) if isinstance(search_results, dict) else []
+        if not id_list:
             handle = Entrez.esearch(db="nucleotide", term=f"{nombre_busqueda}[ORGN]", retmax=10)
             search_results = Entrez.read(handle)
             handle.close()
+            id_list = search_results.get("IdList", []) if isinstance(search_results, dict) else []
         
-        if search_results.get("IdList"):
-            seq_id = search_results["IdList"][0]
+        if id_list:
+            seq_id = id_list[0]
             
             handle = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
             seq_record = SeqIO.read(io.StringIO(handle.read()), "fasta")
@@ -1411,8 +1413,8 @@ def main():
             if popular:
                 # Crear gráfico de barras
                 import plotly.express as px
-                organisms = [org.organism_name[:30] for org in popular]
-                counts = [org.accessed_count for org in popular]
+                organisms = [getattr(org, 'organism_name', str(org))[:30] for org in popular]
+                counts = [getattr(org, 'accessed_count', 0) for org in popular]
                 
                 fig_pop = px.bar(
                     x=counts, 

@@ -22,6 +22,118 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# CSS personalizado para fondo elegante y misterioso
+st.markdown("""
+<style>
+    /* Fondo principal con gradiente animado */
+    .stApp {
+        background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e, #0f0f0f);
+        background-size: 400% 400%;
+        animation: gradientShift 20s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Sidebar elegante */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #0f0f0f, #1a1a1a, #0d0d0d);
+        border-right: 1px solid #333;
+    }
+    
+    /* Contenedor principal */
+    .main .block-container {
+        background: rgba(15, 15, 15, 0.8);
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        padding: 2rem;
+        margin-top: 1rem;
+    }
+    
+    /* Títulos con efecto brillante */
+    h1, h2, h3 {
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    }
+    
+    /* Botones con efecto hover */
+    .stButton > button {
+        background: linear-gradient(45deg, #1a1a2e, #16213e);
+        border: 1px solid #00ff88;
+        border-radius: 10px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(45deg, #00ff88, #16213e);
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    /* Métricas con fondo translúcido */
+    [data-testid="metric-container"] {
+        background: rgba(26, 26, 26, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Expanders con estilo */
+    .streamlit-expanderHeader {
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+    
+    /* Input fields */
+    .stTextInput > div > div > input {
+        background: rgba(26, 26, 26, 0.8);
+        border: 1px solid #00ff88;
+        border-radius: 8px;
+        color: white;
+    }
+    
+    /* Selectbox */
+    .stSelectbox > div > div > select {
+        background: rgba(26, 26, 26, 0.8);
+        border: 1px solid #00ff88;
+        color: white;
+    }
+    
+    /* Partículas flotantes de fondo */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(2px 2px at 20px 30px, rgba(0, 255, 136, 0.1), transparent),
+            radial-gradient(2px 2px at 40px 70px, rgba(0, 255, 136, 0.1), transparent),
+            radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.1), transparent),
+            radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.1), transparent);
+        background-repeat: repeat;
+        background-size: 75px 100px;
+        animation: sparkle 25s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+    
+    @keyframes sparkle {
+        from { transform: translateY(0px); }
+        to { transform: translateY(-100px); }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Temas de colores predefinidos
 COLOR_THEMES = {
     'scientific': {'A': '#FF6B6B', 'T': '#4ECDC4', 'C': '#45B7D1', 'G': '#96CEB4', 'N': '#FFEAA7'},

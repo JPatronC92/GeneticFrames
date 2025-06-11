@@ -752,8 +752,8 @@ def main():
                     st.write("Configurando credenciales...")
                     
                     # Configurar Entrez
-                    Entrez.email = os.environ.get("ENTREZ_EMAIL", "user@example.com")
-                    Entrez.api_key = os.environ.get("NCBI_API_KEY", None)
+                    Entrez.email = st.secrets["ENTREZ_EMAIL"]
+                    Entrez.api_key = st.secrets["NCBI_API_KEY"]
                     
                     st.write(f"Email: {Entrez.email}")
                     st.write(f"API Key configurada: {'Sí' if Entrez.api_key else 'No'}")

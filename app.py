@@ -1182,11 +1182,11 @@ def crear_mapa_ruido_animado(secuencia, theme='scientific', sequence_data=None):
     if not sequence_data:
         sequence_data = {'sequence_hash': hash(secuencia) % 1000000}
     
-    seed = genetic_seed.get('primary_signature', 0) % 1000000
+    seed = sequence_data.get('sequence_hash', 0) % 1000000
     np.random.seed(seed)
     
     size = 100
-    scale = genetic_seed.get('entropy', 2.0) * 10
+    scale = 20  # Fixed scale value
     
     # Crear frames con ondas temporales
     frames = []
@@ -1208,7 +1208,7 @@ def crear_mapa_ruido_animado(secuencia, theme='scientific', sequence_data=None):
         # Normalizar
         noise_map = (noise_map - noise_map.min()) / (noise_map.max() - noise_map.min())
         
-        gc_content = genetic_seed.get('base_ratios', {}).get('gc_content', 0.5)
+        gc_content = sequence_data.get('gc_content', 0.5)
         
         if gc_content > 0.6:
             colorscale = 'Greens'
@@ -2577,7 +2577,9 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     
     return fig, gc_content
 
-def crear_semilla_genetica(secuencia, sequence_id):
+# Genetic seed algorithm removed - using direct sequence characteristics instead
+
+def crear_semilla_genetica_removida(secuencia, sequence_id):
     """Genera firmas genéticas únicas que diferencian dramáticamente cada especie"""
     
     if not secuencia or len(secuencia) < 50:

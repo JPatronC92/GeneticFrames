@@ -561,77 +561,125 @@ class LSystemEngine:
         return lineas, puntos
 
 def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
-    """Sistema L-System para generar árboles fractales únicos"""
+    """Mapeo directo de nucleótidos a elementos gráficos únicos"""
     
     if not secuencia:
         return go.Figure()
     
-    # Análisis genético simplificado
-    perfil = analizar_perfil_genetico(secuencia)
-    if not perfil:
-        return go.Figure()
+    # Colores fijos para cada nucleótido
+    nucleotide_colors = {
+        'A': '#FF4444',  # Rojo - Adenina
+        'T': '#4444FF',  # Azul - Timina  
+        'C': '#44FF44',  # Verde - Citosina
+        'G': '#FFFF44',  # Amarillo - Guanina
+        'N': '#888888'   # Gris - Desconocido
+    }
     
-    # Generar parámetros L-System únicos
-    parametros = generar_lsystem_parametros(perfil, genetic_seed or {})
+    # Elementos gráficos únicos por nucleótido
+    nucleotide_elements = {
+        'A': {'shape': 'circle', 'size': 8, 'symbol': 'circle'},
+        'T': {'shape': 'triangle', 'size': 10, 'symbol': 'triangle-up'},
+        'C': {'shape': 'square', 'size': 6, 'symbol': 'square'},
+        'G': {'shape': 'diamond', 'size': 9, 'symbol': 'diamond'},
+        'N': {'shape': 'cross', 'size': 5, 'symbol': 'x'}
+    }
     
-    # DEBUG: Mostrar parámetros
-    print(f"=== L-SYSTEM PARAMETERS ===")
-    print(f"Axioma: {parametros['axioma']}")
-    print(f"Reglas: {parametros['reglas']}")
-    print(f"Ángulo: {parametros['angulo']:.1f}°")
-    print(f"Iteraciones: {parametros['iteraciones']}")
-    print(f"Perfil: {parametros['perfil_tipo']}")
-    print("===========================")
-    
-    # Crear motor L-System
-    lsystem = LSystemEngine(parametros)
-    
-    # Generar secuencia fractal
-    secuencia_fractal = lsystem.generar_secuencia()
-    
-    # Interpretar en coordenadas
-    lineas, puntos = lsystem.interpretar_secuencia(secuencia_fractal)
-    
-    # Generar paleta de colores
-    colors = generar_paleta_dinamica(genetic_seed, theme) if genetic_seed else COLOR_THEMES[theme]
-    
-    # Crear figura
     fig = go.Figure()
     
-    # Dibujar líneas del árbol fractal
-    for i, linea in enumerate(lineas):
-        # Color basado en profundidad/longitud
-        color_intensity = min(1.0, linea['longitud'] / parametros['longitud_inicial'])
-        color_idx = i % len(colors)
-        color_key = list(colors.keys())[color_idx]
-        
-        fig.add_trace(go.Scatter(
-            x=[linea['x1'], linea['x2']],
-            y=[linea['y1'], linea['y2']],
-            mode='lines',
-            line=dict(
-                color=colors[color_key],
-                width=max(0.5, color_intensity * 3),
-            ),
-            opacity=0.7 + color_intensity * 0.3,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
+    # Tomar muestra de la secuencia para visualización
+    sample_size = min(2000, len(secuencia))
+    sequence_sample = secuencia[:sample_size]
     
-    # Puntos en las terminaciones
-    if puntos:
-        x_puntos = [p[0] for p in puntos[::5]]  # Muestrear puntos
-        y_puntos = [p[1] for p in puntos[::5]]
+    # DEBUG: Mostrar composición
+    composition = {base: sequence_sample.count(base) for base in 'ATCGN'}
+    print(f"=== NUCLEOTIDE MAPPING ===")
+    print(f"Sequence length: {len(sequence_sample)}")
+    print(f"A: {composition['A']}, T: {composition['T']}")
+    print(f"C: {composition['C']}, G: {composition['G']}")
+    print("==========================")
+    
+    # MAPEO DIRECTO: cada nucleótido = posición específica
+    for i, nucleotide in enumerate(sequence_sample):
+        if nucleotide not in nucleotide_elements:
+            continue
+            
+        element = nucleotide_elements[nucleotide]
+        color = nucleotide_colors[nucleotide]
         
+        # Posición basada en índice de la secuencia
+        angle = (i * 360 / len(sequence_sample)) % 360
+        
+        # Radio basado en tipo de nucleótido
+        radius_map = {'A': 50, 'T': 75, 'C': 100, 'G': 125, 'N': 25}
+        radius = radius_map[nucleotide]
+        
+        # Coordenadas polares a cartesianas
+        x = radius * np.cos(np.radians(angle))
+        y = radius * np.sin(np.radians(angle))
+        
+        # Agregar elemento visual único
         fig.add_trace(go.Scatter(
-            x=x_puntos,
-            y=y_puntos,
+            x=[x],
+            y=[y],
             mode='markers',
             marker=dict(
-                color=colors['G'],
-                size=2,
-                opacity=0.6
+                color=color,
+                size=element['size'],
+                symbol=element['symbol'],
+                opacity=0.7,
+                line=dict(width=1, color='white')
             ),
+            showlegend=False,
+            hovertemplate=f'<b>{nucleotide}</b><br>Position: {i}<br>Angle: {angle:.1f}°<extra></extra>'
+        ))
+    
+    # Conectar nucleótidos consecutivos con líneas
+    for i in range(0, len(sequence_sample) - 1, 10):  # Cada 10 para no saturar
+        nucleotide1 = sequence_sample[i]
+        nucleotide2 = sequence_sample[i + 1] if i + 1 < len(sequence_sample) else nucleotide1
+        
+        if nucleotide1 in nucleotide_elements and nucleotide2 in nucleotide_elements:
+            angle1 = (i * 360 / len(sequence_sample)) % 360
+            angle2 = ((i + 1) * 360 / len(sequence_sample)) % 360
+            
+            radius1 = {'A': 50, 'T': 75, 'C': 100, 'G': 125, 'N': 25}[nucleotide1]
+            radius2 = {'A': 50, 'T': 75, 'C': 100, 'G': 125, 'N': 25}[nucleotide2]
+            
+            x1 = radius1 * np.cos(np.radians(angle1))
+            y1 = radius1 * np.sin(np.radians(angle1))
+            x2 = radius2 * np.cos(np.radians(angle2))
+            y2 = radius2 * np.sin(np.radians(angle2))
+            
+            # Color de línea basado en par de nucleótidos
+            line_color = 'rgba(255,255,255,0.2)'
+            if nucleotide1 == nucleotide2:
+                line_color = 'rgba(255,255,255,0.4)'  # Líneas más visibles para repeticiones
+            
+            fig.add_trace(go.Scatter(
+                x=[x1, x2],
+                y=[y1, y2],
+                mode='lines',
+                line=dict(color=line_color, width=0.5),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+    
+    # Agregar círculos concéntricos para mostrar los diferentes radios
+    for nucleotide, radius in [('A', 50), ('T', 75), ('C', 100), ('G', 125)]:
+        theta = np.linspace(0, 2*np.pi, 100)
+        x_circle = radius * np.cos(theta)
+        y_circle = radius * np.sin(theta)
+        
+        fig.add_trace(go.Scatter(
+            x=x_circle,
+            y=y_circle,
+            mode='lines',
+            line=dict(
+                color=nucleotide_colors[nucleotide],
+                width=1,
+                dash='dot'
+            ),
+            opacity=0.3,
             showlegend=False,
             hoverinfo='skip'
         ))
@@ -639,8 +687,8 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     # Configuración final
     fig.update_layout(
         showlegend=False,
-        plot_bgcolor='#000000',
-        paper_bgcolor='#111111',
+        plot_bgcolor='#000011',
+        paper_bgcolor='#000011',
         xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
         yaxis=dict(visible=False),
         height=600,

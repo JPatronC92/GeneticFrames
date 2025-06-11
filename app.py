@@ -125,12 +125,41 @@ COLOR_THEMES = {
     }
 }
 
+def generar_paleta_dinamica(genetic_seed, base_theme):
+    """Genera paleta de colores única basada en firmas genéticas"""
+    fibonacci_sig = genetic_seed.get('fibonacci_signature', 123456)
+    prime_sig = genetic_seed.get('prime_signature', 234567)
+    euler_sig = genetic_seed.get('euler_signature', 789012)
+    
+    # Semilla para rotación de matiz basada en Fibonacci
+    hue_seed = int(fibonacci_sig * 1000) % 360
+    
+    # Saturación y luminosidad basadas en otras firmas
+    saturation = 70 + (prime_sig % 30)  # 70-100%
+    lightness_base = 45 + (euler_sig % 30)  # 45-75%
+    
+    # Generar 5 colores únicos con separación angular
+    unique_colors = {}
+    base_names = ['A', 'T', 'C', 'G', 'N']
+    
+    for i, base in enumerate(base_names):
+        hue = (hue_seed + i * 72) % 360  # Separación de 72 grados
+        lightness = lightness_base + (i * 5)  # Variación de luminosidad
+        color_hsl = f"hsl({hue}, {saturation}%, {lightness}%)"
+        unique_colors[base] = color_hsl
+    
+    return unique_colors
+
 def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
     """Crea arte fluido ultra-premium con máxima calidad visual y diferenciación genética"""
     max_length = min(len(secuencia), 8000)
     sequence_segment = secuencia[:max_length]
     
-    colors = COLOR_THEMES[theme]
+    # Generar paleta dinámica basada en firma genética
+    if genetic_seed:
+        colors = generar_paleta_dinamica(genetic_seed, theme)
+    else:
+        colors = COLOR_THEMES[theme]
     # Valores artísticos premium para mayor expresividad
     base_values = {'A': 1.3, 'T': 2.1, 'C': 2.7, 'G': 3.4, 'N': 0.9}
     
@@ -158,12 +187,18 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
         unique_frequency_base = (fibonacci_sig % 50000) / 500000 + 0.001  # Rango 0.001-0.101
         complexity_multiplier = (catalan_sig % 8000) / 4000 + 0.2  # Rango 0.2-2.2
         
-        # Factores visuales con diferencias extremas
-        color_shift = (euler_sig % 360) / 360  # Rotación completa 0-1
-        pattern_intensity = 0.1 + (taylor_sig % 1800) / 2000  # Rango 0.1-1.0  
+        # AMPLIFICACIÓN NO-LINEAL para exagerar diferencias visuales
+        base_color_shift = (euler_sig % 360) / 360
+        base_pattern = 0.1 + (taylor_sig % 1800) / 2000
+        base_amplitude = 0.3 + (pythagorean_sig % 1400) / 1000
+        
+        # Aplicar funciones no-lineales para separar valores dramáticamente
+        color_shift = np.power(base_color_shift, 1.3)  # Amplifica diferencias
+        pattern_intensity = np.log(1 + base_pattern) * 8  # Expansión logarítmica
+        amplitude_multiplier = np.sqrt(abs(base_amplitude)) * 1.5  # Raíz para separación
+        
         layer_count_modifier = (stirling_sig % 12) + 2  # 2-14 capas (muy variable)
         wave_modifier = 0.2 + (fourier_sig % 1600) / 1000  # Rango 0.2-1.8
-        amplitude_multiplier = 0.3 + (pythagorean_sig % 1400) / 1000  # Rango 0.3-1.7
         
         # Modulación extrema para máxima diferenciación visual
         fractal_modulation = (fractal_sig % 2000) / 2000  # 0-1 rango completo
@@ -255,8 +290,30 @@ def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
                 np.sin(x * freq5 + value * 1.414 + fractal_phase) * amplitude_factor * 0.25 * amplitude_multiplier  # √2
             )
             
-            # Variación por capa
+            # Variación por capa con ruido dirigido por teoremas
             y = y_base + layer * (30 + complexity * 2)
+            
+            # RUIDO VISUAL DIRIGIDO POR TEOREMAS para máxima diferenciación
+            if genetic_seed:
+                # Ruido en posición basado en múltiples firmas
+                noise_pos_x = np.sin(i * 0.1 + fibonacci_sig/10000) * prime_modulation * 8
+                noise_pos_y = np.cos(i * 0.1 + catalan_sig/10000) * fractal_modulation * 8
+                
+                # Ruido en amplitud basado en firmas específicas  
+                noise_amplitude = np.sin(i * 0.05 + euler_sig/10000) * spectral_shift * 5
+                
+                # Simetría condicional basada en firma Euler
+                chaos_factor = 1.0 if euler_sig % 2 == 0 else 1.8  # Simetría vs caos
+                
+                # Aplicar ruido con factor de caos
+                x = x + noise_pos_x * chaos_factor
+                y = y + noise_pos_y * chaos_factor + noise_amplitude
+                
+                # Modulación adicional con prime_signature para fragmentación angular
+                if prime_sig % 3 == 0:
+                    angle_fragment = (i * prime_sig) % 628 / 100  # Fragmentación angular
+                    x += np.cos(angle_fragment) * 3
+                    y += np.sin(angle_fragment) * 3
             
             # Modulación de amplitud basada en patrones locales
             local_pattern = sum(base_values.get(sequence_segment[j], 0) 

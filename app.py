@@ -51,47 +51,79 @@ def limpiar_nombre_cientifico(nombre):
     return nombre_limpio.strip()
 
 def obtener_secuencia(organismo):
-    """Obtiene secuencia de ADN desde NCBI"""
+    """Obtiene secuencia de ADN desde NCBI usando API configurada"""
+    
+    # Configurar Entrez con credenciales
     Entrez.email = st.secrets.get("ENTREZ_EMAIL", "user@example.com")
+    Entrez.api_key = st.secrets.get("NCBI_API_KEY", None)
     
     organismo_limpio = limpiar_nombre_cientifico(organismo)
     
-    # Búsqueda en nucleotide database
-    search_handle = Entrez.esearch(
-        db="nucleotide",
-        term=f"{organismo_limpio}[Organism] AND complete genome",
-        retmax=5
-    )
-    search_results = Entrez.read(search_handle)
-    search_handle.close()
-    
-    if not search_results["IdList"]:
-        # Búsqueda más amplia
+    try:
+        # Búsqueda optimizada - empezar con mitocondrias que son más comunes
         search_handle = Entrez.esearch(
             db="nucleotide",
-            term=f"{organismo_limpio}[Organism]",
-            retmax=10
+            term=f'"{organismo_limpio}"[Organism] AND mitochondrion complete genome',
+            retmax=3,
+            sort="relevance"
         )
         search_results = Entrez.read(search_handle)
         search_handle.close()
-    
-    if not search_results["IdList"]:
-        raise ValueError(f"No se encontraron secuencias para {organismo}")
-    
-    # Obtener la primera secuencia
-    seq_id = search_results["IdList"][0]
-    
-    fetch_handle = Entrez.efetch(
-        db="nucleotide",
-        id=seq_id,
-        rettype="fasta",
-        retmode="text"
-    )
-    
-    seq_record = SeqIO.read(io.StringIO(fetch_handle.read()), "fasta")
-    fetch_handle.close()
-    
-    return seq_record
+        
+        if not search_results.get("IdList", []):
+            # Búsqueda general de mitocondrias
+            search_handle = Entrez.esearch(
+                db="nucleotide",
+                term=f'"{organismo_limpio}"[Organism] AND mitochondrion',
+                retmax=5,
+                sort="relevance"
+            )
+            search_results = Entrez.read(search_handle)
+            search_handle.close()
+        
+        if not search_results.get("IdList", []):
+            # Búsqueda general más simple
+            search_handle = Entrez.esearch(
+                db="nucleotide",
+                term=f'"{organismo_limpio}"[Organism]',
+                retmax=10,
+                sort="relevance"
+            )
+            search_results = Entrez.read(search_handle)
+            search_handle.close()
+        
+        if not search_results.get("IdList", []):
+            raise ValueError(f"No se encontraron secuencias genéticas para {organismo}")
+        
+        # Tomar el primer resultado (más relevante)
+        seq_id = search_results["IdList"][0]
+        
+        # Obtener la secuencia directamente
+        fetch_handle = Entrez.efetch(
+            db="nucleotide",
+            id=seq_id,
+            rettype="fasta",
+            retmode="text"
+        )
+        
+        fasta_data = fetch_handle.read()
+        fetch_handle.close()
+        
+        if not fasta_data.strip():
+            raise ValueError(f"Secuencia vacía obtenida para {organismo}")
+        
+        # Parsear la secuencia FASTA
+        seq_record = SeqIO.read(io.StringIO(fasta_data), "fasta")
+        
+        # Verificar que la secuencia tenga contenido útil
+        if len(seq_record.seq) < 100:
+            raise ValueError(f"Secuencia demasiado corta para {organismo} (longitud: {len(seq_record.seq)})")
+        
+        return seq_record
+        
+    except Exception as e:
+        error_msg = f"Error obteniendo secuencia para '{organismo}': {str(e)}"
+        raise ValueError(error_msg)
 
 def analizar_perfil_genetico_unico(secuencia, organism_id):
     """Analiza patrones genéticos únicos para generar visualizaciones distintivas"""
@@ -711,11 +743,59 @@ def main():
                     unsafe_allow_html=True
                 )
                 
-                seq_record = obtener_secuencia(scientific_name)
+                # Diagnóstico de conexión
+                st.info(f"Buscando secuencias genéticas para: {scientific_name}")
+                
+                # Mostrar estado de la búsqueda
+                with st.status("Conectando con NCBI GenBank...", expanded=True) as status:
+                    st.write("Configurando credenciales...")
+                    
+                    # Configurar Entrez
+                    Entrez.email = st.secrets.get("ENTREZ_EMAIL", "user@example.com")
+                    Entrez.api_key = st.secrets.get("NCBI_API_KEY", None)
+                    
+                    st.write(f"Email: {Entrez.email}")
+                    st.write(f"API Key configurada: {'Sí' if Entrez.api_key else 'No'}")
+                    
+                    st.write("Realizando búsqueda en base de datos...")
+                    
+                    # Búsqueda directa simple
+                    search_handle = Entrez.esearch(
+                        db="nucleotide",
+                        term=f'"{scientific_name}"[Organism] AND mitochondrion',
+                        retmax=3
+                    )
+                    search_results = Entrez.read(search_handle)
+                    search_handle.close()
+                    
+                    ids_found = search_results.get("IdList", [])
+                    st.write(f"Secuencias encontradas: {len(ids_found)}")
+                    
+                    if ids_found:
+                        st.write(f"Obteniendo secuencia ID: {ids_found[0]}")
+                        
+                        fetch_handle = Entrez.efetch(
+                            db="nucleotide",
+                            id=ids_found[0],
+                            rettype="fasta",
+                            retmode="text"
+                        )
+                        fasta_data = fetch_handle.read()
+                        fetch_handle.close()
+                        
+                        st.write(f"Datos obtenidos: {len(fasta_data)} caracteres")
+                        
+                        if fasta_data.strip():
+                            seq_record = SeqIO.read(io.StringIO(fasta_data), "fasta")
+                            st.write(f"Secuencia parseada: {len(seq_record.seq)} nucleótidos")
+                            status.update(label="¡Secuencia obtenida exitosamente!", state="complete")
+                        else:
+                            raise ValueError("Datos FASTA vacíos")
+                    else:
+                        raise ValueError(f"No se encontraron secuencias para {scientific_name}")
+                
                 organism_name = scientific_name
                 loading_placeholder.empty()
-                
-                st.success(f"Encontrado: {scientific_name}")
                 
             else:
                 # Intentar búsqueda directa si no hay sugerencias
@@ -727,13 +807,29 @@ def main():
                     unsafe_allow_html=True
                 )
                 
+                st.info(f"Buscando secuencias genéticas para: {organism_input}")
                 seq_record = obtener_secuencia(organism_input)
                 organism_name = organism_input
                 loading_placeholder.empty()
             
         except Exception as e:
             loading_placeholder.empty()
-            st.error(f"No se pudo encontrar el animal '{organism_input}'.")
+            
+            # Mostrar error detallado
+            st.error(f"Error al obtener secuencias genéticas: {str(e)}")
+            
+            # Verificar estado de conexión
+            if "No se encontraron secuencias" in str(e):
+                st.warning("No hay secuencias genéticas disponibles en NCBI GenBank para este organismo.")
+                st.info("Esto puede ocurrir si:")
+                st.write("• El organismo no tiene su genoma secuenciado aún")
+                st.write("• El nombre científico no coincide exactamente")
+                st.write("• Los datos están en una base diferente")
+            elif "Error de conexión" in str(e) or "HTTP" in str(e):
+                st.error("Problema de conexión con NCBI GenBank")
+                st.info("La API de NCBI podría estar temporalmente no disponible")
+            else:
+                st.error(f"Error técnico: {str(e)}")
             
             # Mostrar sugerencias de nombres similares
             try:

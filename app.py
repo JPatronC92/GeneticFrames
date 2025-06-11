@@ -3235,42 +3235,19 @@ def main():
         """, unsafe_allow_html=True)
         
         # Método de entrada simplificado
-        st.markdown("### 🔍 Búsqueda de Organismo")
+        st.markdown("### 🔍 Búsqueda de Animal")
         
-        col1, col2 = st.columns([2, 1])
+        selected_organism = st.session_state.get('selected_organism', '')
+        organism_input = st.text_input(
+            "Nombre del animal:",
+            value=selected_organism,
+            placeholder="ej: delfín, orca, águila, tigre",
+            help="Introduce el nombre común del animal que quieres visualizar"
+        )
         
-        with col1:
-            selected_organism = st.session_state.get('selected_organism', '')
-            organism_input = st.text_input(
-                "Nombre científico del organismo:",
-                value=selected_organism,
-                placeholder="ej: Tursiops truncatus (delfín nariz de botella)",
-                help="Introduce el nombre científico completo del organismo"
-            )
-        
-        with col2:
-            st.markdown("**Opciones de Arte:**")
-            art_style = st.selectbox(
-                "Estilo:",
-                ['voronoi', 'lsystem', 'cellular', 'noise', 'fluid'],
-                format_func=lambda x: {
-                    'voronoi': '🔷 Voronoi Animado',
-                    'lsystem': '🌿 L-System Creciente', 
-                    'cellular': '🔲 Autómata Evolutivo',
-                    'noise': '🌊 Ondas Dinámicas',
-                    'fluid': '💧 Arte Fluido'
-                }[x]
-            )
-            
-            color_theme = st.selectbox(
-                "Tema:",
-                ['scientific', 'natural', 'cosmic'],
-                format_func=lambda x: {
-                    'scientific': '🔬 Científico',
-                    'natural': '🌿 Natural', 
-                    'cosmic': '🌌 Cósmico'
-                }[x]
-            )
+        # Configuración simplificada con valores por defecto
+        art_style = 'voronoi'  # Valor fijo
+        color_theme = 'scientific'  # Valor fijo
         
         # Botón de generación
         if st.button("🚀 Generar Arte Genético", type="primary", use_container_width=True):
@@ -3278,27 +3255,72 @@ def main():
             processed_sequence = None
             organism_name = ""
             
-            # Buscar organismo en NCBI
+            # Buscar organismo usando nombre común
             if organism_input:
                 log_search(organism_input, user_session=st.session_state.session_id)
                 
                 loading_placeholder = st.empty()
                 loading_placeholder.markdown(
                     create_custom_loading_animation(
-                        "Conectando con NCBI GenBank",
-                        "Buscando secuencias genéticas auténticas"
+                        "Buscando animal",
+                        "Convirtiendo nombre común a científico"
                     ),
                     unsafe_allow_html=True
                 )
                 
+                # Buscar nombre científico usando el motor de búsqueda
                 try:
-                    seq_record = obtener_secuencia(organism_input)
-                    organism_name = organism_input
-                    loading_placeholder.empty()
+                    search_engine = AnimalSearchEngine()
+                    suggestions = search_engine.search_comprehensive(organism_input)
+                    
+                    if suggestions:
+                        # Usar la primera sugerencia más relevante
+                        scientific_name = suggestions[0]['scientific_name']
+                        
+                        loading_placeholder.markdown(
+                            create_custom_loading_animation(
+                                "Conectando con NCBI GenBank",
+                                f"Obteniendo secuencia de {scientific_name}"
+                            ),
+                            unsafe_allow_html=True
+                        )
+                        
+                        seq_record = obtener_secuencia(scientific_name)
+                        organism_name = scientific_name
+                        loading_placeholder.empty()
+                        
+                        st.info(f"✅ Encontrado: {scientific_name}")
+                        
+                    else:
+                        # Intentar búsqueda directa si no hay sugerencias
+                        loading_placeholder.markdown(
+                            create_custom_loading_animation(
+                                "Búsqueda directa en NCBI",
+                                "Probando con el nombre proporcionado"
+                            ),
+                            unsafe_allow_html=True
+                        )
+                        
+                        seq_record = obtener_secuencia(organism_input)
+                        organism_name = organism_input
+                        loading_placeholder.empty()
                     
                 except Exception as e:
                     loading_placeholder.empty()
-                    st.error(f"Error al obtener secuencia: {str(e)}")
+                    st.error(f"No se pudo encontrar el animal '{organism_input}'. Intenta con otro nombre.")
+                    
+                    # Mostrar sugerencias de nombres similares
+                    try:
+                        similar = search_engine.suggest_similar_names(organism_input)
+                        if similar:
+                            st.write("**¿Quisiste decir?**")
+                            for name in similar[:3]:
+                                if st.button(f"💡 {name}", key=f"error_similar_{name}"):
+                                    st.session_state.selected_organism = name
+                                    st.rerun()
+                    except:
+                        pass
+                    
                     log_search(organism_input, successful=False, error_message=str(e), user_session=st.session_state.session_id)
                     st.stop()
             else:

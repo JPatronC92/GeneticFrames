@@ -6,6 +6,7 @@ from Bio.SeqUtils import gc_fraction
 import io
 import math
 import hashlib
+import os
 from animal_search import AnimalSearchEngine
 from database import *
 
@@ -54,8 +55,8 @@ def obtener_secuencia(organismo):
     """Obtiene secuencia de ADN desde NCBI usando API configurada"""
     
     # Configurar Entrez con credenciales
-    Entrez.email = st.secrets.get("ENTREZ_EMAIL", "user@example.com")
-    Entrez.api_key = st.secrets.get("NCBI_API_KEY", None)
+    Entrez.email = st.secrets["ENTREZ_EMAIL"]
+    Entrez.api_key = st.secrets["NCBI_API_KEY"]
     
     organismo_limpio = limpiar_nombre_cientifico(organismo)
     
@@ -751,8 +752,8 @@ def main():
                     st.write("Configurando credenciales...")
                     
                     # Configurar Entrez
-                    Entrez.email = st.secrets.get("ENTREZ_EMAIL", "user@example.com")
-                    Entrez.api_key = st.secrets.get("NCBI_API_KEY", None)
+                    Entrez.email = os.environ.get("ENTREZ_EMAIL", "user@example.com")
+                    Entrez.api_key = os.environ.get("NCBI_API_KEY", None)
                     
                     st.write(f"Email: {Entrez.email}")
                     st.write(f"API Key configurada: {'Sí' if Entrez.api_key else 'No'}")

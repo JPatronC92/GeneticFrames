@@ -352,124 +352,296 @@ def render_organico(secuencia, colors, genetic_seed):
     
     return fig
 
-def analizar_estructura_genomica(secuencia):
-    """Análisis bioinformático profundo para determinar arquitectura de render"""
+def analizar_perfil_genetico(secuencia):
+    """Análisis genético para generar parámetros únicos de L-System"""
     
-    # 1. Análisis de codones
-    codones = {}
-    for i in range(0, len(secuencia) - 2, 3):
-        codon = secuencia[i:i+3]
-        if len(codon) == 3:
-            codones[codon] = codones.get(codon, 0) + 1
+    # 1. Análisis de bases para axioma
+    base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
+    for base in secuencia:
+        if base in base_counts:
+            base_counts[base] += 1
     
-    # Diversidad de codones (Shannon entropy)
-    total_codones = sum(codones.values())
-    shannon_entropy = 0
-    if total_codones > 0:
-        for count in codones.values():
-            if count > 0:
-                p = count / total_codones
-                shannon_entropy -= p * np.log2(p)
+    total = sum(base_counts.values())
+    if total == 0:
+        return None
     
-    # 2. Detección de motivos repetidos
-    motivos = {}
-    for length in [3, 6, 9, 12, 15]:
-        for i in range(len(secuencia) - length + 1):
-            motivo = secuencia[i:i+length]
-            motivos[motivo] = motivos.get(motivo, 0) + 1
+    # Proporciones de bases
+    proporciones = {base: count/total for base, count in base_counts.items()}
     
-    # Calcular repetitividad
-    motivos_repetidos = {k: v for k, v in motivos.items() if v >= 3}
-    repetitividad = len(motivos_repetidos) / max(1, len(motivos))
+    # 2. Patrones de dinucleótidos para reglas
+    dinucleotidos = {}
+    for i in range(len(secuencia) - 1):
+        dinuc = secuencia[i:i+2]
+        if len(dinuc) == 2 and all(base in 'ATCG' for base in dinuc):
+            dinucleotidos[dinuc] = dinucleotidos.get(dinuc, 0) + 1
     
-    # 3. Análisis de composición
-    gc_content = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
-    at_content = (secuencia.count('A') + secuencia.count('T')) / len(secuencia)
+    # 3. Análisis de repeticiones para simetría
+    repeticiones = 0
+    for length in [3, 4, 5]:
+        for i in range(len(secuencia) - length):
+            patron = secuencia[i:i+length]
+            if secuencia.count(patron) > 1:
+                repeticiones += 1
     
-    # 4. Variabilidad posicional
+    # 4. Variabilidad local para caos
     variabilidad = 0
-    window = 100
-    if len(secuencia) > window:
-        for i in range(0, len(secuencia) - window, window):
-            ventana = secuencia[i:i+window]
-            gc_ventana = (ventana.count('G') + ventana.count('C')) / len(ventana)
-            variabilidad += abs(gc_ventana - gc_content)
-        variabilidad /= max(1, (len(secuencia) // window))
+    ventana = 50
+    for i in range(0, len(secuencia) - ventana, ventana//2):
+        segmento = secuencia[i:i+ventana]
+        gc_local = (segmento.count('G') + segmento.count('C')) / len(segmento)
+        variabilidad += abs(gc_local - 0.5)
     
     return {
-        'shannon_entropy': shannon_entropy,
-        'repetitividad': repetitividad,
-        'gc_content': gc_content,
-        'at_content': at_content,
+        'proporciones': proporciones,
+        'dinucleotidos': dinucleotidos,
+        'repeticiones': repeticiones,
         'variabilidad': variabilidad,
-        'longitud': len(secuencia),
-        'diversidad_codones': len(codones)
+        'longitud': len(secuencia)
     }
 
-def seleccionar_arquetipo_visual(analisis):
-    """Selecciona arquitectura de render basada en análisis genómico"""
+def generar_lsystem_parametros(perfil_genetico, genetic_seed):
+    """Genera parámetros únicos para L-System basados en perfil genético"""
     
-    gc = analisis['gc_content']
-    repetitividad = analisis['repetitividad']
-    shannon = analisis['shannon_entropy']
-    variabilidad = analisis['variabilidad']
+    props = perfil_genetico['proporciones']
+    dinucs = perfil_genetico['dinucleotidos']
+    repeticiones = perfil_genetico['repeticiones']
+    variabilidad = perfil_genetico['variabilidad']
     
-    # Lógica de selección de arquetipo
-    if repetitividad > 0.3:
-        return 'fractal'  # Alta repetición → fractales
-    elif gc > 0.6:
-        return 'cristal'  # GC alto → estructuras cristalinas simétricas
-    elif variabilidad > 0.15:
-        return 'glitch'   # Alta variación → arte caótico
-    elif shannon > 3.5:
-        return 'neural'   # Alta entropía → red neuronal
+    # 1. AXIOMA: Base inicial única por especie
+    axiomas_base = {
+        'alta_gc': 'F[+F]F[-F]F',      # Estructuras simétricas para alto GC
+        'alta_at': 'F[+F[-F]]',        # Ramificación asimétrica para alto AT
+        'equilibrado': 'F[+F]F[-F][F]',  # Estructura balanceada
+        'variable': 'F[++F][--F]F'     # Caótico para alta variabilidad
+    }
+    
+    # Seleccionar axioma base
+    if props['G'] + props['C'] > 0.6:
+        axioma_base = axiomas_base['alta_gc']
+    elif props['A'] + props['T'] > 0.6:
+        axioma_base = axiomas_base['alta_at']
+    elif variabilidad > 0.3:
+        axioma_base = axiomas_base['variable']
     else:
-        return 'organico' # Por defecto → formas orgánicas
+        axioma_base = axiomas_base['equilibrado']
+    
+    # Modificar axioma con firma genética
+    fibonacci_mod = genetic_seed.get('fibonacci_signature', 0) % 4
+    if fibonacci_mod == 1:
+        axioma = axioma_base + '[F]'
+    elif fibonacci_mod == 2:
+        axioma = 'F' + axioma_base
+    elif fibonacci_mod == 3:
+        axioma = axioma_base.replace('F', 'FF', 1)
+    else:
+        axioma = axioma_base
+    
+    # 2. REGLAS DE PRODUCCIÓN: Basadas en dinucleótidos más frecuentes
+    reglas = {}
+    dinucs_sorted = sorted(dinucs.items(), key=lambda x: x[1], reverse=True)
+    
+    # Regla principal F
+    if len(dinucs_sorted) > 0:
+        top_dinuc = dinucs_sorted[0][0]
+        if top_dinuc in ['GC', 'CG']:
+            reglas['F'] = 'FF[+F][-F]'  # Simetría para GC
+        elif top_dinuc in ['AT', 'TA']:
+            reglas['F'] = 'F[+F[+F]]'   # Asimetría para AT
+        elif top_dinuc in ['AA', 'TT']:
+            reglas['F'] = 'F[++F][F]'   # Repetición para purinas
+        else:
+            reglas['F'] = 'F[+F]F[-F]'  # Base balanceada
+    else:
+        reglas['F'] = 'F[+F]F[-F]'
+    
+    # Reglas adicionales basadas en otros dinucleótidos
+    if len(dinucs_sorted) > 1:
+        second_dinuc = dinucs_sorted[1][0]
+        if 'G' in second_dinuc:
+            reglas['+'] = '+F'
+        if 'C' in second_dinuc:
+            reglas['-'] = '-F'
+    
+    # 3. ÁNGULO: Basado en variabilidad y firmas genéticas
+    prime_mod = genetic_seed.get('prime_signature', 0) % 180
+    angulo_base = 25 + (variabilidad * 50)  # 25-75 grados base
+    angulo = angulo_base + (prime_mod / 10)  # Modulación única
+    
+    # 4. ITERACIONES: Basado en complejidad genética
+    euler_mod = genetic_seed.get('euler_signature', 0) % 6
+    iteraciones = max(3, min(7, 4 + euler_mod + int(repeticiones / 100)))
+    
+    # 5. LONGITUD INICIAL
+    fractal_mod = genetic_seed.get('fractal_signature', 0) % 50
+    longitud_inicial = 20 + fractal_mod
+    
+    # 6. FACTOR DE REDUCCIÓN
+    catalan_mod = genetic_seed.get('catalan_signature', 0) % 100
+    factor_reduccion = 0.6 + (catalan_mod / 500)  # 0.6-0.8
+    
+    return {
+        'axioma': axioma,
+        'reglas': reglas,
+        'angulo': angulo,
+        'iteraciones': iteraciones,
+        'longitud_inicial': longitud_inicial,
+        'factor_reduccion': factor_reduccion,
+        'perfil_tipo': f"GC:{props['G']+props['C']:.2f}_VAR:{variabilidad:.2f}"
+    }
+
+class LSystemEngine:
+    """Motor L-System para generar árboles fractales únicos por especie"""
+    
+    def __init__(self, parametros):
+        self.axioma = parametros['axioma']
+        self.reglas = parametros['reglas']
+        self.angulo = parametros['angulo']
+        self.iteraciones = parametros['iteraciones']
+        self.longitud = parametros['longitud_inicial']
+        self.factor_reduccion = parametros['factor_reduccion']
+        
+    def generar_secuencia(self):
+        """Genera la secuencia L-System aplicando las reglas"""
+        secuencia = self.axioma
+        
+        for _ in range(self.iteraciones):
+            nueva_secuencia = ""
+            for simbolo in secuencia:
+                if simbolo in self.reglas:
+                    nueva_secuencia += self.reglas[simbolo]
+                else:
+                    nueva_secuencia += simbolo
+            secuencia = nueva_secuencia
+            
+        return secuencia
+    
+    def interpretar_secuencia(self, secuencia_lsystem):
+        """Interpreta la secuencia L-System en coordenadas de dibujo"""
+        stack = []
+        x, y = 0, 0
+        angulo_actual = 90  # Empezar hacia arriba
+        
+        puntos = []
+        lineas = []
+        
+        for simbolo in secuencia_lsystem:
+            if simbolo == 'F':
+                # Dibujar línea hacia adelante
+                nuevo_x = x + self.longitud * np.cos(np.radians(angulo_actual))
+                nuevo_y = y + self.longitud * np.sin(np.radians(angulo_actual))
+                
+                lineas.append({
+                    'x1': x, 'y1': y,
+                    'x2': nuevo_x, 'y2': nuevo_y,
+                    'longitud': self.longitud
+                })
+                
+                x, y = nuevo_x, nuevo_y
+                puntos.append((x, y))
+                
+            elif simbolo == '+':
+                # Rotar a la izquierda
+                angulo_actual += self.angulo
+                
+            elif simbolo == '-':
+                # Rotar a la derecha
+                angulo_actual -= self.angulo
+                
+            elif simbolo == '[':
+                # Guardar estado actual
+                stack.append((x, y, angulo_actual, self.longitud))
+                
+            elif simbolo == ']':
+                # Restaurar estado guardado
+                if stack:
+                    x, y, angulo_actual, self.longitud = stack.pop()
+                    # Reducir longitud para ramas más pequeñas
+                    self.longitud *= self.factor_reduccion
+        
+        return lineas, puntos
 
 def crear_arte_fluido(secuencia, theme='scientific', genetic_seed=None):
-    """Sistema de render modular basado en análisis genómico"""
+    """Sistema L-System para generar árboles fractales únicos"""
     
     if not secuencia:
         return go.Figure()
     
-    # Análisis bioinformático profundo
-    analisis = analizar_estructura_genomica(secuencia)
+    # Análisis genético simplificado
+    perfil = analizar_perfil_genetico(secuencia)
+    if not perfil:
+        return go.Figure()
     
-    # Seleccionar arquitectura de render
-    arquetipo = seleccionar_arquetipo_visual(analisis)
+    # Generar parámetros L-System únicos
+    parametros = generar_lsystem_parametros(perfil, genetic_seed or {})
     
-    # DEBUG: Mostrar análisis
-    print(f"=== ANÁLISIS GENÓMICO ===")
-    print(f"GC Content: {analisis['gc_content']:.3f}")
-    print(f"Repetitividad: {analisis['repetitividad']:.3f}")
-    print(f"Shannon Entropy: {analisis['shannon_entropy']:.3f}")
-    print(f"Variabilidad: {analisis['variabilidad']:.3f}")
-    print(f"ARQUETIPO SELECCIONADO: {arquetipo.upper()}")
-    print("========================")
+    # DEBUG: Mostrar parámetros
+    print(f"=== L-SYSTEM PARAMETERS ===")
+    print(f"Axioma: {parametros['axioma']}")
+    print(f"Reglas: {parametros['reglas']}")
+    print(f"Ángulo: {parametros['angulo']:.1f}°")
+    print(f"Iteraciones: {parametros['iteraciones']}")
+    print(f"Perfil: {parametros['perfil_tipo']}")
+    print("===========================")
     
-    # Generar paleta de colores única
-    colors = generar_paleta_dinamica(genetic_seed, theme) if genetic_seed else {
-        'A': '#FF6B6B', 'T': '#4ECDC4', 'C': '#45B7D1', 'G': '#96CEB4', 'N': '#FFEAA7'
-    }
+    # Crear motor L-System
+    lsystem = LSystemEngine(parametros)
     
-    # Ejecutar arquitectura específica
-    if arquetipo == 'fractal':
-        fig = render_fractal(secuencia, colors, genetic_seed)
-    elif arquetipo == 'cristal':
-        fig = render_cristal(secuencia, colors, genetic_seed)
-    elif arquetipo == 'glitch':
-        fig = render_glitch(secuencia, colors, genetic_seed)
-    elif arquetipo == 'neural':
-        fig = render_neural(secuencia, colors, genetic_seed)
-    else:  # organico
-        fig = render_organico(secuencia, colors, genetic_seed)
+    # Generar secuencia fractal
+    secuencia_fractal = lsystem.generar_secuencia()
+    
+    # Interpretar en coordenadas
+    lineas, puntos = lsystem.interpretar_secuencia(secuencia_fractal)
+    
+    # Generar paleta de colores
+    colors = generar_paleta_dinamica(genetic_seed, theme) if genetic_seed else COLOR_THEMES[theme]
+    
+    # Crear figura
+    fig = go.Figure()
+    
+    # Dibujar líneas del árbol fractal
+    for i, linea in enumerate(lineas):
+        # Color basado en profundidad/longitud
+        color_intensity = min(1.0, linea['longitud'] / parametros['longitud_inicial'])
+        color_idx = i % len(colors)
+        color_key = list(colors.keys())[color_idx]
+        
+        fig.add_trace(go.Scatter(
+            x=[linea['x1'], linea['x2']],
+            y=[linea['y1'], linea['y2']],
+            mode='lines',
+            line=dict(
+                color=colors[color_key],
+                width=max(0.5, color_intensity * 3),
+            ),
+            opacity=0.7 + color_intensity * 0.3,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Puntos en las terminaciones
+    if puntos:
+        x_puntos = [p[0] for p in puntos[::5]]  # Muestrear puntos
+        y_puntos = [p[1] for p in puntos[::5]]
+        
+        fig.add_trace(go.Scatter(
+            x=x_puntos,
+            y=y_puntos,
+            mode='markers',
+            marker=dict(
+                color=colors['G'],
+                size=2,
+                opacity=0.6
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
     
     # Configuración final
     fig.update_layout(
         showlegend=False,
         plot_bgcolor='#000000',
         paper_bgcolor='#111111',
-        xaxis=dict(visible=False),
+        xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
         yaxis=dict(visible=False),
         height=600,
         margin=dict(l=0, r=0, t=0, b=0)
@@ -497,262 +669,50 @@ def generar_visualizacion(seq_record, style='fluid', theme='scientific'):
     return fig, gc_content
 
 def crear_semilla_genetica(secuencia, sequence_id):
-    """Genera parámetros únicos usando teoremas matemáticos avanzados para diferenciar completamente cada secuencia"""
+    """Genera parámetros simples únicos basados en características básicas del ADN"""
     
     if not secuencia:
         return None
     
-    # 1. Análisis de secuencia de Fibonacci
-    def fibonacci_encoding(seq):
-        fib_signature = 0
-        for i, base in enumerate(seq[:min(100, len(seq))]):
-            base_val = {'A': 1, 'T': 1, 'C': 2, 'G': 3, 'N': 0}.get(base, 0)
-            fib_pos = i % 20 + 1
-            fib_number = 1 if fib_pos <= 2 else sum(fibonacci_sequence(fib_pos)[-2:])
-            fib_signature += base_val * fib_number
-        return fib_signature % 1000000
+    # Análisis básico de composición
+    base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
+    for base in secuencia:
+        if base in base_counts:
+            base_counts[base] += 1
     
-    def fibonacci_sequence(n):
-        if n <= 0: return []
-        elif n == 1: return [1]
-        elif n == 2: return [1, 1]
-        
-        seq = [1, 1]
-        for i in range(2, n):
-            seq.append(seq[i-1] + seq[i-2])
-        return seq
+    total = sum(base_counts.values())
+    if total == 0:
+        return None
     
-    # 2. Factorización de números primos única
-    def prime_factorization_hash(seq):
-        prime_signature = 1
-        primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-        
-        for i, base in enumerate(seq[:min(50, len(seq))]):
-            base_power = {'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}.get(base, 0)
-            if base_power > 0:
-                prime_idx = i % len(primes)
-                prime_signature *= (primes[prime_idx] ** base_power)
-                prime_signature = prime_signature % 1000000
-        
-        return prime_signature
+    # Firmas simples basadas en la secuencia real
+    gc_content = (base_counts['G'] + base_counts['C']) / total
+    at_content = (base_counts['A'] + base_counts['T']) / total
     
-    # 3. Números de Catalan aplicados a estructuras secundarias
-    def catalan_analysis(seq):
-        def catalan_number(n):
-            if n <= 1: return 1
-            catalan = [0] * (n + 1)
-            catalan[0], catalan[1] = 1, 1
-            
-            for i in range(2, n + 1):
-                for j in range(i):
-                    catalan[i] += catalan[j] * catalan[i - 1 - j]
-            return catalan[n]
-        
-        catalan_signature = 0
-        gc_pairs = 0
-        at_pairs = 0
-        
-        for i in range(0, len(seq) - 1, 2):
-            if i + 1 < len(seq):
-                pair = seq[i:i+2]
-                if pair in ['GC', 'CG']: gc_pairs += 1
-                elif pair in ['AT', 'TA']: at_pairs += 1
-        
-        structure_complexity = min(15, gc_pairs + at_pairs)
-        catalan_signature = catalan_number(structure_complexity)
-        
-        return catalan_signature % 1000000
+    # Hash simple del sequence_id para reproducibilidad
+    id_hash = hash(sequence_id) % 1000000
     
-    # 4. Aproximación de Taylor para frecuencias de bases
-    def taylor_approximation(seq):
-        def factorial(n):
-            return 1 if n <= 1 else n * factorial(n - 1)
-        
-        base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
-        for base in seq:
-            if base in base_counts:
-                base_counts[base] += 1
-        
-        total = sum(base_counts.values())
-        if total == 0: return 123456
-        
-        taylor_signature = 0
-        for base, count in base_counts.items():
-            frequency = count / total
-            # Expansión de Taylor para e^x alrededor de x=0
-            terms = min(10, count // 10 + 1)
-            exponential_approx = sum(
-                (frequency ** n) / factorial(n) for n in range(terms)
-            )
-            base_multiplier = {'A': 1000, 'T': 2000, 'C': 3000, 'G': 4000}[base]
-            taylor_signature += int(exponential_approx * base_multiplier)
-        
-        return taylor_signature % 1000000
+    # Análisis de dinucleótidos
+    dinucs = {}
+    for i in range(len(secuencia) - 1):
+        dinuc = secuencia[i:i+2]
+        if len(dinuc) == 2:
+            dinucs[dinuc] = dinucs.get(dinuc, 0) + 1
     
-    # 5. Transformada de Fourier discreta simplificada
-    def fourier_transform_hash(seq):
-        if len(seq) == 0: return 234567
-        
-        # Convertir secuencia a señal numérica
-        signal = [{'A': 1, 'T': -1, 'C': 1j, 'G': -1j, 'N': 0}.get(base, 0) for base in seq[:64]]
-        
-        # DFT simplificada para los primeros componentes
-        fourier_signature = 0
-        N = len(signal)
-        
-        for k in range(min(8, N)):
-            component = sum(
-                signal[n] * np.exp(-2j * np.pi * k * n / N) 
-                for n in range(N)
-            )
-            magnitude = abs(component)
-            fourier_signature += int(magnitude * 1000)
-        
-        return fourier_signature % 1000000
+    # Firma basada en el dinucleótido más común
+    top_dinuc = max(dinucs.items(), key=lambda x: x[1])[0] if dinucs else 'AT'
+    dinuc_signature = sum(ord(c) for c in top_dinuc) * 1000
     
-    # 6. Distancias pitagóricas en espacio de características
-    def pythagorean_distances(seq):
-        if len(seq) < 4: return 345678
-        
-        # Dividir en cuartetos y calcular distancias
-        quartets = [seq[i:i+4] for i in range(0, len(seq)-3, 4)]
-        
-        pythagorean_signature = 0
-        for quartet in quartets[:20]:  # Primeros 20 cuartetos
-            # Coordenadas en espacio 4D basadas en bases
-            coords = []
-            for base in quartet:
-                coords.append({'A': 1, 'T': 2, 'C': 3, 'G': 4, 'N': 0}.get(base, 0))
-            
-            if len(coords) == 4:
-                # Distancia euclidiana 4D
-                distance = sum(coord ** 2 for coord in coords) ** 0.5
-                pythagorean_signature += int(distance * 1000)
-        
-        return pythagorean_signature % 1000000
-    
-    # 7. Función totiente de Euler aplicada a motivos
-    def euler_totient_analysis(seq):
-        def gcd(a, b):
-            while b: a, b = b, a % b
-            return a
-        
-        def euler_totient(n):
-            if n <= 1: return 1
-            result = n
-            p = 2
-            while p * p <= n:
-                if n % p == 0:
-                    while n % p == 0: n //= p
-                    result -= result // p
-                p += 1
-            if n > 1: result -= result // n
-            return result
-        
-        # Analizar motivos de longitud 3
-        motif_frequencies = {}
-        for i in range(len(seq) - 2):
-            motif = seq[i:i+3]
-            if motif.replace('N', '') == motif:  # Excluir N's
-                motif_frequencies[motif] = motif_frequencies.get(motif, 0) + 1
-        
-        euler_signature = 0
-        for motif, freq in motif_frequencies.items():
-            if freq > 1:
-                euler_signature += euler_totient(freq)
-        
-        return euler_signature % 1000000
-    
-    # 8. Análisis de dimensión fractal simplificado
-    def fractal_dimension_analysis(seq):
-        if len(seq) < 10: return 456789
-        
-        # Box-counting simplificado
-        fractal_signature = 0
-        
-        for scale in [2, 4, 8, 16]:
-            if scale >= len(seq): break
-            
-            boxes_with_variation = 0
-            for i in range(0, len(seq) - scale + 1, scale):
-                segment = seq[i:i+scale]
-                unique_bases = len(set(segment))
-                if unique_bases > 1:
-                    boxes_with_variation += 1
-            
-            if scale > 0:
-                fractal_signature += int((boxes_with_variation / scale) * 10000)
-        
-        return fractal_signature % 1000000
-    
-    # 9. Números de Stirling de segunda especie
-    def stirling_bell_analysis(seq):
-        def stirling_second(n, k):
-            if n == 0 and k == 0: return 1
-            if n == 0 or k == 0: return 0
-            if k > n: return 0
-            
-            # Aproximación para casos grandes
-            if n > 15: return (k ** n) // (2 ** (k-1))
-            
-            # Recursión directa para casos pequeños
-            return k * stirling_second(n-1, k) + stirling_second(n-1, k-1)
-        
-        # Particionar secuencia en grupos
-        base_groups = {'A': [], 'T': [], 'C': [], 'G': []}
-        for i, base in enumerate(seq[:min(60, len(seq))]):
-            if base in base_groups:
-                base_groups[base].append(i)
-        
-        stirling_signature = 0
-        non_empty_groups = sum(1 for group in base_groups.values() if group)
-        
-        if non_empty_groups > 0:
-            group_sizes = [len(group) for group in base_groups.values() if group]
-            max_size = min(15, max(group_sizes))
-            stirling_signature = stirling_second(max_size, non_empty_groups)
-        
-        return stirling_signature % 1000000
-    
-    # Calcular todas las firmas
-    fibonacci_signature = fibonacci_encoding(secuencia)
-    prime_signature = prime_factorization_hash(secuencia)
-    catalan_signature = catalan_analysis(secuencia)
-    taylor_signature = taylor_approximation(secuencia)
-    fourier_signature = fourier_transform_hash(secuencia)
-    pythagorean_signature = pythagorean_distances(secuencia)
-    euler_signature = euler_totient_analysis(secuencia)
-    fractal_signature = fractal_dimension_analysis(secuencia)
-    stirling_signature = stirling_bell_analysis(secuencia)
-    
-    # Crear firma maestra combinando todas
-    master_signature = (
-        fibonacci_signature * 7 + 
-        prime_signature * 11 + 
-        catalan_signature * 13 + 
-        taylor_signature * 17 + 
-        fourier_signature * 19
-    ) % 1000000
-    
-    # Calcular puntaje de complejidad único
-    complexity_score = (
-        len(set(secuencia[:100])) * 2 +
-        len(secuencia) // 1000 +
-        (fibonacci_signature % 100) // 10
-    )
+    # Firmas simples
+    simple_signature = int(gc_content * 1000000) + id_hash
+    pattern_signature = dinuc_signature + (len(secuencia) % 10000)
     
     return {
-        'fibonacci_signature': fibonacci_signature,
-        'prime_signature': prime_signature,
-        'catalan_signature': catalan_signature,
-        'taylor_signature': taylor_signature,
-        'fourier_signature': fourier_signature,
-        'pythagorean_signature': pythagorean_signature,
-        'euler_signature': euler_signature,
-        'fractal_signature': fractal_signature,
-        'stirling_signature': stirling_signature,
-        'master_signature': master_signature,
-        'complexity_score': complexity_score
+        'fibonacci_signature': simple_signature % 1000000,
+        'prime_signature': pattern_signature % 1000000,
+        'catalan_signature': int(at_content * 1000000) % 1000000,
+        'euler_signature': (id_hash * 7) % 1000000,
+        'fractal_signature': (len(secuencia) * int(gc_content * 1000)) % 1000000,
+        'complexity_score': min(10, len(set(secuencia[:100])))
     }
 
 def crear_visualizacion_clasica(secuencia, seq_record, theme):

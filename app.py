@@ -3472,7 +3472,6 @@ def main():
                                 st.error("Error preparando NFT")
                         else:
                             st.warning("⚠️ Blockchain no disponible. NFT se generará cuando se configure.")
-            
             else:
                 st.error("❌ No se pudo obtener la secuencia. Verifica el nombre científico.")
                 log_search(organism_input, successful=False, 

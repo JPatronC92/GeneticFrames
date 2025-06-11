@@ -2521,6 +2521,112 @@ def main():
                 if selected_display:
                     selected_species = selected_display.split("(")[1].replace(")", "")
         
+        # Análisis comparativo
+        if input_method == "🔬 Análisis comparativo":
+            st.markdown("### 🔬 Análisis Comparativo de Especies")
+            st.info("Compara patrones genéticos únicos entre diferentes especies para identificar firmas evolutivas")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Primera Especie:**")
+                species1 = st.selectbox(
+                    "Selecciona primera especie:",
+                    ["Panthera tigris", "Canis lupus", "Homo sapiens", "Tursiops truncatus", "Orcinus orca"],
+                    key="species1"
+                )
+                
+            with col2:
+                st.markdown("**Segunda Especie:**")
+                species2 = st.selectbox(
+                    "Selecciona segunda especie:",
+                    ["Canis lupus", "Panthera tigris", "Homo sapiens", "Tursiops truncatus", "Orcinus orca"],
+                    key="species2"
+                )
+            
+            if st.button("🔬 Comparar Especies", type="primary", use_container_width=True):
+                if species1 == species2:
+                    st.warning("Selecciona dos especies diferentes para la comparación")
+                else:
+                    # Realizar análisis comparativo
+                    loading_placeholder = st.empty()
+                    loading_placeholder.markdown(
+                        create_custom_loading_animation(
+                            f"Análisis comparativo: {species1} vs {species2}",
+                            "Obteniendo y comparando secuencias genéticas"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                    
+                    try:
+                        # Obtener secuencias de ambas especies
+                        seq_record1 = obtener_secuencia(species1)
+                        seq_record2 = obtener_secuencia(species2)
+                        
+                        seq1 = str(seq_record1.seq)
+                        seq2 = str(seq_record2.seq)
+                        
+                        loading_placeholder.empty()
+                        
+                        # Crear visualización comparativa
+                        fig, comparison_data = create_comparative_visualization(
+                            seq1, seq2, species1, species2, art_style, color_theme
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Mostrar análisis comparativo detallado
+                        st.markdown("### 🔬 Análisis Comparativo Detallado")
+                        
+                        differences = comparison_data['differences']
+                        
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            gc_diff = differences['gc_content']
+                            st.metric(
+                                "Diferencia GC", 
+                                f"{gc_diff['difference']:.3f}",
+                                delta=f"{gc_diff['significance']} significancia"
+                            )
+                        
+                        with col2:
+                            complexity_diff = differences['complexity']
+                            st.metric(
+                                "Diferencia Complejidad",
+                                f"{complexity_diff['difference']:.3f}",
+                                delta="Shannon entropy"
+                            )
+                        
+                        with col3:
+                            coding_diff = differences['coding_potential']
+                            orfs_diff = coding_diff['orfs_count'][0] - coding_diff['orfs_count'][1]
+                            st.metric(
+                                "Diferencia ORFs",
+                                f"{abs(orfs_diff)}",
+                                delta=f"{'Mayor' if orfs_diff > 0 else 'Menor'} en {species1}"
+                            )
+                        
+                        # Insights evolutivos
+                        insights = comparison_data['evolutionary_insights']
+                        if insights:
+                            st.markdown("### 🌳 Insights Evolutivos")
+                            for insight in insights:
+                                st.info(insight)
+                        
+                        # Guardar datos comparativos
+                        st.session_state.last_comparison_data = {
+                            'species': [species1, species2],
+                            'sequences': [seq1, seq2],
+                            'comparison': comparison_data
+                        }
+                        
+                    except Exception as e:
+                        loading_placeholder.empty()
+                        st.error(f"Error en análisis comparativo: {str(e)}")
+            
+            st.stop()
+        
         # Botón de generación universal
         generate_button_text = "🚀 Generar Arte Genético"
         if input_method == "📝 Pegar secuencia FASTA":

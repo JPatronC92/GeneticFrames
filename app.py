@@ -153,6 +153,15 @@ def analizar_perfil_genetico_unico(secuencia, organism_id):
     gc_skew = calcular_skew_simple(secuencia, 'GC')
     at_skew = calcular_skew_simple(secuencia, 'AT')
     
+    # Análisis de entropía y complejidad específica
+    entropy = calcular_entropia_secuencia(secuencia)
+    
+    # Firma genética única basada en múltiples características
+    genetic_signature = generar_firma_genetica_unica(secuencia, organism_id, dinucs, trinucs)
+    
+    # Análisis de periodicidad específica
+    periodicities = detectar_periodicidades_especificas(secuencia)
+    
     return {
         'base_ratios': {k: v/total for k, v in base_counts.items()},
         'dinuc_profile': dinucs,
@@ -162,7 +171,10 @@ def analizar_perfil_genetico_unico(secuencia, organism_id):
         'gc_skew': gc_skew,
         'at_skew': at_skew,
         'sequence_length': len(secuencia),
-        'organism_signature': hash(organism_id + secuencia[:100]) % 1000000
+        'organism_signature': hash(organism_id + secuencia[:100]) % 1000000,
+        'entropy': entropy,
+        'genetic_signature': genetic_signature,
+        'periodicities': periodicities
     }
 
 def detectar_patrones_repetitivos(secuencia):
@@ -223,28 +235,373 @@ def calcular_skew_simple(secuencia, base_type):
         else:
             return 0
 
+def calcular_entropia_secuencia(secuencia):
+    """Calcula la entropía de Shannon de la secuencia"""
+    from collections import Counter
+    import math
+    
+    # Contar dinucleótidos para mayor especificidad
+    dinucs = []
+    for i in range(len(secuencia) - 1):
+        dinuc = secuencia[i:i+2]
+        if all(b in 'ATCG' for b in dinuc):
+            dinucs.append(dinuc)
+    
+    if not dinucs:
+        return 0
+    
+    counts = Counter(dinucs)
+    total = len(dinucs)
+    
+    entropy = 0
+    for count in counts.values():
+        p = count / total
+        if p > 0:
+            entropy -= p * math.log2(p)
+    
+    return entropy
+
+def generar_firma_genetica_unica(secuencia, organism_id, dinucs, trinucs):
+    """Genera una firma genética única específica de la especie"""
+    
+    # Combinación de características únicas
+    top_dinucs = sorted(dinucs.items(), key=lambda x: x[1], reverse=True)[:5]
+    top_trinucs = sorted(trinucs.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    # Crear firma basada en patrones más frecuentes
+    signature_elements = []
+    
+    for pattern, freq in top_dinucs:
+        signature_elements.append(pattern + str(freq))
+    
+    for pattern, freq in top_trinucs:
+        signature_elements.append(pattern + str(freq))
+    
+    # Añadir características específicas del organismo
+    gc_ratio = (secuencia.count('G') + secuencia.count('C')) / len(secuencia)
+    signature_elements.append(f"GC{int(gc_ratio*100)}")
+    
+    # Crear hash único
+    signature_string = "_".join(signature_elements) + organism_id
+    return hash(signature_string) % 999999
+
+def detectar_periodicidades_especificas(secuencia):
+    """Detecta periodicidades específicas en la secuencia"""
+    periodicities = {}
+    
+    # Analizar periodicidades de longitud 3, 6, 9 (relacionadas con codones)
+    for period in [3, 6, 9, 12]:
+        if len(secuencia) < period * 3:
+            continue
+            
+        pattern_counts = {}
+        for i in range(0, len(secuencia) - period, period):
+            segment = secuencia[i:i+period]
+            if all(b in 'ATCG' for b in segment):
+                pattern_counts[segment] = pattern_counts.get(segment, 0) + 1
+        
+        if pattern_counts:
+            most_common = max(pattern_counts.items(), key=lambda x: x[1])
+            periodicities[period] = {
+                'pattern': most_common[0],
+                'frequency': most_common[1],
+                'regularity': most_common[1] / max(1, len(pattern_counts))
+            }
+    
+    return periodicities
+
 def crear_arte_basado_en_perfil(secuencia, genetic_profile, theme):
     """Crea arte único basado en el perfil genético específico"""
     
     colors = COLOR_THEMES.get(theme, COLOR_THEMES['scientific'])
     
-    # Determinar tipo de visualización según características genéticas
+    # Usar la nueva firma genética para determinar el patrón
+    genetic_signature = genetic_profile.get('genetic_signature', 0)
+    entropy = genetic_profile.get('entropy', 0)
+    periodicities = genetic_profile.get('periodicities', {})
+    
+    # Análisis mejorado de características
     gc_content = sum(genetic_profile['base_ratios'][base] for base in ['G', 'C'])
     repeat_density = len(genetic_profile['repeat_patterns'])
     skew_intensity = abs(genetic_profile['gc_skew']) + abs(genetic_profile['at_skew'])
     
-    if gc_content > 0.6 and skew_intensity > 0.3:
-        # Especies con alto GC y skew -> Patrón cristalino
-        fig = crear_patron_cristalino(secuencia, genetic_profile, colors)
-    elif gc_content < 0.4 and repeat_density > 2:
-        # Especies con bajo GC y repeticiones -> Patrón orgánico
-        fig = crear_patron_organico(secuencia, genetic_profile, colors)
-    elif repeat_density > 3:
-        # Muchas repeticiones -> Patrón espiral
-        fig = crear_patron_espiral(secuencia, genetic_profile, colors)
+    # Selección de patrón basada en firma genética única
+    pattern_selector = genetic_signature % 1000
+    
+    if pattern_selector < 250 and gc_content > 0.55:
+        # Patrón de red neural para alta complejidad
+        fig = crear_patron_red_neural(secuencia, genetic_profile, colors)
+    elif pattern_selector < 500 and entropy > 3.0:
+        # Patrón fractal para alta entropía
+        fig = crear_patron_fractal(secuencia, genetic_profile, colors)
+    elif pattern_selector < 750 and len(periodicities) > 0:
+        # Patrón de ondas para secuencias periódicas
+        fig = crear_patron_ondas(secuencia, genetic_profile, colors)
     else:
-        # Patrón por defecto -> Scatter especializado
-        fig = crear_patron_scatter(secuencia, genetic_profile, colors)
+        # Patrón de galaxia espiral único
+        fig = crear_patron_galaxia(secuencia, genetic_profile, colors)
+    
+    return fig
+
+def crear_patron_red_neural(secuencia, genetic_profile, colors):
+    """Patrón de red neural para especies con alta complejidad genética"""
+    
+    fig = go.Figure()
+    
+    # Usar dinucleótidos como nodos
+    dinucs = genetic_profile['dinuc_profile']
+    top_dinucs = sorted(dinucs.items(), key=lambda x: x[1], reverse=True)[:8]
+    
+    # Crear nodos principales
+    nodes = []
+    for i, (dinuc, freq) in enumerate(top_dinucs):
+        angle = (i * 45) * np.pi / 180
+        radius = 60 + (freq / max(dinucs.values())) * 40
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        nodes.append((x, y, dinuc, freq))
+        
+        # Color basado en primer nucleótido
+        color_key = dinuc[0] if dinuc[0] in colors else 'A'
+        
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y],
+            mode='markers',
+            marker=dict(
+                size=15 + freq/max(dinucs.values())*15,
+                color=colors[color_key],
+                symbol='circle',
+                opacity=0.8,
+                line=dict(color='white', width=2)
+            ),
+            name=dinuc,
+            showlegend=False,
+            hovertemplate=f"Dinucleótido: {dinuc}<br>Frecuencia: {freq}"
+        ))
+    
+    # Crear conexiones basadas en entropía
+    entropy = genetic_profile.get('entropy', 0)
+    for i, node1 in enumerate(nodes):
+        for j, node2 in enumerate(nodes[i+1:], i+1):
+            if entropy > 2.0:  # Alta entropía = más conexiones
+                connection_strength = abs(node1[3] - node2[3]) / max(dinucs.values())
+                if connection_strength > 0.3:
+                    fig.add_trace(go.Scatter(
+                        x=[node1[0], node2[0]],
+                        y=[node1[1], node2[1]],
+                        mode='lines',
+                        line=dict(
+                            color='rgba(100,200,255,0.4)',
+                            width=connection_strength * 3
+                        ),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+    
+    fig.update_layout(
+        title=f"Red Neural Genética - Entropía: {entropy:.2f}",
+        xaxis=dict(visible=False, range=[-150, 150]),
+        yaxis=dict(visible=False, range=[-150, 150]),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        width=800,
+        height=600
+    )
+    
+    return fig
+
+def crear_patron_fractal(secuencia, genetic_profile, colors):
+    """Patrón fractal para especies con alta entropía"""
+    
+    fig = go.Figure()
+    
+    # Usar firma genética para generar fractal único
+    genetic_signature = genetic_profile.get('genetic_signature', 12345)
+    np.random.seed(genetic_signature % 10000)
+    
+    # Generar puntos fractales basados en trinucleótidos
+    trinucs = genetic_profile['trinuc_profile']
+    if not trinucs:
+        trinucs = {'ATG': 10, 'GCA': 8, 'TAG': 6}
+    
+    for i, (trinuc, freq) in enumerate(list(trinucs.items())[:6]):
+        # Crear fractal específico para cada trinucleótido
+        iterations = min(freq // 5, 50)
+        
+        # Punto inicial basado en trinucleótido
+        x_vals = [0]
+        y_vals = [0]
+        
+        for _ in range(iterations):
+            # Reglas fractales basadas en secuencia del trinucleótido
+            dx = 0
+            dy = 0
+            for base in trinuc:
+                if base == 'A':
+                    dx += np.random.normal(0, 2)
+                elif base == 'T':
+                    dy += np.random.normal(0, 2)
+                elif base == 'G':
+                    dx += np.random.normal(0, 1)
+                    dy += np.random.normal(0, 1)
+                else:  # C
+                    dx -= np.random.normal(0, 1)
+                    dy -= np.random.normal(0, 1)
+            
+            x_vals.append(x_vals[-1] + dx)
+            y_vals.append(y_vals[-1] + dy)
+        
+        # Color basado en trinucleótido
+        color_key = trinuc[0] if trinuc[0] in colors else 'A'
+        
+        fig.add_trace(go.Scatter(
+            x=x_vals, y=y_vals,
+            mode='lines+markers',
+            line=dict(color=colors[color_key], width=1),
+            marker=dict(size=2, color=colors[color_key]),
+            name=trinuc,
+            showlegend=False,
+            hovertemplate=f"Trinucleótido: {trinuc}<br>Frecuencia: {freq}"
+        ))
+    
+    fig.update_layout(
+        title=f"Fractal Genético - Firma: {genetic_signature}",
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        width=800,
+        height=600
+    )
+    
+    return fig
+
+def crear_patron_ondas(secuencia, genetic_profile, colors):
+    """Patrón de ondas para secuencias periódicas"""
+    
+    fig = go.Figure()
+    
+    periodicities = genetic_profile.get('periodicities', {})
+    
+    for i, (period, data) in enumerate(periodicities.items()):
+        # Crear onda basada en periodicidad específica
+        t = np.linspace(0, 4*np.pi, 200)
+        
+        # Frecuencia basada en período genético
+        frequency = period / 3.0
+        amplitude = data['frequency'] / 10
+        phase = data['regularity'] * np.pi
+        
+        # Onda principal
+        y_main = amplitude * np.sin(frequency * t + phase)
+        
+        # Modulación basada en patrón específico
+        pattern = data['pattern']
+        modulation = 0
+        for j, base in enumerate(pattern):
+            if base == 'A':
+                modulation += 0.1 * np.cos(2 * frequency * t + j)
+            elif base == 'T':
+                modulation += 0.1 * np.sin(3 * frequency * t + j)
+            elif base == 'G':
+                modulation += 0.05 * np.cos(4 * frequency * t + j)
+            else:  # C
+                modulation += 0.05 * np.sin(5 * frequency * t + j)
+        
+        y_final = y_main + modulation + i * 20
+        
+        # Color basado en primer nucleótido del patrón
+        color_key = pattern[0] if pattern[0] in colors else 'A'
+        
+        fig.add_trace(go.Scatter(
+            x=t, y=y_final,
+            mode='lines',
+            line=dict(color=colors[color_key], width=2),
+            name=f"Período {period}",
+            showlegend=False,
+            hovertemplate=f"Patrón: {pattern}<br>Período: {period}<br>Frecuencia: {data['frequency']}"
+        ))
+    
+    fig.update_layout(
+        title=f"Ondas Genéticas - Períodos: {list(periodicities.keys())}",
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        width=800,
+        height=600
+    )
+    
+    return fig
+
+def crear_patron_galaxia(secuencia, genetic_profile, colors):
+    """Patrón de galaxia espiral único para cada especie"""
+    
+    fig = go.Figure()
+    
+    # Usar características específicas para crear galaxia única
+    genetic_signature = genetic_profile.get('genetic_signature', 12345)
+    gc_content = sum(genetic_profile['base_ratios'][base] for base in ['G', 'C'])
+    
+    # Parámetros de galaxia basados en genética
+    num_arms = int(genetic_signature % 5) + 2  # 2-6 brazos
+    arm_tightness = gc_content * 2 + 0.5
+    
+    for arm in range(num_arms):
+        # Crear brazo espiral
+        t = np.linspace(0, 4*np.pi, 100)
+        arm_offset = arm * 2*np.pi / num_arms
+        
+        # Radio basado en dinucleótidos
+        dinucs = genetic_profile['dinuc_profile']
+        if dinucs:
+            radius_modifier = list(dinucs.values())[arm % len(dinucs)] / max(dinucs.values())
+        else:
+            radius_modifier = 1
+        
+        r = (5 + t * 8) * radius_modifier
+        x = r * np.cos(arm_tightness * t + arm_offset)
+        y = r * np.sin(arm_tightness * t + arm_offset)
+        
+        # Color único por brazo
+        color_keys = list(colors.keys())
+        color_key = color_keys[arm % len(color_keys)]
+        
+        fig.add_trace(go.Scatter(
+            x=x, y=y,
+            mode='lines+markers',
+            line=dict(color=colors[color_key], width=2),
+            marker=dict(size=3, color=colors[color_key]),
+            name=f"Brazo {arm+1}",
+            showlegend=False,
+            hovertemplate=f"Brazo galáctico {arm+1}"
+        ))
+        
+        # Añadir estrellas (nodos importantes)
+        for i in range(0, len(x), 20):
+            if i < len(x):
+                fig.add_trace(go.Scatter(
+                    x=[x[i]], y=[y[i]],
+                    mode='markers',
+                    marker=dict(
+                        size=8,
+                        color=colors[color_key],
+                        symbol='star',
+                        opacity=0.8
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+    
+    fig.update_layout(
+        title=f"Galaxia Genética - Brazos: {num_arms}, GC: {gc_content:.1%}",
+        xaxis=dict(visible=False, range=[-200, 200]),
+        yaxis=dict(visible=False, range=[-200, 200]),
+        plot_bgcolor='black',
+        paper_bgcolor='black',
+        width=800,
+        height=600
+    )
     
     return fig
 

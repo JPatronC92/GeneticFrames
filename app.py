@@ -54,41 +54,35 @@ def limpiar_nombre_cientifico(nombre):
 def obtener_secuencia(organismo):
     """Obtiene secuencia de ADN desde NCBI usando API configurada"""
     
-    # Configurar Entrez con credenciales
-    Entrez.email = st.secrets["ENTREZ_EMAIL"]
-    Entrez.api_key = st.secrets["NCBI_API_KEY"]
-    
-    organismo_limpio = limpiar_nombre_cientifico(organismo)
-    
     try:
-        # Búsqueda optimizada - empezar con mitocondrias que son más comunes
+        # Configurar Entrez con credenciales
+        Entrez.email = st.secrets["ENTREZ_EMAIL"]
+        
+        # Verificar si tenemos API key válida
+        if "NCBI_API_KEY" in st.secrets and st.secrets["NCBI_API_KEY"]:
+            Entrez.api_key = st.secrets["NCBI_API_KEY"]
+        else:
+            # Funcionar sin API key (con límites de velocidad más estrictos)
+            Entrez.api_key = None
+        
+        organismo_limpio = limpiar_nombre_cientifico(organismo)
+        clean_name = organismo_limpio.replace('"', '').replace("'", "")
+        
+        # Búsqueda mitocondrial
         search_handle = Entrez.esearch(
             db="nucleotide",
-            term=f'"{organismo_limpio}"[Organism] AND mitochondrion complete genome',
-            retmax=3,
-            sort="relevance"
+            term=f"{clean_name}[Organism] AND mitochondrion",
+            retmax=5
         )
         search_results = Entrez.read(search_handle)
         search_handle.close()
         
         if not search_results.get("IdList", []):
-            # Búsqueda general de mitocondrias
+            # Búsqueda general
             search_handle = Entrez.esearch(
                 db="nucleotide",
-                term=f'"{organismo_limpio}"[Organism] AND mitochondrion',
-                retmax=5,
-                sort="relevance"
-            )
-            search_results = Entrez.read(search_handle)
-            search_handle.close()
-        
-        if not search_results.get("IdList", []):
-            # Búsqueda general más simple
-            search_handle = Entrez.esearch(
-                db="nucleotide",
-                term=f'"{organismo_limpio}"[Organism]',
-                retmax=10,
-                sort="relevance"
+                term=f"{clean_name}[Organism]",
+                retmax=10
             )
             search_results = Entrez.read(search_handle)
             search_handle.close()
@@ -96,10 +90,10 @@ def obtener_secuencia(organismo):
         if not search_results.get("IdList", []):
             raise ValueError(f"No se encontraron secuencias genéticas para {organismo}")
         
-        # Tomar el primer resultado (más relevante)
+        # Tomar el primer resultado
         seq_id = search_results["IdList"][0]
         
-        # Obtener la secuencia directamente
+        # Obtener la secuencia
         fetch_handle = Entrez.efetch(
             db="nucleotide",
             id=seq_id,
@@ -753,24 +747,47 @@ def main():
                     
                     # Configurar Entrez
                     Entrez.email = st.secrets["ENTREZ_EMAIL"]
-                    Entrez.api_key = st.secrets["NCBI_API_KEY"]
+                    
+                    # Verificar API key
+                    if "NCBI_API_KEY" in st.secrets and st.secrets["NCBI_API_KEY"]:
+                        Entrez.api_key = st.secrets["NCBI_API_KEY"]
+                    else:
+                        Entrez.api_key = None
+                        st.warning("Funcionando sin API key - puede ser más lento")
                     
                     st.write(f"Email: {Entrez.email}")
                     st.write(f"API Key configurada: {'Sí' if Entrez.api_key else 'No'}")
                     
                     st.write("Realizando búsqueda en base de datos...")
                     
-                    # Búsqueda directa simple
+                    # Búsqueda simplificada sin caracteres especiales
+                    clean_name = scientific_name.replace('"', '').replace("'", "")
+                    
+                    # Primera búsqueda: mitocondrias
                     search_handle = Entrez.esearch(
                         db="nucleotide",
-                        term=f'"{scientific_name}"[Organism] AND mitochondrion',
-                        retmax=3
+                        term=f"{clean_name}[Organism] AND mitochondrion",
+                        retmax=5
                     )
                     search_results = Entrez.read(search_handle)
                     search_handle.close()
                     
                     ids_found = search_results.get("IdList", [])
-                    st.write(f"Secuencias encontradas: {len(ids_found)}")
+                    st.write(f"Búsqueda mitocondrial: {len(ids_found)} secuencias")
+                    
+                    if not ids_found:
+                        # Segunda búsqueda: general
+                        st.write("Expandiendo búsqueda...")
+                        search_handle = Entrez.esearch(
+                            db="nucleotide",
+                            term=f"{clean_name}[Organism]",
+                            retmax=10
+                        )
+                        search_results = Entrez.read(search_handle)
+                        search_handle.close()
+                        
+                        ids_found = search_results.get("IdList", [])
+                        st.write(f"Búsqueda general: {len(ids_found)} secuencias")
                     
                     if ids_found:
                         st.write(f"Obteniendo secuencia ID: {ids_found[0]}")
@@ -789,7 +806,7 @@ def main():
                         if fasta_data.strip():
                             seq_record = SeqIO.read(io.StringIO(fasta_data), "fasta")
                             st.write(f"Secuencia parseada: {len(seq_record.seq)} nucleótidos")
-                            status.update(label="¡Secuencia obtenida exitosamente!", state="complete")
+                            status.update(label="Secuencia obtenida exitosamente", state="complete")
                         else:
                             raise ValueError("Datos FASTA vacíos")
                     else:

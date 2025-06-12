@@ -58,12 +58,8 @@ def obtener_secuencia(organismo):
         # Configurar Entrez con credenciales
         Entrez.email = st.secrets["ENTREZ_EMAIL"]
         
-        # Verificar si tenemos API key válida
-        if "NCBI_API_KEY" in st.secrets and st.secrets["NCBI_API_KEY"]:
-            Entrez.api_key = st.secrets["NCBI_API_KEY"]
-        else:
-            # Funcionar sin API key (con límites de velocidad más estrictos)
-            Entrez.api_key = None
+        # Funcionar sin API key - NCBI permite acceso básico
+        Entrez.api_key = None
         
         organismo_limpio = limpiar_nombre_cientifico(organismo)
         clean_name = organismo_limpio.replace('"', '').replace("'", "")
@@ -748,15 +744,11 @@ def main():
                     # Configurar Entrez
                     Entrez.email = st.secrets["ENTREZ_EMAIL"]
                     
-                    # Verificar API key
-                    if "NCBI_API_KEY" in st.secrets and st.secrets["NCBI_API_KEY"]:
-                        Entrez.api_key = st.secrets["NCBI_API_KEY"]
-                    else:
-                        Entrez.api_key = None
-                        st.warning("Funcionando sin API key - puede ser más lento")
+                    # NCBI permite acceso básico sin API key
+                    Entrez.api_key = None
                     
-                    st.write(f"Email: {Entrez.email}")
-                    st.write(f"API Key configurada: {'Sí' if Entrez.api_key else 'No'}")
+                    st.write(f"Conectando con NCBI GenBank...")
+                    st.write(f"Email registrado: {Entrez.email}")
                     
                     st.write("Realizando búsqueda en base de datos...")
                     

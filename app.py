@@ -9,6 +9,8 @@ import hashlib
 import os
 from animal_search import AnimalSearchEngine
 from database import *
+from symbolic_art_engine import SymbolicArtEngine
+from species_identity_profiles import get_species_profile
 
 # Configuración de página
 st.set_page_config(
@@ -909,7 +911,7 @@ def crear_patron_scatter(secuencia, genetic_profile, colors):
     return fig
 
 def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
-    """Crea visualización única basada en patrones genéticos específicos"""
+    """Crea arte simbólico único basado en identidad de especies y genética real"""
     
     secuencia = str(seq_record.seq).upper()
     
@@ -917,14 +919,21 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
     
     if not genetic_profile:
-        # Fallback simple
+        # Error en análisis genético
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=[0], y=[0], mode='markers', marker=dict(size=20, color='red')))
         fig.update_layout(title="Error: No se pudo analizar la secuencia")
         return fig, 0
     
-    # Crear visualización específica según el perfil genético
-    fig = crear_arte_basado_en_perfil(secuencia, genetic_profile, theme)
+    # Inicializar motor de arte simbólico
+    art_engine = SymbolicArtEngine()
+    
+    # Extraer nombre científico del registro
+    species_name = seq_record.description.split()[1:3] if len(seq_record.description.split()) >= 3 else [seq_record.id]
+    species_scientific_name = ' '.join(species_name).lower()
+    
+    # Crear arte simbólico que evoque la identidad de la especie
+    fig = art_engine.generate_symbolic_art(species_scientific_name, genetic_profile)
     
     # Calcular GC content
     gc_content = gc_fraction(seq_record.seq) * 100

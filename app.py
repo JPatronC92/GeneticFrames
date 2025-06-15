@@ -1398,10 +1398,7 @@ def main():
             else:
                 # Intentar búsqueda directa si no hay sugerencias
                 loading_placeholder.markdown(
-                    create_custom_loading_animation(
-                        "Búsqueda directa en NCBI",
-                        "Probando con el nombre proporcionado"
-                    ),
+                    create_mycelium_loading_animation(f"Búsqueda directa: {organism_input}"),
                     unsafe_allow_html=True
                 )
                 

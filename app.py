@@ -940,22 +940,250 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     
     return fig, gc_content
 
-def create_custom_loading_animation(message="Generando arte genético", subtitle="Analizando secuencia de ADN"):
-    """Crea una animación de carga personalizada"""
+def create_mycelium_loading_animation(species_name="especie desconocida"):
+    """Crea animación de micelio durante la generación de arte genético"""
     return f"""
-    <div style="text-align: center; padding: 20px;">
-        <div style="color: #00ff88; font-size: 18px; margin-bottom: 10px;">{message}</div>
-        <div style="color: #cccccc; font-size: 14px; margin-bottom: 20px;">{subtitle}</div>
-        <div style="display: inline-block;">
-            <div style="width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #00ff88; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        </div>
-        <style>
-        @keyframes spin {{
-            0% {{ transform: rotate(0deg); }}
-            100% {{ transform: rotate(360deg); }}
+    <style>
+        .mycelium-container {{
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            box-shadow: 0 0 30px rgba(0, 255, 150, 0.3);
         }}
-        </style>
+        
+        .species-title {{
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+            text-align: center;
+        }}
+        
+        .generation-status {{
+            font-size: 16px;
+            background: linear-gradient(45deg, #00ff96, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }}
+        
+        .mycelium-canvas {{
+            width: 400px;
+            height: 300px;
+            border-radius: 15px;
+            background: #050a0f;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(0, 255, 150, 0.3);
+        }}
+        
+        .progress-message {{
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }}
+        
+        @keyframes pulse {{
+            0%, 100% {{ opacity: 0.5; }}
+            50% {{ opacity: 1; }}
+        }}
+        
+        .mycelium-growth {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #00ff96;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }}
+        
+        .growth-line {{
+            position: absolute;
+            background: linear-gradient(45deg, #00ff96, #00d4ff);
+            border-radius: 2px;
+            animation: growLine 0.8s ease-out forwards;
+            opacity: 0.8;
+        }}
+        
+        @keyframes growLine {{
+            0% {{ 
+                width: 0;
+                height: 2px;
+                opacity: 0;
+            }}
+            100% {{ 
+                width: var(--line-length);
+                height: 2px;
+                opacity: 0.8;
+            }}
+        }}
+        
+        .mycelium-node {{
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff96;
+            animation: nodeGlow 2s ease-in-out infinite;
+        }}
+        
+        @keyframes nodeGlow {{
+            0%, 100% {{ 
+                transform: scale(1);
+                box-shadow: 0 0 10px #00ff96;
+            }}
+            50% {{ 
+                transform: scale(1.3);
+                box-shadow: 0 0 20px #00ff96;
+            }}
+        }}
+        
+        .dna-particle {{
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(0, 255, 150, 0.7);
+            border-radius: 50%;
+            animation: float 4s infinite ease-in-out;
+        }}
+        
+        @keyframes float {{
+            0%, 100% {{ 
+                transform: translateY(0px) translateX(0px);
+                opacity: 0;
+            }}
+            50% {{ 
+                transform: translateY(-15px) translateX(8px);
+                opacity: 1;
+            }}
+        }}
+    </style>
+    
+    <div class="mycelium-container">
+        <div class="species-title">Generando arte para: {species_name}</div>
+        <div class="generation-status">Crecimiento Genético en Progreso</div>
+        
+        <div class="mycelium-canvas" id="mycelium-canvas">
+            <div class="mycelium-growth" id="center-node"></div>
+            <!-- Partículas de ADN -->
+            <div class="dna-particle" style="top: 20%; left: 30%; animation-delay: 0s;"></div>
+            <div class="dna-particle" style="top: 60%; left: 70%; animation-delay: 1s;"></div>
+            <div class="dna-particle" style="top: 40%; left: 50%; animation-delay: 2s;"></div>
+            <div class="dna-particle" style="top: 80%; left: 20%; animation-delay: 0.5s;"></div>
+            <div class="dna-particle" style="top: 10%; left: 80%; animation-delay: 1.5s;"></div>
+        </div>
+        
+        <div class="progress-message" id="progress-msg">
+            Decodificando secuencias genéticas...
+        </div>
     </div>
+    
+    <script>
+        const messages = [
+            "Decodificando secuencias genéticas...",
+            "Analizando patrones de ADN...",
+            "Calculando firmas genéticas...",
+            "Generando identidad simbólica...",
+            "Creando arte único...",
+            "Aplicando características de especie...",
+            "Finalizando obra maestra..."
+        ];
+        
+        let currentMsg = 0;
+        const progressElement = document.getElementById('progress-msg');
+        const canvas = document.getElementById('mycelium-canvas');
+        
+        function createMyceliumBranch(startX, startY, angle, length, generation) {{
+            if (generation > 5 || length < 10) return;
+            
+            const endX = startX + Math.cos(angle) * length;
+            const endY = startY + Math.sin(angle) * length;
+            
+            // Crear línea de crecimiento
+            const line = document.createElement('div');
+            line.className = 'growth-line';
+            line.style.left = startX + 'px';
+            line.style.top = startY + 'px';
+            line.style.transform = `rotate(${{angle}}rad)`;
+            line.style.setProperty('--line-length', length + 'px');
+            line.style.animationDelay = (generation * 200) + 'ms';
+            canvas.appendChild(line);
+            
+            // Crear nodo al final
+            setTimeout(() => {{
+                const node = document.createElement('div');
+                node.className = 'mycelium-node';
+                node.style.left = (endX - 3) + 'px';
+                node.style.top = (endY - 3) + 'px';
+                node.style.animationDelay = Math.random() + 's';
+                canvas.appendChild(node);
+                
+                // Crear ramas secundarias
+                if (Math.random() > 0.3) {{
+                    const newAngle1 = angle + (Math.random() - 0.5) * 1.2;
+                    const newAngle2 = angle + (Math.random() - 0.5) * 1.2;
+                    const newLength = length * (0.6 + Math.random() * 0.3);
+                    
+                    setTimeout(() => {{
+                        createMyceliumBranch(endX, endY, newAngle1, newLength, generation + 1);
+                        if (Math.random() > 0.5) {{
+                            createMyceliumBranch(endX, endY, newAngle2, newLength, generation + 1);
+                        }}
+                    }}, 300);
+                }}
+            }}, generation * 200 + 500);
+        }}
+        
+        // Iniciar crecimiento de micelio
+        setTimeout(() => {{
+            const centerX = 200;
+            const centerY = 150;
+            
+            // Crear múltiples ramas iniciales
+            for (let i = 0; i < 6; i++) {{
+                const angle = (i * Math.PI * 2 / 6) + (Math.random() - 0.5) * 0.5;
+                const length = 30 + Math.random() * 20;
+                setTimeout(() => {{
+                    createMyceliumBranch(centerX, centerY, angle, length, 1);
+                }}, i * 150);
+            }}
+        }}, 500);
+        
+        const updateMessage = () => {{
+            if (currentMsg < messages.length && progressElement) {{
+                progressElement.textContent = messages[currentMsg];
+                currentMsg++;
+            }}
+        }};
+        
+        // Cambiar mensaje cada 1.2 segundos
+        const interval = setInterval(updateMessage, 1200);
+        
+        // Limpiar intervalo después de 8 segundos
+        setTimeout(() => {{
+            clearInterval(interval);
+            if (progressElement) {{
+                progressElement.textContent = "Arte genético completado!";
+            }}
+        }}, 8000);
+    </script>
     """
 
 def mostrar_estadisticas_secuencia(seq_record, gc_content, genetic_profile):
@@ -1076,10 +1304,7 @@ def main():
         
         loading_placeholder = st.empty()
         loading_placeholder.markdown(
-            create_custom_loading_animation(
-                "Buscando animal",
-                "Convirtiendo nombre común a científico"
-            ),
+            create_mycelium_loading_animation("Buscando especie"),
             unsafe_allow_html=True
         )
         
@@ -1093,10 +1318,7 @@ def main():
                 scientific_name = suggestions[0]['scientific_name']
                 
                 loading_placeholder.markdown(
-                    create_custom_loading_animation(
-                        "Conectando con NCBI GenBank",
-                        f"Obteniendo secuencia de {scientific_name}"
-                    ),
+                    create_mycelium_loading_animation(f"Conectando NCBI: {scientific_name}"),
                     unsafe_allow_html=True
                 )
                 
@@ -1242,15 +1464,16 @@ def main():
             
             save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
             
-            # Animación de carga para generación de arte
+            # Animación de micelio para generación de arte
             art_loading_placeholder = st.empty()
             art_loading_placeholder.markdown(
-                create_custom_loading_animation(
-                    "Generando Arte Genético",
-                    "Aplicando algoritmos de análisis genético"
-                ), 
+                create_mycelium_loading_animation(organism_name), 
                 unsafe_allow_html=True
             )
+            
+            # Simular tiempo de procesamiento para mostrar animación completa
+            import time
+            time.sleep(6)  # 6 segundos para ver el crecimiento del micelio
             
             fig, gc = generar_visualizacion(seq_record, theme='scientific')
             genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)

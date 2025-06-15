@@ -1453,64 +1453,213 @@ def main():
             
             save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
             
-            # Animación de generación genética usando elementos nativos de Streamlit
+            # Animación compleja de micelio embebida directamente
             st.markdown(f"### 🧬 Generando Arte Genético para: **{organism_name}**")
             
-            # Crear contenedor visual para la animación
-            animation_container = st.container()
-            
-            with animation_container:
-                # Mostrar información de progreso estilizada
-                st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #1a1a2e, #16213e);
-                    border-radius: 15px;
-                    padding: 20px;
-                    text-align: center;
-                    margin: 20px 0;
-                    border: 2px solid #00ff88;
-                    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-                ">
-                    <h4 style="color: #00ff88; margin-bottom: 15px;">
-                        Crecimiento Genético en Progreso
-                    </h4>
-                    <div style="color: #cccccc; font-size: 14px;">
-                        Transformando secuencias de ADN en arte simbólico único
-                    </div>
+            # Crear animación compleja embebida usando HTML y JavaScript
+            animation_html = f"""
+            <div style="background: #0a0a0a; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                <div style="text-align: center; color: #00ff88; font-size: 24px; margin-bottom: 20px;">
+                    🧬 Crecimiento Genético en Progreso
                 </div>
-                """, unsafe_allow_html=True)
+                <div style="text-align: center; color: #cccccc; font-size: 16px; margin-bottom: 30px;">
+                    Transformando secuencias de ADN en arte simbólico único para: {organism_name}
+                </div>
                 
-                # Barra de progreso animada
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+                <div id="mycelium-canvas-{hash(organism_name) % 10000}" style="text-align: center; margin: 20px 0;"></div>
+                <div id="progress-text-{hash(organism_name) % 10000}" style="text-align: center; color: #cccccc; font-size: 14px; opacity: 0.8;">
+                    Decodificando secuencias genéticas...
+                </div>
                 
-                # Etapas del proceso con tiempos específicos
-                stages = [
-                    ("🔬 Iniciando análisis genético...", 0.05, 0.7),
-                    ("🧬 Decodificando secuencias de ADN...", 0.15, 0.8),
-                    ("📊 Calculando patrones únicos...", 0.35, 0.9),
-                    ("🎨 Generando identidad simbólica...", 0.55, 1.0),
-                    ("✨ Aplicando características de especie...", 0.75, 1.1),
-                    ("🖼️ Creando arte único...", 0.90, 0.8),
-                    ("🎯 Finalizando obra maestra...", 1.0, 0.6)
-                ]
+                <script>
+                // Variables globales para esta instancia
+                let myceliumSketch_{hash(organism_name) % 10000} = function(p) {{
+                    let animDuration = 25000; // 25 segundos
+                    let points = [];
+                    let maxPoints = 800;
+                    let growSpeed = 1.2;
+                    let animationStartTime;
+                    let progressMessages = [
+                        "Decodificando secuencias genéticas...",
+                        "Analizando patrones de ADN...",
+                        "Calculando firmas genéticas únicas...",
+                        "Generando identidad simbólica...",
+                        "Creando arte basado en perfil de especie...",
+                        "Aplicando características evolutivas...",
+                        "Finalizando obra maestra genética..."
+                    ];
+                    let currentMessageIndex = 0;
+                    
+                    p.setup = function() {{
+                        let canvas = p.createCanvas(600, 400);
+                        canvas.parent('mycelium-canvas-{hash(organism_name) % 10000}');
+                        
+                        p.background(5, 10, 15);
+                        p.stroke(255);
+                        p.strokeWeight(1);
+                        p.frameRate(60);
+                        
+                        animationStartTime = p.millis();
+                        
+                        // Múltiples puntos iniciales
+                        for (let i = 0; i < 4; i++) {{
+                            points.push({{
+                                x: p.width / 2 + p.random(-40, 40),
+                                y: p.height / 2 + p.random(-40, 40),
+                                angle: p.random(p.TWO_PI),
+                                generation: 0,
+                                energy: 1.0
+                            }});
+                        }}
+                        
+                        // Cambiar mensaje cada 3.5 segundos
+                        setInterval(() => {{
+                            updateProgressMessage_{hash(organism_name) % 10000}();
+                        }}, 3500);
+                    }};
+                    
+                    p.draw = function() {{
+                        // Efecto de desvanecimiento
+                        p.fill(5, 10, 15, 25);
+                        p.noStroke();
+                        p.rect(0, 0, p.width, p.height);
+                        
+                        let elapsed = p.millis() - animationStartTime;
+                        let progress = elapsed / animDuration;
+                        
+                        if (progress < 1 && points.length < maxPoints) {{
+                            growMycelium_{hash(organism_name) % 10000}(progress, p);
+                        }} else if (elapsed > animDuration) {{
+                            p.noLoop();
+                        }}
+                    }};
+                }};
                 
-                import time
-                for message, progress, delay in stages:
-                    status_text.markdown(f"**{message}**")
-                    progress_bar.progress(progress)
-                    time.sleep(delay)
+                function growMycelium_{hash(organism_name) % 10000}(progress, p) {{
+                    let newPoints = [];
+                    let growthIntensity = 0.4 + progress * 1.2;
+                    
+                    for (let pt of points) {{
+                        if (p.random() < 0.35) {{
+                            let branchCount = p.random() < 0.25 ? 2 : 1;
+                            
+                            for (let branch = 0; branch < branchCount; branch++) {{
+                                for (let i = 0; i < growSpeed * growthIntensity; i++) {{
+                                    let angleVariation = p.map(pt.generation, 0, 15, p.PI/3, p.PI/8);
+                                    let angle = pt.angle + p.random(-angleVariation, angleVariation);
+                                    
+                                    // Movimiento orgánico
+                                    let noiseVal = p.noise(pt.x * 0.008, pt.y * 0.008, p.frameCount * 0.005);
+                                    angle += (noiseVal - 0.5) * 0.4;
+                                    
+                                    let stepSize = p.random(1, 3.5) * (0.7 + progress * 0.5);
+                                    let x = pt.x + p.cos(angle) * stepSize;
+                                    let y = pt.y + p.sin(angle) * stepSize;
+                                    
+                                    if (x > 15 && x < p.width - 15 && y > 15 && y < p.height - 15) {{
+                                        // Sistema de colores evolutivo complejo
+                                        let timeWave = p.sin(p.frameCount * 0.015) * 0.5 + 0.5;
+                                        let depthColor = p.map(pt.generation, 0, 20, 0, 1);
+                                        
+                                        let r = 25 + p.sin(progress * p.TWO_PI + pt.generation * 0.15) * 75 + timeWave * 35;
+                                        let g = 110 + p.cos(progress * p.TWO_PI * 1.2 + pt.x * 0.008) * 110 + depthColor * 70;
+                                        let b = 70 + p.sin(progress * p.TWO_PI * 1.8 + pt.y * 0.008 + p.frameCount * 0.003) * 160;
+                                        
+                                        let alpha = 90 + progress * 165 + p.sin(pt.generation * 0.25) * 35;
+                                        
+                                        p.stroke(r, g, b, alpha);
+                                        p.strokeWeight(0.7 + progress * 2.2 + p.sin(pt.generation * 0.08) * 0.4);
+                                        
+                                        p.line(pt.x, pt.y, x, y);
+                                        
+                                        // Nodos especiales brillantes
+                                        if (p.random() < 0.06) {{
+                                            p.stroke(255, 255, 255, 140 + p.sin(p.frameCount * 0.08) * 90);
+                                            p.strokeWeight(1.8 + p.sin(p.frameCount * 0.04) * 0.8);
+                                            p.point(x, y);
+                                            
+                                            // Anillos de energía
+                                            if (p.random() < 0.4) {{
+                                                p.noFill();
+                                                p.stroke(g, b, r, 80);
+                                                p.strokeWeight(0.4);
+                                                p.circle(x, y, 6 + p.sin(p.frameCount * 0.08) * 3);
+                                            }}
+                                        }}
+                                        
+                                        newPoints.push({{
+                                            x: x,
+                                            y: y,
+                                            angle: angle + p.random(-0.12, 0.12),
+                                            generation: pt.generation + 1,
+                                            energy: p.random(0.6, 1.0)
+                                        }});
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                    
+                    points = [...points, ...newPoints];
+                    
+                    if (points.length > maxPoints) {{
+                        points.sort((a, b) => (b.energy || 0.5) - (a.energy || 0.5));
+                        points = points.slice(0, maxPoints);
+                    }}
+                }}
                 
-                # Limpiar elementos de progreso
-                status_text.empty()
-                progress_bar.empty()
+                function updateProgressMessage_{hash(organism_name) % 10000}() {{
+                    const progressElement = document.getElementById('progress-text-{hash(organism_name) % 10000}');
+                    if (progressElement && currentMessageIndex < progressMessages.length) {{
+                        progressElement.textContent = progressMessages[currentMessageIndex];
+                        currentMessageIndex++;
+                    }}
+                }}
+                
+                // Inicializar sketch
+                new p5(myceliumSketch_{hash(organism_name) % 10000});
+                </script>
+            </div>
+            """
+            
+            animation_placeholder = st.empty()
+            animation_placeholder.markdown(animation_html, unsafe_allow_html=True)
+            
+            # Proceso de generación con tiempos más lentos y realistas
+            import time
+            stages = [
+                ("Iniciando conexión con NCBI GenBank...", 3.5),
+                ("Descargando secuencias de ADN mitocondrial...", 4.2),
+                ("Analizando composición nucleotídica completa...", 3.8),
+                ("Calculando patrones genéticos únicos...", 4.5),
+                ("Generando perfil de identidad simbólica...", 3.2),
+                ("Aplicando características específicas de especie...", 4.8),
+                ("Creando arte basado en firma genética...", 5.5),
+                ("Optimizando visualización final...", 3.0),
+                ("Finalizando obra maestra genética...", 2.5)
+            ]
+            
+            total_time = sum(delay for _, delay in stages)
+            st.info(f"⏱️ Proceso de generación estimado: {total_time:.0f} segundos (~{total_time/60:.1f} minutos)")
+            
+            # Ejecutar cada etapa con barras de progreso lentas
+            for i, (message, delay) in enumerate(stages):
+                st.write(f"**Etapa {i+1}/{len(stages)}:** {message}")
+                
+                stage_progress = st.progress(0)
+                steps = int(delay * 20)  # Más pasos para suavidad
+                for step in range(steps):
+                    stage_progress.progress((step + 1) / steps)
+                    time.sleep(0.05)  # Pasos muy pequeños para suavidad
+                stage_progress.empty()
             
             # Generar el arte final
             fig, gc = generar_visualizacion(seq_record, theme='scientific')
             genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
             
-            # Limpiar el contenedor de animación
-            animation_container.empty()
+            # Limpiar la animación
+            animation_placeholder.empty()
             
             # Mostrar arte generado
             st.plotly_chart(fig, use_container_width=True)

@@ -1481,13 +1481,13 @@ def main():
                     let growSpeed = 1.2;
                     let animationStartTime;
                     let progressMessages = [
-                        "Decodificando secuencias genéticas...",
-                        "Analizando patrones de ADN...",
-                        "Calculando firmas genéticas únicas...",
-                        "Generando identidad simbólica...",
-                        "Creando arte basado en perfil de especie...",
-                        "Aplicando características evolutivas...",
-                        "Finalizando obra maestra genética..."
+                        "Leyendo secuencia genética...",
+                        "Aplicando codificación simbólica...",
+                        "Ramificando estructuras...",
+                        "Traduciendo bases nitrogenadas...",
+                        "Dibujando el alma visual del genoma...",
+                        "Finalizando ADN simbiótico...",
+                        "¡Arte Genético Generado!"
                     ];
                     let currentMessageIndex = 0;
                     
@@ -1513,7 +1513,7 @@ def main():
                             }});
                         }}
                         
-                        // Cambiar mensaje cada 3.5 segundos
+                        // Cambiar mensaje cada 3.5 segundos con efectos visuales
                         setInterval(() => {{
                             updateProgressMessage_{hash(organism_name) % 10000}();
                         }}, 3500);
@@ -1612,8 +1612,32 @@ def main():
                 function updateProgressMessage_{hash(organism_name) % 10000}() {{
                     const progressElement = document.getElementById('progress-text-{hash(organism_name) % 10000}');
                     if (progressElement && currentMessageIndex < progressMessages.length) {{
-                        progressElement.textContent = progressMessages[currentMessageIndex];
-                        currentMessageIndex++;
+                        // Efecto fade out
+                        progressElement.style.opacity = '0';
+                        progressElement.style.transition = 'opacity 0.5s ease-in-out';
+                        
+                        setTimeout(() => {{
+                            // Cambiar texto y color
+                            progressElement.textContent = progressMessages[currentMessageIndex];
+                            
+                            // Cambiar color según el progreso
+                            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+                            progressElement.style.color = colors[currentMessageIndex % colors.length];
+                            
+                            // Efecto fade in
+                            progressElement.style.opacity = '1';
+                            
+                            currentMessageIndex++;
+                            
+                            // Mostrar mensaje final de éxito
+                            if (currentMessageIndex >= progressMessages.length) {{
+                                setTimeout(() => {{
+                                    progressElement.style.color = '#00ff88';
+                                    progressElement.style.fontWeight = 'bold';
+                                    progressElement.style.fontSize = '16px';
+                                }}, 500);
+                            }}
+                        }}, 500);
                     }}
                 }}
                 
@@ -1626,33 +1650,13 @@ def main():
             animation_placeholder = st.empty()
             animation_placeholder.markdown(animation_html, unsafe_allow_html=True)
             
-            # Proceso de generación con tiempos más lentos y realistas
+            # Los mensajes dinámicos ahora se muestran integrados con la animación de micelio
+            # Solo esperamos el tiempo total de la animación (25 segundos)
             import time
-            stages = [
-                ("Iniciando conexión con NCBI GenBank...", 3.5),
-                ("Descargando secuencias de ADN mitocondrial...", 4.2),
-                ("Analizando composición nucleotídica completa...", 3.8),
-                ("Calculando patrones genéticos únicos...", 4.5),
-                ("Generando perfil de identidad simbólica...", 3.2),
-                ("Aplicando características específicas de especie...", 4.8),
-                ("Creando arte basado en firma genética...", 5.5),
-                ("Optimizando visualización final...", 3.0),
-                ("Finalizando obra maestra genética...", 2.5)
-            ]
+            st.info("⏱️ Proceso de generación: 25 segundos de animación + análisis genético")
             
-            total_time = sum(delay for _, delay in stages)
-            st.info(f"⏱️ Proceso de generación estimado: {total_time:.0f} segundos (~{total_time/60:.1f} minutos)")
-            
-            # Ejecutar cada etapa con barras de progreso lentas
-            for i, (message, delay) in enumerate(stages):
-                st.write(f"**Etapa {i+1}/{len(stages)}:** {message}")
-                
-                stage_progress = st.progress(0)
-                steps = int(delay * 20)  # Más pasos para suavidad
-                for step in range(steps):
-                    stage_progress.progress((step + 1) / steps)
-                    time.sleep(0.05)  # Pasos muy pequeños para suavidad
-                stage_progress.empty()
+            # Esperar mientras la animación y mensajes dinámicos corren
+            time.sleep(25)  # Duración sincronizada con la animación de micelio
             
             # Generar el arte final
             fig, gc = generar_visualizacion(seq_record, theme='scientific')

@@ -1,0 +1,75 @@
+Instrucciones para el Agente IA de Replit
+🎯 Objetivo
+Mostrar mensajes dinámicos mientras corre la animación tipo micelio, antes de mostrar el arte final generado desde el ADN.
+
+📂 Archivos relevantes:
+static/canvas_micelio.js – Animación p5.js (ya implementada)
+
+templates/index.html – Página donde el usuario genera la imagen
+
+app.py o equivalente – Controlador Flask (o similar backend)
+
+static/main.js – (si existe, para manejar eventos JS)
+
+✅ Cambios solicitados:
+1. Añadir una lista de mensajes de progreso en main.js (u otro script JS frontend):
+js
+Copiar
+Editar
+const messages = [
+  "Leyendo secuencia genética...",
+  "Aplicando codificación simbólica...",
+  "Ramificando estructuras...",
+  "Traduciendo bases nitrogenadas...",
+  "Dibujando el alma visual del genoma...",
+  "Finalizando ADN simbiótico..."
+];
+
+let msgIndex = 0;
+
+function mostrarMensajes() {
+  const msgBox = document.getElementById("gen-status");
+  if (!msgBox) return;
+
+  msgBox.innerText = messages[msgIndex];
+  msgIndex++;
+
+  if (msgIndex < messages.length) {
+    setTimeout(mostrarMensajes, 1000); // cambia cada 1s
+  }
+}
+2. En index.html, colocar un div para mostrar los mensajes mientras corre la animación:
+html
+Copiar
+Editar
+<div id="gen-status" style="color: #aaa; font-family: monospace; margin-top: 20px; text-align: center;">
+  Iniciando generación...
+</div>
+3. Iniciar animación y mensajes desde main.js al hacer clic en “Generar Imagen”:
+js
+Copiar
+Editar
+document.getElementById("generate-btn").addEventListener("click", () => {
+  msgIndex = 0;
+  mostrarMensajes(); // inicia los mensajes de progreso
+  startMicelioAnimation(); // función que activa canvas_micelio.js
+});
+4. Ocultar los mensajes una vez termine la animación (cuando se renderiza el arte final):
+js
+Copiar
+Editar
+function ocultarMensajes() {
+  const msgBox = document.getElementById("gen-status");
+  if (msgBox) msgBox.style.display = "none";
+}
+
+// Llamar a esta función al final de la animación
+⏱️ Duración Sugerida
+El sistema de mensajes está pensado para mostrarse durante 6–8 segundos, igual que la animación. Después, se debe ocultar automáticamente y mostrar el arte.
+
+💡 Extras opcionales (si el agente IA lo desea implementar):
+Agregar efectos de fade in/out para cada mensaje (opacity con CSS y JS).
+
+Cambiar color del texto según especie o gen dominante.
+
+Reemplazar el mensaje final con un mensaje de éxito: "¡Arte Genético Generado!"

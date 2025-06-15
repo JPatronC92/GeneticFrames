@@ -1,0 +1,154 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<div id="mycelium-canvas-782" style="text-align: center; margin: 20px 0;"></div>
+<div id="progress-text-782" style="text-align: center; color: #cccccc; font-size: 14px; opacity: 0.8;">
+    Decodificando secuencias genéticas...
+</div>
+
+<script>
+// Variables globales para esta instancia
+let myceliumSketch_782 = function(p) {
+    let animDuration = 25000; // 25 segundos
+    let points = [];
+    let maxPoints = 800;
+    let growSpeed = 1.2;
+    let animationStartTime;
+    let progressMessages = [
+        "Decodificando secuencias genéticas...",
+        "Analizando patrones de ADN...",
+        "Calculando firmas genéticas únicas...",
+        "Generando identidad simbólica...",
+        "Creando arte basado en perfil de especie...",
+        "Aplicando características evolutivas...",
+        "Finalizando obra maestra genética..."
+    ];
+    let currentMessageIndex = 0;
+
+    p.setup = function() {
+        let canvas = p.createCanvas(600, 400);
+        canvas.parent('mycelium-canvas-782');
+
+        p.background(5, 10, 15);
+        p.stroke(255);
+        p.strokeWeight(1);
+        p.frameRate(60);
+
+        animationStartTime = p.millis();
+
+        // Múltiples puntos iniciales
+        for (let i = 0; i < 4; i++) {
+            points.push({
+                x: p.width / 2 + p.random(-40, 40),
+                y: p.height / 2 + p.random(-40, 40),
+                angle: p.random(p.TWO_PI),
+                generation: 0,
+                energy: 1.0
+            });
+        }
+
+        // Cambiar mensaje cada 3.5 segundos
+        setInterval(() => {
+            updateProgressMessage_782();
+        }, 3500);
+    };
+
+    p.draw = function() {
+        // Efecto de desvanecimiento
+        p.fill(5, 10, 15, 25);
+        p.noStroke();
+        p.rect(0, 0, p.width, p.height);
+
+        let elapsed = p.millis() - animationStartTime;
+        let progress = elapsed / animDuration;
+
+        if (progress < 1 && points.length < maxPoints) {
+            growMycelium_782(progress, p);
+        } else if (elapsed > animDuration) {
+            p.noLoop();
+        }
+    };
+};
+
+function growMycelium_782(progress, p) {
+    let newPoints = [];
+    let growthIntensity = 0.4 + progress * 1.2;
+
+    for (let pt of points) {
+        if (p.random() < 0.35) {
+            let branchCount = p.random() < 0.25 ? 2 : 1;
+
+            for (let branch = 0; branch < branchCount; branch++) {
+                for (let i = 0; i < growSpeed * growthIntensity; i++) {
+                    let angleVariation = p.map(pt.generation, 0, 15, p.PI/3, p.PI/8);
+                    let angle = pt.angle + p.random(-angleVariation, angleVariation);
+
+                    // Movimiento orgánico
+                    let noiseVal = p.noise(pt.x * 0.008, pt.y * 0.008, p.frameCount * 0.005);
+                    angle += (noiseVal - 0.5) * 0.4;
+
+                    let stepSize = p.random(1, 3.5) * (0.7 + progress * 0.5);
+                    let x = pt.x + p.cos(angle) * stepSize;
+                    let y = pt.y + p.sin(angle) * stepSize;
+
+                    if (x > 15 && x < p.width - 15 && y > 15 && y < p.height - 15) {
+                        // Sistema de colores evolutivo complejo
+                        let timeWave = p.sin(p.frameCount * 0.015) * 0.5 + 0.5;
+                        let depthColor = p.map(pt.generation, 0, 20, 0, 1);
+
+                        let r = 25 + p.sin(progress * p.TWO_PI + pt.generation * 0.15) * 75 + timeWave * 35;
+                        let g = 110 + p.cos(progress * p.TWO_PI * 1.2 + pt.x * 0.008) * 110 + depthColor * 70;
+                        let b = 70 + p.sin(progress * p.TWO_PI * 1.8 + pt.y * 0.008 + p.frameCount * 0.003) * 160;
+
+                        let alpha = 90 + progress * 165 + p.sin(pt.generation * 0.25) * 35;
+
+                        p.stroke(r, g, b, alpha);
+                        p.strokeWeight(0.7 + progress * 2.2 + p.sin(pt.generation * 0.08) * 0.4);
+
+                        p.line(pt.x, pt.y, x, y);
+
+                        // Nodos especiales brillantes
+                        if (p.random() < 0.06) {
+                            p.stroke(255, 255, 255, 140 + p.sin(p.frameCount * 0.08) * 90);
+                            p.strokeWeight(1.8 + p.sin(p.frameCount * 0.04) * 0.8);
+                            p.point(x, y);
+
+                            // Anillos de energía
+                            if (p.random() < 0.4) {
+                                p.noFill();
+                                p.stroke(g, b, r, 80);
+                                p.strokeWeight(0.4);
+                                p.circle(x, y, 6 + p.sin(p.frameCount * 0.08) * 3);
+                            }
+                        }
+
+                        newPoints.push({
+                            x: x,
+                            y: y,
+                            angle: angle + p.random(-0.12, 0.12),
+                            generation: pt.generation + 1,
+                            energy: p.random(0.6, 1.0)
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    points = [...points, ...newPoints];
+
+    if (points.length > maxPoints) {
+        points.sort((a, b) => (b.energy || 0.5) - (a.energy || 0.5));
+        points = points.slice(0, maxPoints);
+    }
+}
+
+function updateProgressMessage_782() {
+    const progressElement = document.getElementById('progress-text-782');
+    if (progressElement && currentMessageIndex < progressMessages.length) {
+        progressElement.textContent = progressMessages[currentMessageIndex];
+        currentMessageIndex++;
+    }
+}
+
+// Inicializar sketch
+new p5(myceliumSketch_782);
+</script>

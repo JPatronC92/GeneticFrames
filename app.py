@@ -940,7 +940,7 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     
     return fig, gc_content
 
-def create_mycelium_loading_animation(species_name="especie desconocida"):
+def create_animated_dna_progress(species_name="especie desconocida"):
     """Crea animación de micelio durante la generación de arte genético"""
     return f"""
     <style>
@@ -1303,10 +1303,8 @@ def main():
         log_search(organism_input, user_session=st.session_state.session_id)
         
         loading_placeholder = st.empty()
-        loading_placeholder.markdown(
-            create_mycelium_loading_animation("Buscando especie"),
-            unsafe_allow_html=True
-        )
+        # Mostrar progreso simple y efectivo
+        loading_placeholder.info("🔍 Buscando especie en base de datos...")
         
         # Buscar nombre científico usando el motor de búsqueda
         try:
@@ -1317,10 +1315,7 @@ def main():
                 # Usar la primera sugerencia más relevante
                 scientific_name = suggestions[0]['scientific_name']
                 
-                loading_placeholder.markdown(
-                    create_mycelium_loading_animation(f"Conectando NCBI: {scientific_name}"),
-                    unsafe_allow_html=True
-                )
+                loading_placeholder.info(f"🧬 Conectando con NCBI GenBank: {scientific_name}")
                 
                 # Diagnóstico de conexión
                 st.info(f"Buscando secuencias genéticas para: {scientific_name}")
@@ -1397,10 +1392,7 @@ def main():
                 
             else:
                 # Intentar búsqueda directa si no hay sugerencias
-                loading_placeholder.markdown(
-                    create_mycelium_loading_animation(f"Búsqueda directa: {organism_input}"),
-                    unsafe_allow_html=True
-                )
+                loading_placeholder.info(f"🔍 Búsqueda directa en NCBI: {organism_input}")
                 
                 st.info(f"Buscando secuencias genéticas para: {organism_input}")
                 seq_record = obtener_secuencia(organism_input)
@@ -1461,20 +1453,64 @@ def main():
             
             save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
             
-            # Animación de micelio para generación de arte
-            art_loading_placeholder = st.empty()
-            art_loading_placeholder.markdown(
-                create_mycelium_loading_animation(organism_name), 
-                unsafe_allow_html=True
-            )
+            # Animación de generación genética usando elementos nativos de Streamlit
+            st.markdown(f"### 🧬 Generando Arte Genético para: **{organism_name}**")
             
-            # Simular tiempo de procesamiento para mostrar animación completa
-            import time
-            time.sleep(6)  # 6 segundos para ver el crecimiento del micelio
+            # Crear contenedor visual para la animación
+            animation_container = st.container()
             
+            with animation_container:
+                # Mostrar información de progreso estilizada
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #1a1a2e, #16213e);
+                    border-radius: 15px;
+                    padding: 20px;
+                    text-align: center;
+                    margin: 20px 0;
+                    border: 2px solid #00ff88;
+                    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+                ">
+                    <h4 style="color: #00ff88; margin-bottom: 15px;">
+                        Crecimiento Genético en Progreso
+                    </h4>
+                    <div style="color: #cccccc; font-size: 14px;">
+                        Transformando secuencias de ADN en arte simbólico único
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Barra de progreso animada
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # Etapas del proceso con tiempos específicos
+                stages = [
+                    ("🔬 Iniciando análisis genético...", 0.05, 0.7),
+                    ("🧬 Decodificando secuencias de ADN...", 0.15, 0.8),
+                    ("📊 Calculando patrones únicos...", 0.35, 0.9),
+                    ("🎨 Generando identidad simbólica...", 0.55, 1.0),
+                    ("✨ Aplicando características de especie...", 0.75, 1.1),
+                    ("🖼️ Creando arte único...", 0.90, 0.8),
+                    ("🎯 Finalizando obra maestra...", 1.0, 0.6)
+                ]
+                
+                import time
+                for message, progress, delay in stages:
+                    status_text.markdown(f"**{message}**")
+                    progress_bar.progress(progress)
+                    time.sleep(delay)
+                
+                # Limpiar elementos de progreso
+                status_text.empty()
+                progress_bar.empty()
+            
+            # Generar el arte final
             fig, gc = generar_visualizacion(seq_record, theme='scientific')
             genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
-            art_loading_placeholder.empty()
+            
+            # Limpiar el contenedor de animación
+            animation_container.empty()
             
             # Mostrar arte generado
             st.plotly_chart(fig, use_container_width=True)

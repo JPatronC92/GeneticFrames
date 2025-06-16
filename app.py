@@ -916,6 +916,150 @@ def crear_patron_scatter(secuencia, genetic_profile, colors):
     
     return fig
 
+def determinar_categoria_taxonomica(species_name, seq_description):
+    """Determina la categoría taxonómica y estilo visual apropiado"""
+    name_lower = species_name.lower()
+    desc_lower = seq_description.lower()
+    
+    # Patrones para identificar categorías
+    mammal_patterns = ['panthera', 'canis', 'felis', 'homo', 'bos', 'sus', 'equus', 'ursus', 'macaca', 'rattus']
+    aquatic_patterns = ['balaenoptera', 'tursiops', 'salmo', 'thunnus', 'octopus', 'cancer', 'hippocampus']
+    avian_patterns = ['aquila', 'bubo', 'aptenodytes', 'falco', 'corvus', 'passer', 'gallus']
+    reptile_patterns = ['python', 'crocodylus', 'iguana', 'gecko', 'chelonia', 'vipera']
+    arthropod_patterns = ['drosophila', 'apis', 'theraphosa', 'latrodectus', 'aedes', 'tribolium']
+    plant_patterns = ['arabidopsis', 'oryza', 'triticum', 'zea', 'solanum', 'rosa', 'quercus']
+    
+    if any(pattern in name_lower for pattern in mammal_patterns):
+        return 'mammal'
+    elif any(pattern in name_lower for pattern in aquatic_patterns):
+        return 'aquatic'
+    elif any(pattern in name_lower for pattern in avian_patterns):
+        return 'avian'
+    elif any(pattern in name_lower for pattern in reptile_patterns):
+        return 'reptile'
+    elif any(pattern in name_lower for pattern in arthropod_patterns):
+        return 'arthropod'
+    elif any(pattern in name_lower for pattern in plant_patterns):
+        return 'plant'
+    else:
+        return 'general'
+
+def obtener_paleta_semantica(categoria):
+    """Paletas de colores específicas por categoría taxonómica"""
+    paletas = {
+        'mammal': {
+            'primary': ['#8B4513', '#CD853F', '#DEB887', '#F4A460', '#D2691E'],  # Tierras y marrones
+            'secondary': ['#FF6347', '#FFB347', '#FFCCCB', '#FFA07A', '#FA8072'],  # Cálidos
+            'accent': ['#4169E1', '#6495ED', '#87CEEB', '#B0C4DE', '#E6E6FA'],    # Azules suaves
+            'gradient': 'radial'
+        },
+        'aquatic': {
+            'primary': ['#000080', '#0000CD', '#4169E1', '#6495ED', '#87CEEB'],    # Azules profundos
+            'secondary': ['#20B2AA', '#48D1CC', '#40E0D0', '#AFEEEE', '#E0FFFF'], # Turquesas
+            'accent': ['#FF1493', '#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB'],    # Corales
+            'gradient': 'linear_vertical'
+        },
+        'avian': {
+            'primary': ['#FFD700', '#FFA500', '#FF8C00', '#FF7F50', '#FF6347'],   # Dorados y naranjas
+            'secondary': ['#4682B4', '#5F9EA0', '#6495ED', '#7B68EE', '#9370DB'], # Cielos
+            'accent': ['#32CD32', '#90EE90', '#98FB98', '#F0FFF0', '#FFFFE0'],    # Verdes naturales
+            'gradient': 'conical'
+        },
+        'reptile': {
+            'primary': ['#228B22', '#32CD32', '#9ACD32', '#ADFF2F', '#7FFF00'],   # Verdes reptil
+            'secondary': ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#F5DEB3'], # Tierras
+            'accent': ['#DC143C', '#B22222', '#FF0000', '#FF6347', '#FA8072'],    # Rojos intensos
+            'gradient': 'diamond'
+        },
+        'arthropod': {
+            'primary': ['#4B0082', '#8B008B', '#9932CC', '#BA55D3', '#DA70D6'],   # Púrpuras
+            'secondary': ['#FF4500', '#FF6347', '#FF8C00', '#FFA500', '#FFD700'], # Naranjas
+            'accent': ['#00CED1', '#40E0D0', '#48D1CC', '#20B2AA', '#008B8B'],    # Cianes
+            'gradient': 'spiral'
+        },
+        'plant': {
+            'primary': ['#006400', '#228B22', '#32CD32', '#90EE90', '#98FB98'],   # Verdes naturales
+            'secondary': ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#DEB887'], # Tierras
+            'accent': ['#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB', '#F0F8FF'],    # Florales
+            'gradient': 'organic'
+        },
+        'general': {
+            'primary': ['#483D8B', '#6A5ACD', '#7B68EE', '#9370DB', '#BA55D3'],   # Púrpuras místicos
+            'secondary': ['#00CED1', '#40E0D0', '#48D1CC', '#AFEEEE', '#E0FFFF'], # Cianes
+            'accent': ['#FFD700', '#FFA500', '#FF8C00', '#FF7F50', '#FF6347'],    # Dorados
+            'gradient': 'cosmic'
+        }
+    }
+    return paletas.get(categoria, paletas['general'])
+
+def crear_visualizacion_avanzada(secuencia, genetic_profile, categoria, paleta):
+    """Crea visualización estéticamente rica basada en complejidad genética"""
+    import numpy as np
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    
+    # Análisis de complejidad para determinar densidad visual
+    sequence_length = len(secuencia)
+    complexity_score = genetic_profile.get('entropy', 0) * genetic_profile.get('gc_content', 50) / 50
+    
+    # Crear figura con múltiples capas visuales
+    fig = go.Figure()
+    
+    # Capa 1: Base genética - estructura fundamental
+    n_base_points = min(2000, sequence_length // 10)  # Más puntos para secuencias complejas
+    
+    # Usar patrón específico por categoría
+    if categoria == 'mammal':
+        pattern = crear_patron_mamifero(n_base_points, paleta, genetic_profile)
+    elif categoria == 'aquatic':
+        pattern = crear_patron_acuatico(n_base_points, paleta, genetic_profile)
+    elif categoria == 'avian':
+        pattern = crear_patron_aviario(n_base_points, paleta, genetic_profile)
+    elif categoria == 'reptile':
+        pattern = crear_patron_reptil(n_base_points, paleta, genetic_profile)
+    elif categoria == 'arthropod':
+        pattern = crear_patron_artropodo(n_base_points, paleta, genetic_profile)
+    elif categoria == 'plant':
+        pattern = crear_patron_botanico(n_base_points, paleta, genetic_profile)
+    else:
+        pattern = crear_patron_general(n_base_points, paleta, genetic_profile)
+    
+    # Añadir todas las trazas del patrón
+    for trace in pattern:
+        fig.add_trace(trace)
+    
+    # Capa 2: Elementos de complejidad genética
+    if complexity_score > 0.5:  # Solo para secuencias complejas
+        complexity_traces = crear_elementos_complejidad(genetic_profile, paleta, sequence_length)
+        for trace in complexity_traces:
+            fig.add_trace(trace)
+    
+    # Configurar layout estético avanzado
+    fig.update_layout(
+        title=dict(
+            text=f"🧬 Genoma Artístico - {genetic_profile.get('organism_id', 'Especie Desconocida')}",
+            font=dict(size=20, color=paleta['accent'][0]),
+            x=0.5
+        ),
+        plot_bgcolor='rgba(5,5,5,1)',
+        paper_bgcolor='rgba(5,5,5,1)',
+        showlegend=False,
+        xaxis=dict(visible=False, range=[-1.2, 1.2]),
+        yaxis=dict(visible=False, range=[-1.2, 1.2]),
+        height=700,
+        annotations=[
+            dict(
+                text=f"Longitud: {sequence_length:,} bp | Entropía: {genetic_profile.get('entropy', 0):.3f} | GC: {genetic_profile.get('gc_content', 0):.1f}%",
+                showarrow=False,
+                xref="paper", yref="paper",
+                x=0.5, y=0.02, xanchor='center', yanchor='bottom',
+                font=dict(size=10, color=paleta['secondary'][2])
+            )
+        ]
+    )
+    
+    return fig
+
 def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
     """Crea arte simbólico único basado en identidad de especies y genética real"""
     
@@ -931,15 +1075,16 @@ def generar_visualizacion(seq_record, style='voronoi', theme='scientific'):
         fig.update_layout(title="Error: No se pudo analizar la secuencia")
         return fig, 0
     
-    # Inicializar motor de arte simbólico
-    art_engine = SymbolicArtEngine()
-    
-    # Extraer nombre científico del registro
+    # Extraer información de la especie
     species_name = seq_record.description.split()[1:3] if len(seq_record.description.split()) >= 3 else [seq_record.id]
     species_scientific_name = ' '.join(species_name).lower()
     
-    # Crear arte simbólico que evoque la identidad de la especie
-    fig = art_engine.generate_symbolic_art(species_scientific_name, genetic_profile)
+    # Determinar categoría taxonómica y paleta semántica
+    categoria = determinar_categoria_taxonomica(species_scientific_name, seq_record.description)
+    paleta = obtener_paleta_semantica(categoria)
+    
+    # Crear visualización estéticamente avanzada
+    fig = crear_visualizacion_avanzada(secuencia, genetic_profile, categoria, paleta)
     
     # Calcular GC content
     gc_content = gc_fraction(seq_record.seq) * 100
@@ -1865,6 +2010,400 @@ def crear_visualizacion_animada(fig_original, genetic_profile, organism_name):
     animated_fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 100
     
     return animated_fig
+
+def crear_patron_mamifero(n_points, paleta, genetic_profile):
+    """Patrón cálido y orgánico para mamíferos"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Estructura base: espiral dorada orgánica
+    golden_ratio = 1.618033988749
+    for layer in range(5):
+        angles = np.linspace(0, 8 * np.pi, n_points // 5)
+        r = np.sqrt(angles) * 0.1 * (layer + 1)
+        x = r * np.cos(angles * golden_ratio) * (1 + 0.1 * np.sin(angles * 3))
+        y = r * np.sin(angles * golden_ratio) * (1 + 0.1 * np.cos(angles * 3))
+        
+        # Colores cálidos y terrosos
+        colors = [paleta['primary'][layer % len(paleta['primary'])] for _ in range(len(x))]
+        
+        traces.append(go.Scatter(
+            x=x, y=y, mode='markers',
+            marker=dict(
+                size=np.random.uniform(2, 8, len(x)),
+                color=colors,
+                opacity=0.7,
+                line=dict(color=paleta['secondary'][0], width=0.5)
+            ),
+            showlegend=False
+        ))
+    
+    # Conexiones familiares (vínculos sociales)
+    for i in range(20):
+        x_line = np.random.uniform(-0.8, 0.8, 2)
+        y_line = np.random.uniform(-0.8, 0.8, 2)
+        traces.append(go.Scatter(
+            x=x_line, y=y_line, mode='lines',
+            line=dict(color=paleta['accent'][2], width=1, dash='dot'),
+            showlegend=False
+        ))
+    
+    return traces
+
+def crear_patron_acuatico(n_points, paleta, genetic_profile):
+    """Patrón fluido y ondulante para especies acuáticas"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Ondas fluidas multicapa
+    for wave in range(7):
+        t = np.linspace(0, 4 * np.pi, n_points // 7)
+        amplitude = 0.6 - wave * 0.08
+        frequency = 2 + wave * 0.5
+        
+        x = t / (2 * np.pi) - 1
+        y = amplitude * np.sin(frequency * t) * np.exp(-0.1 * wave * t)
+        
+        # Efectos de corriente
+        flow_x = x + 0.1 * np.sin(t * 1.5)
+        flow_y = y + 0.05 * np.cos(t * 2.3)
+        
+        color_cycle = wave % len(paleta['primary'])
+        
+        traces.append(go.Scatter(
+            x=flow_x, y=flow_y, mode='lines+markers',
+            line=dict(color=paleta['primary'][color_cycle], width=3),
+            marker=dict(
+                size=4, color=paleta['secondary'][color_cycle],
+                opacity=0.8, symbol='circle'
+            ),
+            showlegend=False
+        ))
+    
+    # Burbujas flotantes
+    bubble_x = np.random.uniform(-1, 1, 50)
+    bubble_y = np.random.uniform(-1, 1, 50)
+    bubble_sizes = np.random.uniform(5, 15, 50)
+    
+    traces.append(go.Scatter(
+        x=bubble_x, y=bubble_y, mode='markers',
+        marker=dict(
+            size=bubble_sizes,
+            color=paleta['accent'][0],
+            opacity=0.4,
+            line=dict(color=paleta['secondary'][1], width=1)
+        ),
+        showlegend=False
+    ))
+    
+    return traces
+
+def crear_patron_aviario(n_points, paleta, genetic_profile):
+    """Patrón elevado y radiante para aves"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Plumas radiantes desde el centro
+    for feather in range(12):
+        angle_base = feather * 2 * np.pi / 12
+        
+        # Estructura de pluma
+        spine_length = np.linspace(0, 0.8, 40)
+        spine_x = spine_length * np.cos(angle_base)
+        spine_y = spine_length * np.sin(angle_base)
+        
+        # Bárbulas de la pluma
+        for barb in range(8):
+            barb_pos = barb / 8
+            barb_length = 0.1 * (1 - barb_pos)
+            
+            barb_angle = angle_base + np.pi/2
+            barb_x = spine_x[barb * 5] + np.linspace(0, barb_length, 10) * np.cos(barb_angle)
+            barb_y = spine_y[barb * 5] + np.linspace(0, barb_length, 10) * np.sin(barb_angle)
+            
+            color_idx = feather % len(paleta['primary'])
+            
+            traces.append(go.Scatter(
+                x=barb_x, y=barb_y, mode='lines',
+                line=dict(color=paleta['primary'][color_idx], width=2),
+                showlegend=False
+            ))
+    
+    # Patrones de vuelo
+    flight_paths = 3
+    for path in range(flight_paths):
+        t = np.linspace(0, 2 * np.pi, 100)
+        radius = 0.6 + path * 0.1
+        x = radius * np.cos(t + path * np.pi/3) * (1 + 0.2 * np.sin(3 * t))
+        y = radius * np.sin(t + path * np.pi/3) * (1 + 0.2 * np.cos(3 * t))
+        
+        traces.append(go.Scatter(
+            x=x, y=y, mode='lines',
+            line=dict(color=paleta['accent'][path % len(paleta['accent'])], width=1, dash='dash'),
+            showlegend=False
+        ))
+    
+    return traces
+
+def crear_patron_reptil(n_points, paleta, genetic_profile):
+    """Patrón escamoso y angular para reptiles"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Estructura de escamas hexagonales
+    hex_layers = 5
+    for layer in range(hex_layers):
+        radius = 0.2 + layer * 0.15
+        n_hexagons = 6 + layer * 3
+        
+        for hex_i in range(n_hexagons):
+            angle = hex_i * 2 * np.pi / n_hexagons
+            center_x = radius * np.cos(angle)
+            center_y = radius * np.sin(angle)
+            
+            # Hexágono individual
+            hex_angles = np.linspace(0, 2 * np.pi, 7)
+            hex_size = 0.08 - layer * 0.01
+            hex_x = center_x + hex_size * np.cos(hex_angles)
+            hex_y = center_y + hex_size * np.sin(hex_angles)
+            
+            color_idx = (layer + hex_i) % len(paleta['primary'])
+            
+            traces.append(go.Scatter(
+                x=hex_x, y=hex_y, mode='lines',
+                line=dict(color=paleta['primary'][color_idx], width=2),
+                fill='tonext' if hex_i > 0 else None,
+                fillcolor=f"rgba({int(paleta['secondary'][color_idx][1:3], 16)}, {int(paleta['secondary'][color_idx][3:5], 16)}, {int(paleta['secondary'][color_idx][5:7], 16)}, 0.3)",
+                showlegend=False
+            ))
+    
+    # Patrones de camuflaje
+    for stripe in range(8):
+        y_pos = -0.8 + stripe * 0.2
+        x_wave = np.linspace(-0.9, 0.9, 50)
+        y_wave = y_pos + 0.05 * np.sin(x_wave * 8 + stripe)
+        
+        traces.append(go.Scatter(
+            x=x_wave, y=y_wave, mode='lines',
+            line=dict(color=paleta['accent'][stripe % len(paleta['accent'])], width=3),
+            showlegend=False
+        ))
+    
+    return traces
+
+def crear_patron_artropodo(n_points, paleta, genetic_profile):
+    """Patrón segmentado y complejo para artrópodos"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Estructura segmentada central
+    segments = 8
+    for seg in range(segments):
+        y_center = -0.6 + seg * 0.15
+        
+        # Cuerpo del segmento
+        x_body = np.linspace(-0.3, 0.3, 20)
+        y_body = np.full(20, y_center)
+        
+        # Patas laterales
+        if seg % 2 == 0:  # Segmentos con patas
+            for side in [-1, 1]:
+                leg_x = np.linspace(0.3 * side, 0.6 * side, 10)
+                leg_y = y_center + 0.05 * np.sin(np.linspace(0, np.pi, 10))
+                
+                traces.append(go.Scatter(
+                    x=leg_x, y=leg_y, mode='lines+markers',
+                    line=dict(color=paleta['primary'][seg % len(paleta['primary'])], width=3),
+                    marker=dict(size=4, color=paleta['secondary'][seg % len(paleta['secondary'])]),
+                    showlegend=False
+                ))
+        
+        color_idx = seg % len(paleta['primary'])
+        traces.append(go.Scatter(
+            x=x_body, y=y_body, mode='lines+markers',
+            line=dict(color=paleta['primary'][color_idx], width=5),
+            marker=dict(size=6, color=paleta['accent'][color_idx % len(paleta['accent'])]),
+            showlegend=False
+        ))
+    
+    # Patrones complejos tipo red neural
+    web_points = 30
+    web_x = np.random.uniform(-0.8, 0.8, web_points)
+    web_y = np.random.uniform(-0.8, 0.8, web_points)
+    
+    # Conectar puntos cercanos
+    for i in range(web_points):
+        for j in range(i+1, web_points):
+            dist = np.sqrt((web_x[i] - web_x[j])**2 + (web_y[i] - web_y[j])**2)
+            if dist < 0.3:
+                traces.append(go.Scatter(
+                    x=[web_x[i], web_x[j]], y=[web_y[i], web_y[j]], mode='lines',
+                    line=dict(color=paleta['accent'][2], width=1, dash='dot'),
+                    showlegend=False
+                ))
+    
+    return traces
+
+def crear_patron_botanico(n_points, paleta, genetic_profile):
+    """Patrón orgánico y ramificado para plantas"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Sistema de raíces
+    for root in range(5):
+        angle = root * 2 * np.pi / 5 + np.pi  # Hacia abajo
+        length = np.linspace(0, 0.7, 30)
+        
+        # Ramificación fractal
+        for branch_level in range(3):
+            branch_factor = 0.7 ** branch_level
+            n_branches = 2 ** branch_level
+            
+            for branch in range(n_branches):
+                branch_angle = angle + (branch - n_branches/2) * 0.3 * branch_factor
+                
+                x = length * branch_factor * np.cos(branch_angle)
+                y = -0.1 + length * branch_factor * np.sin(branch_angle)
+                
+                # Añadir ondulación orgánica
+                x += 0.02 * np.sin(length * 10)
+                y += 0.01 * np.cos(length * 15)
+                
+                color_idx = (root + branch_level) % len(paleta['primary'])
+                
+                traces.append(go.Scatter(
+                    x=x, y=y, mode='lines',
+                    line=dict(color=paleta['primary'][color_idx], width=3-branch_level),
+                    showlegend=False
+                ))
+    
+    # Follaje superior
+    leaf_clusters = 12
+    for cluster in range(leaf_clusters):
+        angle = cluster * 2 * np.pi / leaf_clusters
+        radius = 0.4 + 0.2 * np.random.random()
+        
+        center_x = radius * np.cos(angle)
+        center_y = 0.2 + radius * np.sin(angle)
+        
+        # Hojas individuales
+        for leaf in range(5):
+            leaf_angle = angle + leaf * 0.3
+            leaf_x = center_x + 0.1 * np.cos(leaf_angle)
+            leaf_y = center_y + 0.1 * np.sin(leaf_angle)
+            
+            # Forma de hoja
+            t = np.linspace(0, 2 * np.pi, 20)
+            x_leaf = leaf_x + 0.05 * np.cos(t) * (1 + 0.5 * np.cos(2*t))
+            y_leaf = leaf_y + 0.08 * np.sin(t)
+            
+            traces.append(go.Scatter(
+                x=x_leaf, y=y_leaf, mode='lines',
+                line=dict(color=paleta['accent'][cluster % len(paleta['accent'])], width=2),
+                fill='toself',
+                fillcolor=f"rgba({int(paleta['secondary'][leaf % len(paleta['secondary'])][1:3], 16)}, {int(paleta['secondary'][leaf % len(paleta['secondary'])][3:5], 16)}, {int(paleta['secondary'][leaf % len(paleta['secondary'])][5:7], 16)}, 0.4)",
+                showlegend=False
+            ))
+    
+    return traces
+
+def crear_patron_general(n_points, paleta, genetic_profile):
+    """Patrón cósmico y abstracto para especies generales"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Espiral galáctica
+    t = np.linspace(0, 6 * np.pi, n_points)
+    r = 0.1 * t
+    x = r * np.cos(t) * np.exp(-0.1 * t)
+    y = r * np.sin(t) * np.exp(-0.1 * t)
+    
+    # Colores que cambian con la posición
+    colors = []
+    for i in range(len(x)):
+        color_idx = int(i / len(x) * len(paleta['primary']))
+        if color_idx >= len(paleta['primary']):
+            color_idx = len(paleta['primary']) - 1
+        colors.append(paleta['primary'][color_idx])
+    
+    traces.append(go.Scatter(
+        x=x, y=y, mode='markers',
+        marker=dict(size=np.linspace(2, 8, len(x)), color=colors, opacity=0.8),
+        showlegend=False
+    ))
+    
+    # Anillos concéntricos
+    for ring in range(5):
+        theta = np.linspace(0, 2 * np.pi, 100)
+        radius = 0.2 + ring * 0.15
+        x_ring = radius * np.cos(theta)
+        y_ring = radius * np.sin(theta)
+        
+        traces.append(go.Scatter(
+            x=x_ring, y=y_ring, mode='lines',
+            line=dict(color=paleta['accent'][ring % len(paleta['accent'])], width=1, dash='dash'),
+            showlegend=False
+        ))
+    
+    return traces
+
+def crear_elementos_complejidad(genetic_profile, paleta, sequence_length):
+    """Añade elementos visuales basados en la complejidad genética"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Nodos de alta entropía
+    entropy = genetic_profile.get('entropy', 0)
+    if entropy > 0.8:
+        n_entropy_nodes = int(entropy * 20)
+        nodes_x = np.random.uniform(-0.9, 0.9, n_entropy_nodes)
+        nodes_y = np.random.uniform(-0.9, 0.9, n_entropy_nodes)
+        
+        traces.append(go.Scatter(
+            x=nodes_x, y=nodes_y, mode='markers',
+            marker=dict(
+                size=np.random.uniform(8, 15, n_entropy_nodes),
+                color=paleta['accent'][0],
+                opacity=0.6,
+                symbol='star'
+            ),
+            showlegend=False
+        ))
+    
+    # Campos de frecuencia para secuencias largas
+    if sequence_length > 50000:
+        field_density = min(sequence_length // 10000, 50)
+        field_x = np.random.uniform(-1, 1, field_density)
+        field_y = np.random.uniform(-1, 1, field_density)
+        
+        traces.append(go.Scatter(
+            x=field_x, y=field_y, mode='markers',
+            marker=dict(
+                size=3,
+                color=paleta['secondary'][1],
+                opacity=0.3,
+                symbol='diamond'
+            ),
+            showlegend=False
+        ))
+    
+    return traces
 
 if __name__ == "__main__":
     main()

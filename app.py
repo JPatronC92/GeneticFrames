@@ -1513,19 +1513,36 @@ def main():
                             opacity = 0.6 + smooth_progress * 0.4
                             size_multiplier = 0.8 + smooth_progress * 0.2
                             
+                            # Obtener valores seguros para marcadores y líneas
+                            marker_size = 4  # Valor por defecto
+                            if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'size') and trace.marker.size is not None:
+                                marker_size = trace.marker.size
+                            
+                            marker_color = '#00ff88'  # Color por defecto
+                            if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'color') and trace.marker.color is not None:
+                                marker_color = trace.marker.color
+                            
+                            line_color = '#00ff88'  # Color por defecto
+                            if hasattr(trace, 'line') and trace.line and hasattr(trace.line, 'color') and trace.line.color is not None:
+                                line_color = trace.line.color
+                            
+                            line_width = 2  # Ancho por defecto
+                            if hasattr(trace, 'line') and trace.line and hasattr(trace.line, 'width') and trace.line.width is not None:
+                                line_width = trace.line.width
+                            
                             # Crear nueva traza con efectos suaves
                             new_trace = go.Scatter(
                                 x=trace.x[:points_to_show],
                                 y=trace.y[:points_to_show],
                                 mode=trace.mode,
                                 marker=dict(
-                                    size=(trace.marker.size if hasattr(trace, 'marker') else 4) * size_multiplier,
-                                    color=trace.marker.color if hasattr(trace, 'marker') else '#00ff88',
+                                    size=marker_size * size_multiplier,
+                                    color=marker_color,
                                     opacity=opacity
                                 ),
                                 line=dict(
-                                    color=trace.line.color if hasattr(trace, 'line') else '#00ff88',
-                                    width=(trace.line.width if hasattr(trace, 'line') else 2) * size_multiplier
+                                    color=line_color,
+                                    width=line_width * size_multiplier
                                 ),
                                 showlegend=False,
                                 name=f"Emergiendo..."

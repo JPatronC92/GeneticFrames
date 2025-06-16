@@ -1874,14 +1874,23 @@ def crear_visualizacion_animada(fig_original, genetic_profile, organism_name):
         
         # Conservar arte base con transparencia reducida
         for trace in original_traces:
-            base_trace = dict(trace)
-            if hasattr(trace, 'marker') and trace.marker:
-                if hasattr(trace.marker, 'opacity'):
-                    base_trace['marker']['opacity'] = 0.3
-                else:
-                    base_trace['marker'] = dict(trace.marker)
-                    base_trace['marker']['opacity'] = 0.3
-            frame_data.append(go.Scatter(**base_trace))
+            # Crear nueva traza basada en la original pero con propiedades seguras
+            new_trace = go.Scatter(
+                x=trace.x if hasattr(trace, 'x') else [],
+                y=trace.y if hasattr(trace, 'y') else [],
+                mode=trace.mode if hasattr(trace, 'mode') else 'markers',
+                marker=dict(
+                    size=trace.marker.size if hasattr(trace, 'marker') and hasattr(trace.marker, 'size') else 5,
+                    color=trace.marker.color if hasattr(trace, 'marker') and hasattr(trace.marker, 'color') else '#00ff88',
+                    opacity=0.4
+                ),
+                line=dict(
+                    color=trace.line.color if hasattr(trace, 'line') and hasattr(trace.line, 'color') else '#00ff88',
+                    width=trace.line.width if hasattr(trace, 'line') and hasattr(trace.line, 'width') else 2
+                ) if hasattr(trace, 'mode') and 'lines' in trace.mode else None,
+                showlegend=False
+            )
+            frame_data.append(new_trace)
         
         # Añadir efectos de animación específicos por tipo
         if animation_type == 'helix_rotation':

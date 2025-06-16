@@ -30,6 +30,15 @@ class AnimalSearchEngine:
             "leon": "Panthera leo",
             "leopard": "Panthera pardus",
             "leopardo": "Panthera pardus",
+            "jaguar": "Panthera onca",
+            "yaguar": "Panthera onca",
+            "cheetah": "Acinonyx jubatus",
+            "guepardo": "Acinonyx jubatus",
+            "puma": "Puma concolor",
+            "león de montaña": "Puma concolor",
+            "leon de montana": "Puma concolor",
+            "mountain lion": "Puma concolor",
+            "cougar": "Puma concolor",
             "elephant": "Loxodonta africana",
             "elefante": "Loxodonta africana",
             "african elephant": "Loxodonta africana",
@@ -240,6 +249,10 @@ class AnimalSearchEngine:
             "arana": "Latrodectus hesperus",
             "black widow": "Latrodectus hesperus",
             "viuda negra": "Latrodectus hesperus",
+            "tarantula": "Theraphosa blondi",
+            "tarántula": "Theraphosa blondi",
+            "tarantula goliath": "Theraphosa blondi",
+            "tarántula goliat": "Theraphosa blondi",
             "dragonfly": "Libellula quadrimaculata",
             "libélula": "Libellula quadrimaculata",
             "libelula": "Libellula quadrimaculata",
@@ -339,42 +352,79 @@ class AnimalSearchEngine:
     
     def search_gbif_api(self, query: str) -> List[Dict]:
         """Search GBIF (Global Biodiversity Information Facility) API"""
+        results = []
         try:
-            # Search for species by name
+            # First try: Direct species search
             url = f"{self.gbif_base}/species/search"
             params = {
                 "q": query,
                 "rank": "SPECIES",
                 "status": "ACCEPTED",
-                "limit": 10
+                "limit": 15
             }
             
-            response = requests.get(url, params=params, timeout=5)
+            response = requests.get(url, params=params, timeout=8)
             if response.status_code == 200:
                 data = response.json()
-                results = []
                 
                 for item in data.get("results", []):
-                    if item.get("scientificName") and item.get("kingdom"):
-                        # Filter for animals (exclude plants, fungi, etc.)
-                        kingdom = item.get("kingdom", "").lower()
-                        if kingdom in ["animalia", "animal"]:
-                            results.append({
-                                "common_name": item.get("vernacularName", query.title()),
-                                "scientific_name": item.get("scientificName"),
-                                "confidence": 0.9,
-                                "source": "gbif_api",
-                                "type": "api_result",
-                                "kingdom": item.get("kingdom"),
-                                "phylum": item.get("phylum"),
-                                "class": item.get("class"),
-                                "order": item.get("order"),
-                                "family": item.get("family"),
-                                "genus": item.get("genus")
-                            })
+                    scientific_name = item.get("scientificName", "")
+                    kingdom = item.get("kingdom", "").lower()
+                    
+                    # Filter for animals and valid scientific names
+                    if scientific_name and kingdom in ["animalia", "animal"]:
+                        # Calculate confidence based on name match
+                        query_lower = query.lower()
+                        sci_lower = scientific_name.lower()
+                        
+                        confidence = 0.9
+                        if query_lower in sci_lower or sci_lower.startswith(query_lower):
+                            confidence = 0.95
+                        
+                        results.append({
+                            "common_name": item.get("vernacularName", query.title()),
+                            "scientific_name": scientific_name,
+                            "confidence": confidence,
+                            "source": "gbif_api",
+                            "type": "api_result",
+                            "kingdom": item.get("kingdom"),
+                            "phylum": item.get("phylum"),
+                            "class": item.get("class"),
+                            "order": item.get("order"),
+                            "family": item.get("family"),
+                            "genus": item.get("genus")
+                        })
                 
-                return results[:5]  # Limit to top 5 results
+                # If we have results, return them
+                if results:
+                    return results[:5]
+            
+            # Second try: Search by vernacular names if no direct species match
+            url = f"{self.gbif_base}/species/suggest"
+            params = {"q": query, "limit": 10}
+            
+            response = requests.get(url, params=params, timeout=8)
+            if response.status_code == 200:
+                data = response.json()
+                for item in data:
+                    scientific_name = item.get("scientificName", "")
+                    kingdom = item.get("kingdom", "").lower()
+                    
+                    if scientific_name and kingdom in ["animalia", "animal"]:
+                        results.append({
+                            "common_name": query.title(),
+                            "scientific_name": scientific_name,
+                            "confidence": 0.85,
+                            "source": "gbif_suggest",
+                            "type": "suggestion",
+                            "kingdom": item.get("kingdom"),
+                            "rank": item.get("rank")
+                        })
+            
+            return results[:5]
                 
+        except requests.RequestException as e:
+            logger.warning(f"GBIF API network error: {e}")
         except Exception as e:
             logger.warning(f"GBIF API search failed: {e}")
         

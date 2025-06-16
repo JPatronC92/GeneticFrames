@@ -1469,11 +1469,12 @@ def main():
             import numpy as np
             import plotly.graph_objects as go
             
-            # Mensajes dinámicos
+            # Mensajes dinámicos con más frecuencia para mayor fluidez
             messages = [
                 "🔬 Leyendo secuencia genética...",
                 "🧬 Aplicando codificación simbólica...", 
-                "🌿 Ramificando estructuras...",
+                "🌿 Ramificando estructuras primarias...",
+                "🔗 Conectando patrones moleculares...",
                 "⚗️ Traduciendo bases nitrogenadas...",
                 "🎨 Dibujando el alma visual del genoma...",
                 "✨ Finalizando ADN simbiótico...",
@@ -1483,46 +1484,57 @@ def main():
             # Extraer datos del gráfico original para construir progresivamente
             original_traces = fig.data
             
-            # Construir el arte paso a paso
-            for step in range(len(messages)):
-                status_placeholder.markdown(f"**{messages[step]}**")
+            # Animación fluida con más frames intermedios
+            total_frames = 40  # Más frames para mayor fluidez
+            message_change_interval = total_frames // len(messages)
+            
+            for frame in range(total_frames):
+                # Calcular progreso suave (0 a 1)
+                progress = (frame + 1) / total_frames
                 
-                # Crear figura progresiva basada en el paso actual
+                # Determinar mensaje actual
+                message_index = min(frame // message_change_interval, len(messages) - 1)
+                status_placeholder.markdown(f"**{messages[message_index]}**")
+                
+                # Crear figura progresiva con animación suave
                 progressive_fig = go.Figure()
                 
-                # Calcular progreso (0 a 1)
-                progress = (step + 1) / len(messages)
-                
-                # Añadir trazas progresivamente
+                # Añadir trazas progresivamente con curva de easing
                 for trace_idx, trace in enumerate(original_traces):
                     if hasattr(trace, 'x') and hasattr(trace, 'y'):
-                        # Calcular cuántos puntos mostrar basado en el progreso
                         total_points = len(trace.x)
-                        points_to_show = int(progress * total_points)
+                        
+                        # Función de easing suave (ease-in-out)
+                        smooth_progress = progress * progress * (3.0 - 2.0 * progress)
+                        points_to_show = int(smooth_progress * total_points)
                         
                         if points_to_show > 0:
-                            # Crear nueva traza con puntos limitados
+                            # Efectos visuales progresivos
+                            opacity = 0.6 + smooth_progress * 0.4
+                            size_multiplier = 0.8 + smooth_progress * 0.2
+                            
+                            # Crear nueva traza con efectos suaves
                             new_trace = go.Scatter(
                                 x=trace.x[:points_to_show],
                                 y=trace.y[:points_to_show],
                                 mode=trace.mode,
                                 marker=dict(
-                                    size=trace.marker.size if hasattr(trace, 'marker') else 4,
+                                    size=(trace.marker.size if hasattr(trace, 'marker') else 4) * size_multiplier,
                                     color=trace.marker.color if hasattr(trace, 'marker') else '#00ff88',
-                                    opacity=0.7 + progress * 0.3
+                                    opacity=opacity
                                 ),
                                 line=dict(
                                     color=trace.line.color if hasattr(trace, 'line') else '#00ff88',
-                                    width=trace.line.width if hasattr(trace, 'line') else 2
+                                    width=(trace.line.width if hasattr(trace, 'line') else 2) * size_multiplier
                                 ),
                                 showlegend=False,
-                                name=f"Construcción {step+1}"
+                                name=f"Emergiendo..."
                             )
                             progressive_fig.add_trace(new_trace)
                 
-                # Configurar el layout similar al original
+                # Layout con título dinámico
                 progressive_fig.update_layout(
-                    title=f"Arte Genético Emergiendo: {organism_name} ({progress*100:.0f}% completado)",
+                    title=f"Arte Genético Emergiendo: {organism_name} ({progress*100:.1f}% completado)",
                     template="plotly_dark",
                     plot_bgcolor='rgba(5,10,15,1)',
                     paper_bgcolor='rgba(5,10,15,1)',
@@ -1535,11 +1547,11 @@ def main():
                 # Mostrar la figura progresiva
                 art_placeholder.plotly_chart(progressive_fig, use_container_width=True)
                 
-                # Barra de progreso visual
+                # Barra de progreso visual suave
                 progress_placeholder.progress(progress)
                 
-                # Tiempo de espera entre pasos
-                time.sleep(3 if step < len(messages) - 1 else 1)
+                # Tiempo de espera más corto para mayor fluidez
+                time.sleep(0.4)  # 40 frames x 0.4s = 16 segundos total
             
             # Limpiar elementos temporales
             progress_placeholder.empty()

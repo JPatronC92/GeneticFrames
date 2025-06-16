@@ -66,24 +66,30 @@ def obtener_secuencia(organismo):
         organismo_limpio = limpiar_nombre_cientifico(organismo)
         clean_name = organismo_limpio.replace('"', '').replace("'", "")
         
-        # Búsqueda mitocondrial
-        search_handle = Entrez.esearch(
-            db="nucleotide",
-            term=f"{clean_name}[Organism] AND mitochondrion",
-            retmax=5
-        )
-        search_results = Entrez.read(search_handle)
-        search_handle.close()
+        # Búsqueda estratégica: genoma completo primero, luego mitocondrial
+        search_strategies = [
+            f"{clean_name}[Organism] AND genome AND complete",
+            f"{clean_name}[Organism] AND chromosome",
+            f"{clean_name}[Organism] AND mitochondrion",
+            f"{clean_name}[Organism] AND plastid",
+            f"{clean_name}[Organism]"
+        ]
         
-        if not search_results.get("IdList", []):
-            # Búsqueda general
+        search_results = None
+        for strategy in search_strategies:
             search_handle = Entrez.esearch(
                 db="nucleotide",
-                term=f"{clean_name}[Organism]",
-                retmax=10
+                term=strategy,
+                retmax=10,
+                sort="length"  # Ordenar por longitud para obtener secuencias más grandes
             )
             search_results = Entrez.read(search_handle)
             search_handle.close()
+            
+            # Si encontramos resultados, usar esta estrategia
+            if search_results.get("IdList", []):
+                logger.info(f"Secuencia encontrada usando estrategia: {strategy}")
+                break
         
         if not search_results.get("IdList", []):
             raise ValueError(f"No se encontraron secuencias genéticas para {organismo}")
@@ -1453,130 +1459,24 @@ def main():
             
             save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
             
-            # Construcción progresiva del arte genético usando Streamlit nativo
-            st.markdown(f"### 🧬 Construyendo Arte Genético para: **{organism_name}**")
+            # Generar arte genético directamente
+            st.markdown(f"### 🧬 Generando Arte Genético para: **{organism_name}**")
             
-            # Generar el arte primero para tener los datos
-            fig, gc = generar_visualizacion(seq_record, theme='scientific')
-            genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
-            
-            # Crear contenedores para la animación progresiva
-            art_placeholder = st.empty()
-            progress_placeholder = st.empty()
-            status_placeholder = st.empty()
-            
+            # Mostrar proceso de generación simple
             import time
-            import numpy as np
-            import plotly.graph_objects as go
+            with st.spinner("Analizando secuencia genética y creando visualización artística..."):
+                fig, gc = generar_visualizacion(seq_record, theme='scientific')
+                genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
+                time.sleep(2)  # Breve pausa para efecto
             
-            # Mensajes dinámicos con más frecuencia para mayor fluidez
-            messages = [
-                "🔬 Leyendo secuencia genética...",
-                "🧬 Aplicando codificación simbólica...", 
-                "🌿 Ramificando estructuras primarias...",
-                "🔗 Conectando patrones moleculares...",
-                "⚗️ Traduciendo bases nitrogenadas...",
-                "🎨 Dibujando el alma visual del genoma...",
-                "✨ Finalizando ADN simbiótico...",
-                "🎯 ¡Arte Genético Completado!"
-            ]
+            st.success("Arte genético completado")
             
-            # Extraer datos del gráfico original para construir progresivamente
-            original_traces = fig.data
+            # Mostrar arte final con animación infinita
+            st.markdown("### 🎨 Arte Genético Animado")
             
-            # Animación fluida con más frames intermedios
-            total_frames = 40  # Más frames para mayor fluidez
-            message_change_interval = total_frames // len(messages)
-            
-            for frame in range(total_frames):
-                # Calcular progreso suave (0 a 1)
-                progress = (frame + 1) / total_frames
-                
-                # Determinar mensaje actual
-                message_index = min(frame // message_change_interval, len(messages) - 1)
-                status_placeholder.markdown(f"**{messages[message_index]}**")
-                
-                # Crear figura progresiva con animación suave
-                progressive_fig = go.Figure()
-                
-                # Añadir trazas progresivamente con curva de easing
-                for trace_idx, trace in enumerate(original_traces):
-                    if hasattr(trace, 'x') and hasattr(trace, 'y'):
-                        total_points = len(trace.x)
-                        
-                        # Función de easing suave (ease-in-out)
-                        smooth_progress = progress * progress * (3.0 - 2.0 * progress)
-                        points_to_show = int(smooth_progress * total_points)
-                        
-                        if points_to_show > 0:
-                            # Efectos visuales progresivos
-                            opacity = 0.6 + smooth_progress * 0.4
-                            size_multiplier = 0.8 + smooth_progress * 0.2
-                            
-                            # Obtener valores seguros para marcadores y líneas
-                            marker_size = 4  # Valor por defecto
-                            if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'size') and trace.marker.size is not None:
-                                marker_size = trace.marker.size
-                            
-                            marker_color = '#00ff88'  # Color por defecto
-                            if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'color') and trace.marker.color is not None:
-                                marker_color = trace.marker.color
-                            
-                            line_color = '#00ff88'  # Color por defecto
-                            if hasattr(trace, 'line') and trace.line and hasattr(trace.line, 'color') and trace.line.color is not None:
-                                line_color = trace.line.color
-                            
-                            line_width = 2  # Ancho por defecto
-                            if hasattr(trace, 'line') and trace.line and hasattr(trace.line, 'width') and trace.line.width is not None:
-                                line_width = trace.line.width
-                            
-                            # Crear nueva traza con efectos suaves
-                            new_trace = go.Scatter(
-                                x=trace.x[:points_to_show],
-                                y=trace.y[:points_to_show],
-                                mode=trace.mode,
-                                marker=dict(
-                                    size=marker_size * size_multiplier,
-                                    color=marker_color,
-                                    opacity=opacity
-                                ),
-                                line=dict(
-                                    color=line_color,
-                                    width=line_width * size_multiplier
-                                ),
-                                showlegend=False,
-                                name=f"Emergiendo..."
-                            )
-                            progressive_fig.add_trace(new_trace)
-                
-                # Layout con título dinámico
-                progressive_fig.update_layout(
-                    title=f"Arte Genético Emergiendo: {organism_name} ({progress*100:.1f}% completado)",
-                    template="plotly_dark",
-                    plot_bgcolor='rgba(5,10,15,1)',
-                    paper_bgcolor='rgba(5,10,15,1)',
-                    font=dict(color='white'),
-                    xaxis=dict(showgrid=False, zeroline=False),
-                    yaxis=dict(showgrid=False, zeroline=False),
-                    height=500
-                )
-                
-                # Mostrar la figura progresiva
-                art_placeholder.plotly_chart(progressive_fig, use_container_width=True)
-                
-                # Barra de progreso visual suave
-                progress_placeholder.progress(progress)
-                
-                # Tiempo de espera más corto para mayor fluidez
-                time.sleep(0.4)  # 40 frames x 0.4s = 16 segundos total
-            
-            # Limpiar elementos temporales
-            progress_placeholder.empty()
-            status_placeholder.markdown("### ✅ **Arte Genético Completado**")
-            
-            # Mostrar el arte final completo
-            time.sleep(2)
-            art_placeholder.plotly_chart(fig, use_container_width=True)
+            # Crear visualización animada con loop infinito
+            animated_fig = crear_visualizacion_animada(fig, genetic_profile, organism_name)
+            st.plotly_chart(animated_fig, use_container_width=True)
             
             # Mostrar estadísticas
             st.markdown("### 📊 Análisis de la Secuencia")
@@ -1806,6 +1706,165 @@ def create_progressive_art_animation(art_data):
         </script>
     </div>
     """
+
+def crear_visualizacion_animada(fig_original, genetic_profile, organism_name):
+    """Crea una visualización con animación infinita sobre la imagen terminada"""
+    import plotly.graph_objects as go
+    import numpy as np
+    
+    # Extraer datos de la figura original
+    original_traces = list(fig_original.data)
+    
+    # Crear múltiples frames para la animación
+    frames = []
+    total_frames = 60  # 60 frames para animación suave
+    
+    for frame_num in range(total_frames):
+        frame_data = []
+        time_factor = frame_num / total_frames * 2 * np.pi  # Ciclo completo
+        
+        for trace_idx, trace in enumerate(original_traces):
+            if hasattr(trace, 'x') and hasattr(trace, 'y'):
+                # Efectos de animación basados en perfil genético
+                
+                # Efecto de pulsación (latido del ADN)
+                pulse_intensity = 0.8 + 0.2 * np.sin(time_factor * 2)
+                
+                # Efecto de rotación de colores (evolución cromática)
+                color_shift = np.sin(time_factor + trace_idx) * 0.3
+                
+                # Efecto de respiración (cambio de opacidad)
+                breathing = 0.7 + 0.3 * np.sin(time_factor * 1.5)
+                
+                # Obtener propiedades seguras
+                marker_size = 4
+                if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'size'):
+                    if trace.marker.size is not None:
+                        marker_size = trace.marker.size
+                
+                marker_color = '#00ff88'
+                if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'color'):
+                    if trace.marker.color is not None:
+                        marker_color = trace.marker.color
+                
+                # Crear traza animada
+                animated_trace = go.Scatter(
+                    x=trace.x,
+                    y=trace.y,
+                    mode=trace.mode,
+                    marker=dict(
+                        size=marker_size * pulse_intensity,
+                        color=marker_color,
+                        opacity=breathing,
+                        line=dict(
+                            color='rgba(255,255,255,0.3)',
+                            width=1
+                        )
+                    ),
+                    line=dict(
+                        color=marker_color,
+                        width=2 * pulse_intensity,
+                        dash='solid'
+                    ),
+                    showlegend=False,
+                    name=f"Genoma Vivo {trace_idx}"
+                )
+                frame_data.append(animated_trace)
+        
+        # Añadir efectos de partículas flotantes para genes activos
+        if frame_num % 10 == 0:  # Cada 10 frames, añadir partículas especiales
+            n_particles = 20
+            particle_x = np.random.uniform(-0.5, 1.5, n_particles)
+            particle_y = np.random.uniform(-0.5, 1.5, n_particles)
+            
+            particles = go.Scatter(
+                x=particle_x,
+                y=particle_y,
+                mode='markers',
+                marker=dict(
+                    size=np.random.uniform(1, 3, n_particles),
+                    color='rgba(255,255,255,0.4)',
+                    symbol='star'
+                ),
+                showlegend=False,
+                name="Genes Activos"
+            )
+            frame_data.append(particles)
+        
+        frames.append(go.Frame(data=frame_data, name=str(frame_num)))
+    
+    # Crear figura animada
+    animated_fig = go.Figure(
+        data=frames[0].data if frames else [],
+        frames=frames
+    )
+    
+    # Configurar animación automática infinita
+    animated_fig.update_layout(
+        title=f"🧬 {organism_name} - Genoma Vivo en Movimiento",
+        template="plotly_dark",
+        plot_bgcolor='rgba(5,10,15,1)',
+        paper_bgcolor='rgba(5,10,15,1)',
+        font=dict(color='white', size=14),
+        xaxis=dict(
+            showgrid=False, 
+            zeroline=False,
+            showticklabels=False,
+            title=""
+        ),
+        yaxis=dict(
+            showgrid=False, 
+            zeroline=False,
+            showticklabels=False,
+            title=""
+        ),
+        height=600,
+        updatemenus=[{
+            "type": "buttons",
+            "direction": "left",
+            "pad": {"r": 10, "t": 87},
+            "showactive": False,
+            "x": 0.1,
+            "xanchor": "right",
+            "y": 0,
+            "yanchor": "top",
+            "buttons": [
+                {
+                    "label": "▶ Play",
+                    "method": "animate",
+                    "args": [None, {
+                        "frame": {"duration": 100, "redraw": True},
+                        "fromcurrent": True,
+                        "transition": {"duration": 50, "easing": "quadratic-in-out"},
+                        "mode": "immediate"
+                    }]
+                },
+                {
+                    "label": "⏸ Pause",
+                    "method": "animate",
+                    "args": [[None], {
+                        "frame": {"duration": 0, "redraw": False},
+                        "mode": "immediate",
+                        "transition": {"duration": 0}
+                    }]
+                }
+            ]
+        }],
+        annotations=[
+            dict(
+                text="💫 Genoma en movimiento eterno - patrones que evolucionan infinitamente",
+                showarrow=False,
+                xref="paper", yref="paper",
+                x=0.5, y=-0.1, xanchor='center', yanchor='bottom',
+                font=dict(size=12, color='#cccccc')
+            )
+        ]
+    )
+    
+    # Configurar para que inicie automáticamente
+    animated_fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 100
+    
+    return animated_fig
 
 if __name__ == "__main__":
     main()

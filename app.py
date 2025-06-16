@@ -2537,6 +2537,7 @@ def crear_animacion_latido_mamifero(progress, genetic_profile):
         # Colores cálidos que representan sangre/vida
         red_intensity = 255 - ring * 30
         opacity = (0.8 - ring * 0.15) * (0.5 + 0.5 * np.sin(pulse_phase))
+        opacity = max(0.1, min(1.0, opacity))  # Asegurar rango válido
         color = f'rgba({red_intensity}, {100 + ring * 20}, 50, {opacity})'
         
         line_width = 3 + ring - 2 * np.sin(pulse_phase)
@@ -2550,6 +2551,7 @@ def crear_animacion_latido_mamifero(progress, genetic_profile):
     # Núcleo central que late
     core_size = 15 + 10 * np.sin(pulse_phase)
     core_opacity = 0.6 + 0.4 * np.sin(pulse_phase)
+    core_opacity = max(0.1, min(1.0, core_opacity))  # Asegurar rango válido
     
     traces.append(go.Scatter(
         x=[0], y=[0], mode='markers',
@@ -2650,6 +2652,7 @@ def crear_animacion_red_neuronal(progress, genetic_profile):
         
         size = 6 * pulse
         brightness = 0.6 + 0.4 * np.sin(node_phase)
+        brightness = max(0.1, min(1.0, brightness))  # Asegurar rango válido
         color = f'rgba(150, 0, 255, {brightness})'
         
         traces.append(go.Scatter(
@@ -2662,6 +2665,7 @@ def crear_animacion_red_neuronal(progress, genetic_profile):
         for j, (x2, y2) in enumerate(node_positions[i+1:i+4]):
             if j < len(node_positions) and np.sin(node_phase + j) > 0.3:
                 connection_strength = 0.3 + 0.4 * np.sin(node_phase + j * np.pi/2)
+                connection_strength = max(0.1, min(1.0, connection_strength))  # Asegurar rango válido
                 traces.append(go.Scatter(
                     x=[x, x2], y=[y, y2], mode='lines',
                     line=dict(color=f'rgba(100, 200, 255, {connection_strength})', width=1),
@@ -2749,6 +2753,7 @@ def crear_animacion_cosmos_estelar(progress, genetic_profile):
         # Brillo parpadeante
         twinkle_phase = progress * 12 * np.pi + star * np.pi / 3
         brightness = 0.4 + 0.6 * np.sin(twinkle_phase)
+        brightness = max(0.1, min(1.0, brightness))  # Asegurar que esté entre 0.1 y 1.0
         size = 4 + 6 * brightness
         
         # Colores estelares variados

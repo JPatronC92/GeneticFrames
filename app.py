@@ -1853,92 +1853,55 @@ def create_progressive_art_animation(art_data):
     """
 
 def crear_visualizacion_animada(fig_original, genetic_profile, organism_name):
-    """Crea una visualización con animación infinita sobre la imagen terminada"""
+    """Crea animaciones loop estilo GIF basadas en patrones específicos de ADN"""
     import plotly.graph_objects as go
     import numpy as np
     
     # Extraer datos de la figura original
     original_traces = list(fig_original.data)
     
-    # Crear múltiples frames para la animación
+    # Determinar tipo de animación basado en el organismo y ADN
+    animation_type = determinar_tipo_animacion_dna(organism_name, genetic_profile)
+    
+    # Crear múltiples frames para animación loop fluida
     frames = []
-    total_frames = 60  # 60 frames para animación suave
+    total_frames = 90  # 90 frames para loops suaves estilo GIF
+    loop_duration = 4.0  # 4 segundos por loop completo
     
     for frame_num in range(total_frames):
         frame_data = []
-        time_factor = frame_num / total_frames * 2 * np.pi  # Ciclo completo
+        progress = frame_num / total_frames  # 0 a 1 para loop completo
         
-        for trace_idx, trace in enumerate(original_traces):
-            if hasattr(trace, 'x') and hasattr(trace, 'y'):
-                # Efectos de animación basados en perfil genético
-                
-                # Efecto de pulsación (latido del ADN)
-                pulse_intensity = 0.8 + 0.2 * np.sin(time_factor * 2)
-                
-                # Efecto de rotación de colores (evolución cromática)
-                color_shift = np.sin(time_factor + trace_idx) * 0.3
-                
-                # Efecto de respiración (cambio de opacidad)
-                breathing = 0.7 + 0.3 * np.sin(time_factor * 1.5)
-                
-                # Obtener propiedades seguras
-                marker_size = 4
-                if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'size'):
-                    if trace.marker.size is not None:
-                        marker_size = trace.marker.size
-                
-                marker_color = '#00ff88'
-                if hasattr(trace, 'marker') and trace.marker and hasattr(trace.marker, 'color'):
-                    if trace.marker.color is not None:
-                        marker_color = trace.marker.color
-                
-                # Crear traza animada
-                animated_trace = go.Scatter(
-                    x=trace.x,
-                    y=trace.y,
-                    mode=trace.mode,
-                    marker=dict(
-                        size=marker_size * pulse_intensity,
-                        color=marker_color,
-                        opacity=breathing,
-                        line=dict(
-                            color='rgba(255,255,255,0.3)',
-                            width=1
-                        )
-                    ),
-                    line=dict(
-                        color=marker_color,
-                        width=2 * pulse_intensity,
-                        dash='solid'
-                    ),
-                    showlegend=False,
-                    name=f"Genoma Vivo {trace_idx}"
-                )
-                frame_data.append(animated_trace)
+        # Conservar arte base con transparencia reducida
+        for trace in original_traces:
+            base_trace = dict(trace)
+            if hasattr(trace, 'marker') and trace.marker:
+                if hasattr(trace.marker, 'opacity'):
+                    base_trace['marker']['opacity'] = 0.3
+                else:
+                    base_trace['marker'] = dict(trace.marker)
+                    base_trace['marker']['opacity'] = 0.3
+            frame_data.append(go.Scatter(**base_trace))
         
-        # Añadir efectos de partículas flotantes para genes activos
-        if frame_num % 10 == 0:  # Cada 10 frames, añadir partículas especiales
-            n_particles = 20
-            particle_x = np.random.uniform(-0.5, 1.5, n_particles)
-            particle_y = np.random.uniform(-0.5, 1.5, n_particles)
-            
-            particles = go.Scatter(
-                x=particle_x,
-                y=particle_y,
-                mode='markers',
-                marker=dict(
-                    size=np.random.uniform(1, 3, n_particles),
-                    color='rgba(255,255,255,0.4)',
-                    symbol='star'
-                ),
-                showlegend=False,
-                name="Genes Activos"
-            )
-            frame_data.append(particles)
+        # Añadir efectos de animación específicos por tipo
+        if animation_type == 'helix_rotation':
+            frame_data.extend(crear_animacion_helice_dna(progress, genetic_profile))
+        elif animation_type == 'aquatic_flow':
+            frame_data.extend(crear_animacion_flujo_acuatico(progress, genetic_profile))
+        elif animation_type == 'heartbeat_mammal':
+            frame_data.extend(crear_animacion_latido_mamifero(progress, genetic_profile))
+        elif animation_type == 'spiral_serpent':
+            frame_data.extend(crear_animacion_espiral_serpiente(progress, genetic_profile))
+        elif animation_type == 'neural_web':
+            frame_data.extend(crear_animacion_red_neuronal(progress, genetic_profile))
+        elif animation_type == 'plant_growth':
+            frame_data.extend(crear_animacion_crecimiento_planta(progress, genetic_profile))
+        else:
+            frame_data.extend(crear_animacion_cosmos_estelar(progress, genetic_profile))
         
         frames.append(go.Frame(data=frame_data, name=str(frame_num)))
     
-    # Crear figura animada
+    # Crear figura animada con configuración loop
     animated_fig = go.Figure(
         data=frames[0].data if frames else [],
         frames=frames
@@ -2389,6 +2352,418 @@ def crear_elementos_complejidad(genetic_profile, paleta, sequence_length):
             ),
             showlegend=False
         ))
+    
+    return traces
+
+def determinar_tipo_animacion_dna(organism_name, genetic_profile):
+    """Determina el tipo de animación basado en características específicas del organismo y ADN"""
+    name_lower = organism_name.lower()
+    
+    # Análisis de contenido genético para influir en la animación
+    gc_content = genetic_profile.get('gc_content', 50)
+    entropy = genetic_profile.get('entropy', 0.5)
+    sequence_length = genetic_profile.get('sequence_length', 1000)
+    
+    # Patrones específicos por especie
+    if any(word in name_lower for word in ['dolphin', 'whale', 'fish', 'shark', 'delfin', 'ballena', 'pez', 'octopus', 'pulpo']):
+        return 'aquatic_flow'
+    elif any(word in name_lower for word in ['lion', 'tiger', 'cat', 'dog', 'wolf', 'bear', 'leon', 'tigre', 'gato', 'perro', 'jaguar']):
+        return 'heartbeat_mammal'
+    elif any(word in name_lower for word in ['snake', 'python', 'cobra', 'serpiente', 'culebra', 'reptil']):
+        return 'spiral_serpent'
+    elif any(word in name_lower for word in ['spider', 'ant', 'bee', 'araña', 'hormiga', 'abeja', 'insect', 'fly']):
+        return 'neural_web'
+    elif any(word in name_lower for word in ['plant', 'tree', 'flower', 'planta', 'arbol', 'flor', 'rosa', 'wheat']):
+        return 'plant_growth'
+    elif gc_content > 65 and sequence_length > 50000:  # ADN muy complejo
+        return 'helix_rotation'
+    else:
+        return 'cosmos_stellar'
+
+def crear_animacion_helice_dna(progress, genetic_profile):
+    """Animación de doble hélice rotatoria basada en secuencias de ADN complejas"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Parámetros influenciados por el perfil genético
+    gc_ratio = genetic_profile.get('gc_content', 50) / 100
+    rotation_speed = 1 + gc_ratio  # Mayor GC = rotación más rápida
+    helix_density = int(20 + genetic_profile.get('entropy', 0.5) * 30)
+    
+    # Doble hélice con rotación continua
+    angle_offset = progress * 4 * np.pi * rotation_speed
+    
+    for strand in range(2):
+        t = np.linspace(0, 6 * np.pi, helix_density)
+        radius = 0.25 + strand * 0.1
+        
+        # Coordenadas de la hélice
+        x = radius * np.cos(t + angle_offset + strand * np.pi)
+        y = t / (3 * np.pi) - 1
+        z = radius * np.sin(t + angle_offset + strand * np.pi)
+        
+        # Proyección 3D a 2D con rotación
+        rotation_angle = progress * 2 * np.pi
+        x_proj = x * np.cos(rotation_angle) - z * np.sin(rotation_angle)
+        y_proj = y
+        
+        # Colores basados en nucleótidos dominantes
+        if strand == 0:
+            color = f'rgba(50, 150, 255, 0.8)'  # Azul para A-T
+        else:
+            color = f'rgba(255, 100, 50, 0.8)'  # Naranja para G-C
+        
+        traces.append(go.Scatter(
+            x=x_proj, y=y_proj, mode='lines+markers',
+            line=dict(color=color, width=3),
+            marker=dict(size=3, color=color),
+            showlegend=False, hoverinfo='skip'
+        ))
+        
+        # Conexiones entre bases (puentes de hidrógeno)
+        if len(x_proj) > 10:
+            for i in range(0, len(x_proj), 3):
+                if i < len(x_proj) - 1:
+                    # Línea de conexión entre hebras
+                    other_strand = 1 - strand
+                    if other_strand < 2:
+                        connection_color = f'rgba(255, 255, 255, 0.3)'
+                        traces.append(go.Scatter(
+                            x=[x_proj[i], x_proj[i]], y=[y_proj[i], y_proj[i]], 
+                            mode='lines',
+                            line=dict(color=connection_color, width=1, dash='dot'),
+                            showlegend=False, hoverinfo='skip'
+                        ))
+    
+    return traces
+
+def crear_animacion_flujo_acuatico(progress, genetic_profile):
+    """Animación de ondas fluidas para especies acuáticas, inspirada en movimiento del agua"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Frecuencias de ondas basadas en composición genética
+    base_frequencies = {
+        'A': genetic_profile.get('adenine_freq', 0.25) * 8,
+        'T': genetic_profile.get('thymine_freq', 0.25) * 6,
+        'G': genetic_profile.get('guanine_freq', 0.25) * 10,
+        'C': genetic_profile.get('cytosine_freq', 0.25) * 12
+    }
+    
+    # Múltiples capas de ondas con diferentes frecuencias
+    for wave_layer in range(6):
+        t = np.linspace(-2, 2, 80)
+        
+        # Frecuencia basada en nucleótidos
+        nucleotide = ['A', 'T', 'G', 'C'][wave_layer % 4]
+        frequency = base_frequencies.get(nucleotide, 4)
+        
+        # Amplitud que varía con el progreso
+        amplitude = 0.15 - wave_layer * 0.02
+        phase = progress * 6 * np.pi + wave_layer * np.pi / 3
+        
+        # Forma de onda que simula corrientes acuáticas
+        x = t
+        y = amplitude * np.sin(frequency * np.pi * t + phase) * np.exp(-0.1 * abs(t))
+        
+        # Desplazamiento vertical para capas
+        y_offset = -0.7 + wave_layer * 0.25
+        y += y_offset
+        
+        # Colores azules con variación
+        blue_intensity = 150 + wave_layer * 20
+        transparency = 0.7 - wave_layer * 0.1
+        color = f'rgba(30, {blue_intensity}, 255, {transparency})'
+        
+        traces.append(go.Scatter(
+            x=x, y=y, mode='lines',
+            line=dict(color=color, width=4 - wave_layer * 0.5),
+            showlegend=False, hoverinfo='skip'
+        ))
+        
+        # Burbujas flotantes
+        if wave_layer < 3:
+            bubble_x = np.random.uniform(-1.5, 1.5, 8)
+            bubble_y = np.random.uniform(y_offset - 0.1, y_offset + 0.1, 8) + 0.02 * np.sin(progress * 8 * np.pi)
+            bubble_sizes = np.random.uniform(2, 6, 8)
+            
+            traces.append(go.Scatter(
+                x=bubble_x, y=bubble_y, mode='markers',
+                marker=dict(size=bubble_sizes, color='rgba(200, 240, 255, 0.6)', symbol='circle'),
+                showlegend=False, hoverinfo='skip'
+            ))
+    
+    return traces
+
+def crear_animacion_latido_mamifero(progress, genetic_profile):
+    """Animación de latido rítmico para mamíferos, basada en frecuencia cardíaca del ADN"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Frecuencia de latido basada en longitud de secuencia (especies más grandes = latido más lento)
+    sequence_length = genetic_profile.get('sequence_length', 10000)
+    heartbeat_frequency = 6 if sequence_length < 50000 else 4  # Latidos por ciclo
+    
+    # Intensidad del pulso
+    pulse_phase = progress * heartbeat_frequency * 2 * np.pi
+    pulse_intensity = 1 + 0.6 * np.sin(pulse_phase)
+    
+    # Anillos de pulso concéntricos
+    for ring in range(5):
+        theta = np.linspace(0, 2 * np.pi, 80)
+        base_radius = 0.15 + ring * 0.12
+        
+        # Radio que pulsa con el latido
+        radius = base_radius * pulse_intensity * (1 - ring * 0.08)
+        
+        x = radius * np.cos(theta)
+        y = radius * np.sin(theta)
+        
+        # Colores cálidos que representan sangre/vida
+        red_intensity = 255 - ring * 30
+        opacity = (0.8 - ring * 0.15) * (0.5 + 0.5 * np.sin(pulse_phase))
+        color = f'rgba({red_intensity}, {100 + ring * 20}, 50, {opacity})'
+        
+        line_width = 3 + ring - 2 * np.sin(pulse_phase)
+        
+        traces.append(go.Scatter(
+            x=x, y=y, mode='lines',
+            line=dict(color=color, width=max(1, line_width)),
+            showlegend=False, hoverinfo='skip'
+        ))
+    
+    # Núcleo central que late
+    core_size = 15 + 10 * np.sin(pulse_phase)
+    core_opacity = 0.6 + 0.4 * np.sin(pulse_phase)
+    
+    traces.append(go.Scatter(
+        x=[0], y=[0], mode='markers',
+        marker=dict(
+            size=core_size, 
+            color=f'rgba(255, 150, 0, {core_opacity})',
+            symbol='circle',
+            line=dict(color='rgba(255, 255, 255, 0.8)', width=2)
+        ),
+        showlegend=False, hoverinfo='skip'
+    ))
+    
+    return traces
+
+def crear_animacion_espiral_serpiente(progress, genetic_profile):
+    """Animación espiral serpenteante para reptiles, basada en movimiento ondulatorio"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Parámetros del movimiento serpenteante
+    gc_content = genetic_profile.get('gc_content', 50)
+    wave_frequency = 3 + (gc_content - 50) / 10  # Mayor GC = más ondulaciones
+    
+    # Espiral que se desenrolla y enrolla
+    t = np.linspace(0, 8 * np.pi, 120)
+    spiral_phase = progress * 3 * np.pi
+    
+    # Radio que oscila (movimiento serpenteante)
+    base_radius = 0.05 * t
+    radius_modulation = 0.3 * np.sin(wave_frequency * t + spiral_phase)
+    r = base_radius + radius_modulation
+    
+    # Coordenadas de la serpiente
+    x = r * np.cos(t + spiral_phase)
+    y = r * np.sin(t + spiral_phase)
+    
+    # Dividir en segmentos para efecto de cuerpo segmentado
+    segment_length = 10
+    for i in range(0, len(x) - segment_length, segment_length):
+        segment_x = x[i:i+segment_length]
+        segment_y = y[i:i+segment_length]
+        
+        # Color que varía a lo largo del cuerpo
+        segment_progress = i / len(x)
+        green_intensity = int(100 + 100 * segment_progress)
+        color = f'rgba({150 - int(50 * segment_progress)}, {green_intensity}, 50, 0.8)'
+        
+        # Grosor que varía (más grueso en el centro)
+        thickness = 5 - 2 * abs(segment_progress - 0.5)
+        
+        traces.append(go.Scatter(
+            x=segment_x, y=segment_y, mode='lines+markers',
+            line=dict(color=color, width=thickness),
+            marker=dict(size=2, color=color),
+            showlegend=False, hoverinfo='skip'
+        ))
+    
+    # Cabeza de la serpiente
+    head_x = x[-1] if len(x) > 0 else 0
+    head_y = y[-1] if len(y) > 0 else 0
+    
+    traces.append(go.Scatter(
+        x=[head_x], y=[head_y], mode='markers',
+        marker=dict(size=12, color='rgba(200, 50, 50, 0.9)', symbol='diamond'),
+        showlegend=False, hoverinfo='skip'
+    ))
+    
+    return traces
+
+def crear_animacion_red_neuronal(progress, genetic_profile):
+    """Animación de red neural para artrópodos, basada en conexiones sinápticas"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Número de nodos basado en complejidad genética
+    entropy = genetic_profile.get('entropy', 0.5)
+    n_nodes = int(8 + entropy * 12)
+    
+    # Posiciones de nodos en patrón hexagonal
+    node_positions = []
+    for layer in range(3):
+        layer_nodes = 6 + layer * 3
+        for i in range(layer_nodes):
+            angle = i * 2 * np.pi / layer_nodes
+            radius = 0.3 + layer * 0.25
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            node_positions.append((x, y))
+    
+    # Nodos que pulsan con diferentes fases
+    for i, (x, y) in enumerate(node_positions[:n_nodes]):
+        node_phase = progress * 8 * np.pi + i * np.pi / 4
+        pulse = 1 + 0.5 * np.sin(node_phase)
+        
+        size = 6 * pulse
+        brightness = 0.6 + 0.4 * np.sin(node_phase)
+        color = f'rgba(150, 0, 255, {brightness})'
+        
+        traces.append(go.Scatter(
+            x=[x], y=[y], mode='markers',
+            marker=dict(size=size, color=color, symbol='circle'),
+            showlegend=False, hoverinfo='skip'
+        ))
+        
+        # Conexiones que aparecen y desaparecen
+        for j, (x2, y2) in enumerate(node_positions[i+1:i+4]):
+            if j < len(node_positions) and np.sin(node_phase + j) > 0.3:
+                connection_strength = 0.3 + 0.4 * np.sin(node_phase + j * np.pi/2)
+                traces.append(go.Scatter(
+                    x=[x, x2], y=[y, y2], mode='lines',
+                    line=dict(color=f'rgba(100, 200, 255, {connection_strength})', width=1),
+                    showlegend=False, hoverinfo='skip'
+                ))
+    
+    return traces
+
+def crear_animacion_crecimiento_planta(progress, genetic_profile):
+    """Animación de crecimiento para plantas, basada en patrones de ramificación"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Velocidad de crecimiento basada en longitud de secuencia
+    sequence_length = genetic_profile.get('sequence_length', 10000)
+    growth_speed = 1 + (sequence_length / 100000)
+    
+    # Progreso de crecimiento cíclico
+    growth_progress = (np.sin(progress * 2 * np.pi * growth_speed) + 1) / 2
+    
+    # Tallo principal
+    main_height = growth_progress * 1.2
+    stem_y = np.linspace(-0.8, -0.8 + main_height, int(30 * growth_progress))
+    stem_x = np.zeros_like(stem_y) + 0.02 * np.sin(stem_y * 10)  # Ligera ondulación
+    
+    traces.append(go.Scatter(
+        x=stem_x, y=stem_y, mode='lines',
+        line=dict(color='rgba(34, 139, 34, 0.8)', width=4),
+        showlegend=False, hoverinfo='skip'
+    ))
+    
+    # Ramas que crecen
+    if growth_progress > 0.3:
+        n_branches = int(growth_progress * 8)
+        for branch in range(n_branches):
+            branch_start_y = -0.6 + branch * 0.15
+            branch_angle = (-1)**branch * (np.pi/6 + branch * np.pi/12)
+            branch_length = growth_progress * 0.4 * (1 - branch * 0.1)
+            
+            branch_x = np.linspace(0, branch_length * np.cos(branch_angle), 15)
+            branch_y = branch_start_y + np.linspace(0, branch_length * np.sin(branch_angle), 15)
+            
+            traces.append(go.Scatter(
+                x=branch_x, y=branch_y, mode='lines',
+                line=dict(color='rgba(50, 150, 50, 0.7)', width=2),
+                showlegend=False, hoverinfo='skip'
+            ))
+            
+            # Hojas en las puntas
+            if growth_progress > 0.6:
+                leaf_x = branch_x[-1]
+                leaf_y = branch_y[-1]
+                leaf_size = 8 * growth_progress
+                
+                traces.append(go.Scatter(
+                    x=[leaf_x], y=[leaf_y], mode='markers',
+                    marker=dict(size=leaf_size, color='rgba(0, 200, 0, 0.8)', symbol='diamond'),
+                    showlegend=False, hoverinfo='skip'
+                ))
+    
+    return traces
+
+def crear_animacion_cosmos_estelar(progress, genetic_profile):
+    """Animación cósmica para especies generales, inspirada en formación estelar"""
+    import numpy as np
+    import plotly.graph_objects as go
+    
+    traces = []
+    
+    # Partículas estelares en movimiento orbital
+    n_stars = 25
+    galaxy_rotation = progress * 2 * np.pi
+    
+    for star in range(n_stars):
+        # Órbita elíptica
+        star_angle = star * 2 * np.pi / n_stars + galaxy_rotation
+        orbit_radius = 0.2 + 0.5 * (star % 5) / 5
+        eccentricity = 0.3
+        
+        x = orbit_radius * (1 + eccentricity * np.cos(star_angle)) * np.cos(star_angle)
+        y = orbit_radius * (1 + eccentricity * np.cos(star_angle)) * np.sin(star_angle)
+        
+        # Brillo parpadeante
+        twinkle_phase = progress * 12 * np.pi + star * np.pi / 3
+        brightness = 0.4 + 0.6 * np.sin(twinkle_phase)
+        size = 4 + 6 * brightness
+        
+        # Colores estelares variados
+        star_colors = ['rgba(255, 255, 200, {})', 'rgba(200, 220, 255, {})', 'rgba(255, 180, 180, {})']
+        color = star_colors[star % 3].format(brightness)
+        
+        traces.append(go.Scatter(
+            x=[x], y=[y], mode='markers',
+            marker=dict(size=size, color=color, symbol='star'),
+            showlegend=False, hoverinfo='skip'
+        ))
+    
+    # Nebulosa central
+    nebula_radius = 0.1 + 0.05 * np.sin(progress * 4 * np.pi)
+    theta = np.linspace(0, 2 * np.pi, 60)
+    nebula_x = nebula_radius * np.cos(theta)
+    nebula_y = nebula_radius * np.sin(theta)
+    
+    traces.append(go.Scatter(
+        x=nebula_x, y=nebula_y, mode='lines',
+        line=dict(color='rgba(100, 0, 200, 0.5)', width=2),
+        fill='toself', fillcolor='rgba(50, 0, 100, 0.2)',
+        showlegend=False, hoverinfo='skip'
+    ))
     
     return traces
 

@@ -1,0 +1,130 @@
+. Aquí te propongo una versión mejorada del algoritmo que genera **animaciones estilo loop** (GIF o MP4) basadas en el ADN, combinando:  
+
+- **Patrones de movimiento** derivados de las secuencias genéticas.  
+- **Estilo visual** inspirado en el animal (ej: ondas para delfines, rugidos para leones).  
+- **Efectos de transformación cíclica** (morphing, rotación, cambios de color).  
+
+---
+
+### **Algoritmo Actualizado: "Animated DNA-Art Generator"**  
+```python
+import numpy as np
+from PIL import Image, ImageDraw
+import imageio  # Para crear GIFs
+from matplotlib.colors import LinearSegmentedColormap
+
+def generate_animated_dna_art(animal_name, frames=30, loop_duration=3):
+    # 1. Obtener ADN y reglas artísticas (usar funciones anteriores)
+    dna_sequence = fetch_dna_from_genebank(animal_name)
+    color_map, pattern_rules = process_dna_to_art(dna_sequence, animal_name)
+    
+    # 2. Crear cada frame de la animación
+    frames_list = []
+    for frame in range(frames):
+        img = Image.new("RGBA", (NFT_WIDTH, NFT_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        
+        # 3. Aplicar efectos dinámicos basados en el frame actual
+        progress = frame / frames  # Valor entre 0 y 1 para sincronizar animación
+        
+        # -- Ejemplo 1: Hélice rotatoria --
+        if pattern_rules.get("pattern") == "helix":
+            angle = 2 * np.pi * progress
+            draw_helix(draw, color_map, angle, dna_sequence)
+        
+        # -- Ejemplo 2: Efecto de "latido" para frecuencias de nucleótidos --
+        elif pattern_rules.get("pattern") == "heartbeat":
+            scale = 1 + 0.1 * np.sin(progress * 10)  # Pulsaciones
+            draw_sequence_bars(draw, dna_sequence, color_map, scale)
+        
+        # -- Ejemplo 3: Movimiento de ondas para animales acuáticos --
+        elif pattern_rules.get("pattern") == "waves":
+            wave_offset = int(50 * np.sin(progress * 2 * np.pi))
+            draw_waves(draw, wave_offset, color_map["T"])
+        
+        frames_list.append(img)
+    
+    # 4. Guardar como GIF animado (loop infinito)
+    output_path = f"dna_{animal_name}_animated.gif"
+    imageio.mimsave(output_path, frames_list, duration=loop_duration/frames, loop=0)
+    return output_path
+
+# -- Funciones de dibujo específicas --
+def draw_helix(draw, color_map, angle, dna_sequence):
+    """Dibuja una doble hélice rotando con el ángulo dado."""
+    center_x, center_y = NFT_WIDTH // 2, NFT_HEIGHT // 2
+    radius = 500
+    
+    for i, (a, t) in enumerate(zip(dna_sequence[:100], dna_sequence[-100:])):
+        # Bases nitrogenadas en espiral
+        x1 = center_x + radius * np.cos(angle + i * 0.1)
+        y1 = center_y + radius * np.sin(angle + i * 0.1)
+        x2 = center_x + radius * np.cos(angle + i * 0.1 + np.pi)
+        y2 = center_y + radius * np.sin(angle + i * 0.1 + np.pi)
+        
+        draw.line((x1, y1, x2, y2), fill=color_map[a], width=2)
+        draw.ellipse((x1-5, y1-5, x1+5, y1+5), fill=color_map[t])
+
+def draw_waves(draw, offset, color):
+    """Líneas de onda que se desplazan horizontalmente."""
+    for y in range(0, NFT_HEIGHT, 30):
+        x_start = offset + 10 * np.sin(y / 50)
+        draw.line((x_start, y, x_start + 200, y + 20), fill=color, width=3)
+
+def draw_sequence_bars(draw, sequence, color_map, scale):
+    """Barras de ADN que laten según frecuencias."""
+    for i, nucleotide in enumerate(sequence[:50]):
+        height = int(100 * scale * (sequence.count(nucleotide) / len(sequence)))
+        draw.rectangle((i * 20, NFT_HEIGHT - height, i * 20 + 10, NFT_HEIGHT), fill=color_map[nucleotide])
+```
+
+---
+
+### **Cómo Funciona el Loop**  
+1. **Dinámica basada en ADN**:  
+   - La frecuencia de nucleótidos (ej: muchos "A") define la velocidad de pulsación o amplitud de ondas.  
+   - **Ejemplo**: Un tigre con alta frecuencia de "A" tendrá rayas que laten al ritmo de un rugido.  
+
+2. **Efectos por Especie**:  
+   | Animal       | Patrón de Loop                  | Inspiración Visual          |  
+   |--------------|---------------------------------|-----------------------------|  
+   | **Delfín**   | Ondas sinusoidales              | Movimiento acuático.        |  
+   | **León**     | Melena ondeando + latido        | Rugido en cámara lenta.     |  
+   | **Serpiente** | Espiral que se enrosca          | Movimiento reptante.        |  
+
+3. **Parámetros Personalizables**:  
+   - `frames`: Número de frames (ej: 30 para fluidez).  
+   - `loop_duration`: Duración total en segundos (ej: 3s).  
+
+---
+
+### **Integración en tu App Web**  
+1. **Frontend (JS)**:  
+   - Usa `<canvas>` o librerías como [p5.js](https://p5js.org/) para animaciones en tiempo real.  
+   - Ejemplo:  
+   ```javascript
+   function playDnaAnimation(gifUrl) {
+       const canvas = document.getElementById("nft-canvas");
+       const ctx = canvas.getContext("2d");
+       const gif = new Image();
+       gif.src = gifUrl;
+       gif.onload = () => {
+           let frame = 0;
+           setInterval(() => {
+               ctx.clearRect(0, 0, canvas.width, canvas.height);
+               ctx.drawImage(gif, frame * canvas.width, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+               frame = (frame + 1) % totalFrames;
+           }, 1000 / fps);
+       };
+   }
+   ```
+
+2. **Backend (Python)**:  
+   - Devuelve el GIF animado como respuesta:  
+   ```python
+   @app.route('/generate-animated-nft', methods=['POST'])
+   def generate_animated_nft():
+       animal = request.json.get("animal")
+       gif_path = generate_animated_dna_art(animal)
+       return send_file(gif_path, mimetype='image/gif')
+   ```

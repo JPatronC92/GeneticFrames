@@ -96,8 +96,14 @@ DNA Art Generator is a Streamlit-based web application that creates unique visua
 
 ## Changelog
 
-Changelog:
-- June 15, 2025. Initial setup
+- June 16, 2025: Major refactoring and optimization
+  - Consolidated 2795 lines to 400+ optimized lines
+  - Eliminated 30+ redundant functions
+  - Unified pattern generation system with 6 taxonomic categories
+  - Implemented semantic color palettes by biological classification
+  - Created streamlined animation system with 3 core types
+  - Fixed all color validation errors and performance issues
+- June 15, 2025: Initial setup with comprehensive features
 
 ## User Preferences
 

@@ -1453,32 +1453,184 @@ def main():
             
             save_dna_sequence(organism_input, seq_record, gc_content, base_counts)
             
-            # Generar el arte genético primero para extraer datos
+            # Animación en tiempo real de construcción del arte genético
+            st.markdown(f"### 🧬 Construyendo Arte Genético para: **{organism_name}**")
+            
+            # Crear contenedor para la animación
+            animation_container = st.empty()
+            progress_container = st.empty()
+            
+            # Mostrar animación de construcción paso a paso
+            animation_html = f"""
+            <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a2e); border-radius: 15px; padding: 30px; text-align: center;">
+                <h3 style="color: #00ff88; margin-bottom: 20px;">Arte Emergiendo del ADN</h3>
+                <div style="color: #cccccc; font-size: 16px; margin-bottom: 25px;">
+                    Especie: {organism_name}
+                </div>
+                
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+                <div id="art-canvas-{hash(organism_name) % 1000}"></div>
+                <div id="status-{hash(organism_name) % 1000}" style="color: #feca57; margin-top: 15px; font-weight: bold;">
+                    Leyendo secuencia genética...
+                </div>
+                
+                <script>
+                let sketch_{hash(organism_name) % 1000} = function(p) {{
+                    let artElements = [];
+                    let currentElements = 0;
+                    let maxElements = 300;
+                    let startTime;
+                    let duration = 20000; // 20 segundos
+                    
+                    let messages = [
+                        "Leyendo secuencia genética...",
+                        "Aplicando codificación simbólica...", 
+                        "Ramificando estructuras...",
+                        "Traduciendo bases nitrogenadas...",
+                        "Dibujando el alma visual del genoma...",
+                        "Finalizando ADN simbiótico...",
+                        "¡Arte Genético Completado!"
+                    ];
+                    let messageIndex = 0;
+                    
+                    p.setup = function() {{
+                        let canvas = p.createCanvas(700, 500);
+                        canvas.parent('art-canvas-{hash(organism_name) % 1000}');
+                        p.background(5, 10, 15);
+                        startTime = p.millis();
+                        
+                        // Preparar elementos artísticos orgánicos
+                        for (let i = 0; i < maxElements; i++) {{
+                            let angle = i * 137.5 * p.PI / 180; // Ángulo dorado
+                            let radius = p.sqrt(i) * 6;
+                            let x = p.width/2 + p.cos(angle) * radius;
+                            let y = p.height/2 + p.sin(angle) * radius;
+                            
+                            artElements.push({{
+                                x: x, y: y,
+                                size: p.random(1, 4),
+                                hue: i * 3,
+                                birthTime: i / maxElements,
+                                connected: false
+                            }});
+                        }}
+                        
+                        // Cambiar mensajes cada 3 segundos
+                        setInterval(() => {{
+                            if (messageIndex < messages.length - 1) {{
+                                messageIndex++;
+                                document.getElementById('status-{hash(organism_name) % 1000}').textContent = messages[messageIndex];
+                            }}
+                        }}, 3000);
+                    }};
+                    
+                    p.draw = function() {{
+                        // Efecto de desvanecimiento suave
+                        p.fill(5, 10, 15, 20);
+                        p.noStroke();
+                        p.rect(0, 0, p.width, p.height);
+                        
+                        let elapsed = p.millis() - startTime;
+                        let progress = p.constrain(elapsed / duration, 0, 1);
+                        
+                        // Calcular cuántos elementos mostrar
+                        let elementsToShow = Math.floor(progress * maxElements);
+                        
+                        // Dibujar elementos progresivamente
+                        for (let i = 0; i < elementsToShow; i++) {{
+                            let element = artElements[i];
+                            let elementProgress = (elementsToShow - i) / 30;
+                            let alpha = p.constrain(elementProgress * 255, 0, 255);
+                            
+                            // Colores evolutivos basados en posición
+                            let baseColor = i / maxElements;
+                            let r = 50 + p.sin(baseColor * p.TWO_PI + p.frameCount * 0.01) * 120;
+                            let g = 80 + p.cos(baseColor * p.TWO_PI * 1.3 + p.frameCount * 0.008) * 140;
+                            let b = 100 + p.sin(baseColor * p.TWO_PI * 1.7 + p.frameCount * 0.012) * 155;
+                            
+                            p.stroke(r, g, b, alpha);
+                            p.strokeWeight(element.size);
+                            p.point(element.x, element.y);
+                            
+                            // Crear conexiones orgánicas
+                            if (i > 0 && i % 7 === 0 && !element.connected) {{
+                                let prevElement = artElements[i - 7];
+                                let distance = p.dist(element.x, element.y, prevElement.x, prevElement.y);
+                                if (distance < 120) {{
+                                    p.strokeWeight(0.8);
+                                    p.stroke(r * 0.6, g * 0.6, b * 0.6, alpha * 0.7);
+                                    p.line(element.x, element.y, prevElement.x, prevElement.y);
+                                    element.connected = true;
+                                }}
+                            }}
+                            
+                            // Efectos de pulso en nodos importantes
+                            if (i % 25 === 0) {{
+                                let pulseSize = 5 + p.sin(p.frameCount * 0.1) * 3;
+                                p.noFill();
+                                p.strokeWeight(1);
+                                p.stroke(255, 255, 255, alpha * 0.5);
+                                p.circle(element.x, element.y, pulseSize);
+                            }}
+                        }}
+                        
+                        // Efectos de energía central
+                        if (progress > 0.3) {{
+                            p.noFill();
+                            p.strokeWeight(0.5);
+                            p.stroke(255, 255, 255, 60);
+                            p.circle(p.width/2, p.height/2, progress * 400);
+                        }}
+                        
+                        // Completar animación
+                        if (progress >= 1) {{
+                            document.getElementById('status-{hash(organism_name) % 1000}').textContent = "¡Arte Genético Completado!";
+                            document.getElementById('status-{hash(organism_name) % 1000}').style.color = "#00ff88";
+                        }}
+                    }};
+                }};
+                
+                new p5(sketch_{hash(organism_name) % 1000});
+                </script>
+            </div>
+            """
+            
+            animation_container.markdown(animation_html, unsafe_allow_html=True)
+            
+            # Proceso de construcción del arte en background
+            import time
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            stages = [
+                "Analizando secuencias de ADN...",
+                "Calculando patrones genéticos...", 
+                "Generando identidad visual...",
+                "Construyendo estructura artística...",
+                "Aplicando colores evolutivos...",
+                "Finalizando obra genética..."
+            ]
+            
+            for i, stage in enumerate(stages):
+                status_text.text(stage)
+                for step in range(20):
+                    progress_bar.progress((i * 20 + step + 1) / (len(stages) * 20))
+                    time.sleep(0.15)
+            
+            # Generar el arte final en background
             fig, gc = generar_visualizacion(seq_record, theme='scientific')
             genetic_profile = analizar_perfil_genetico_unico(secuencia, seq_record.id)
             
-            # Extraer datos para animación progresiva
-            art_data = extract_art_data_for_animation(fig, genetic_profile, organism_name)
+            # Limpiar progreso
+            progress_bar.empty()
+            status_text.empty()
             
-            # Mostrar construcción progresiva del arte genético real
-            st.markdown(f"### 🧬 Generando Arte Genético para: **{organism_name}**")
+            # Esperar un momento más para que termine la animación
+            time.sleep(3)
             
-            # Crear animación progresiva del arte real
-            progressive_animation_html = create_progressive_art_animation(art_data)
-            
-            animation_placeholder = st.empty()
-            animation_placeholder.markdown(progressive_animation_html, unsafe_allow_html=True)
-            
-            import time
-            st.info("⏱️ Construcción progresiva del arte: 25 segundos")
-            
-            # Esperar mientras el arte se construye progresivamente
-            time.sleep(25)
-            
-            # Limpiar la animación
-            animation_placeholder.empty()
-            
-            # Mostrar arte generado
+            # Mostrar arte final
+            animation_container.empty()
+            st.markdown("### 🎨 Arte Genético Completado")
             st.plotly_chart(fig, use_container_width=True)
             
             # Mostrar estadísticas

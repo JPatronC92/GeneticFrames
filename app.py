@@ -2026,14 +2026,14 @@ def crear_patron_mamifero(n_points, paleta, genetic_profile):
         x = r * np.cos(angles * golden_ratio) * (1 + 0.1 * np.sin(angles * 3))
         y = r * np.sin(angles * golden_ratio) * (1 + 0.1 * np.cos(angles * 3))
         
-        # Colores cálidos y terrosos
-        colors = [paleta['primary'][layer % len(paleta['primary'])] for _ in range(len(x))]
+        # Color único para esta capa
+        layer_color = paleta['primary'][layer % len(paleta['primary'])]
         
         traces.append(go.Scatter(
             x=x, y=y, mode='markers',
             marker=dict(
                 size=np.random.uniform(2, 8, len(x)),
-                color=colors,
+                color=layer_color,
                 opacity=0.7,
                 line=dict(color=paleta['secondary'][0], width=0.5)
             ),
@@ -2061,7 +2061,7 @@ def crear_patron_acuatico(n_points, paleta, genetic_profile):
     
     # Ondas fluidas multicapa
     for wave in range(7):
-        t = np.linspace(0, 4 * np.pi, n_points // 7)
+        t = np.linspace(0, 4 * np.pi, max(10, n_points // 7))
         amplitude = 0.6 - wave * 0.08
         frequency = 2 + wave * 0.5
         
@@ -2158,42 +2158,42 @@ def crear_patron_reptil(n_points, paleta, genetic_profile):
     
     traces = []
     
-    # Estructura de escamas hexagonales
-    hex_layers = 5
+    # Estructura de escamas hexagonales simplificada
+    hex_layers = 3
     for layer in range(hex_layers):
-        radius = 0.2 + layer * 0.15
-        n_hexagons = 6 + layer * 3
+        radius = 0.3 + layer * 0.2
+        n_hexagons = 6 + layer * 2
         
-        for hex_i in range(n_hexagons):
-            angle = hex_i * 2 * np.pi / n_hexagons
-            center_x = radius * np.cos(angle)
-            center_y = radius * np.sin(angle)
-            
-            # Hexágono individual
-            hex_angles = np.linspace(0, 2 * np.pi, 7)
-            hex_size = 0.08 - layer * 0.01
-            hex_x = center_x + hex_size * np.cos(hex_angles)
-            hex_y = center_y + hex_size * np.sin(hex_angles)
-            
-            color_idx = (layer + hex_i) % len(paleta['primary'])
-            
-            traces.append(go.Scatter(
-                x=hex_x, y=hex_y, mode='lines',
-                line=dict(color=paleta['primary'][color_idx], width=2),
-                fill='tonext' if hex_i > 0 else None,
-                fillcolor=f"rgba({int(paleta['secondary'][color_idx][1:3], 16)}, {int(paleta['secondary'][color_idx][3:5], 16)}, {int(paleta['secondary'][color_idx][5:7], 16)}, 0.3)",
-                showlegend=False
-            ))
+        color_idx = layer % len(paleta['primary'])
+        
+        # Círculo de escamas
+        angles = np.linspace(0, 2 * np.pi, n_hexagons, endpoint=False)
+        x_hex = radius * np.cos(angles)
+        y_hex = radius * np.sin(angles)
+        
+        traces.append(go.Scatter(
+            x=x_hex, y=y_hex, mode='markers',
+            marker=dict(
+                size=15 - layer * 3,
+                color=paleta['primary'][color_idx],
+                opacity=0.7,
+                symbol='hexagon',
+                line=dict(color=paleta['secondary'][color_idx], width=2)
+            ),
+            showlegend=False
+        ))
     
     # Patrones de camuflaje
-    for stripe in range(8):
-        y_pos = -0.8 + stripe * 0.2
-        x_wave = np.linspace(-0.9, 0.9, 50)
-        y_wave = y_pos + 0.05 * np.sin(x_wave * 8 + stripe)
+    for stripe in range(6):
+        y_pos = -0.6 + stripe * 0.2
+        x_wave = np.linspace(-0.8, 0.8, 40)
+        y_wave = y_pos + 0.05 * np.sin(x_wave * 6 + stripe)
+        
+        stripe_color = paleta['accent'][stripe % len(paleta['accent'])]
         
         traces.append(go.Scatter(
             x=x_wave, y=y_wave, mode='lines',
-            line=dict(color=paleta['accent'][stripe % len(paleta['accent'])], width=3),
+            line=dict(color=stripe_color, width=3),
             showlegend=False
         ))
     
@@ -2261,61 +2261,51 @@ def crear_patron_botanico(n_points, paleta, genetic_profile):
     
     traces = []
     
-    # Sistema de raíces
+    # Sistema de raíces simplificado
     for root in range(5):
         angle = root * 2 * np.pi / 5 + np.pi  # Hacia abajo
-        length = np.linspace(0, 0.7, 30)
+        length = np.linspace(0, 0.6, 25)
         
-        # Ramificación fractal
-        for branch_level in range(3):
-            branch_factor = 0.7 ** branch_level
-            n_branches = 2 ** branch_level
-            
-            for branch in range(n_branches):
-                branch_angle = angle + (branch - n_branches/2) * 0.3 * branch_factor
-                
-                x = length * branch_factor * np.cos(branch_angle)
-                y = -0.1 + length * branch_factor * np.sin(branch_angle)
-                
-                # Añadir ondulación orgánica
-                x += 0.02 * np.sin(length * 10)
-                y += 0.01 * np.cos(length * 15)
-                
-                color_idx = (root + branch_level) % len(paleta['primary'])
-                
-                traces.append(go.Scatter(
-                    x=x, y=y, mode='lines',
-                    line=dict(color=paleta['primary'][color_idx], width=3-branch_level),
-                    showlegend=False
-                ))
+        x = length * 0.8 * np.cos(angle)
+        y = -0.1 + length * 0.8 * np.sin(angle)
+        
+        # Añadir ondulación orgánica
+        x += 0.02 * np.sin(length * 8)
+        y += 0.01 * np.cos(length * 12)
+        
+        color_idx = root % len(paleta['primary'])
+        
+        traces.append(go.Scatter(
+            x=x, y=y, mode='lines',
+            line=dict(color=paleta['primary'][color_idx], width=3),
+            showlegend=False
+        ))
     
-    # Follaje superior
-    leaf_clusters = 12
+    # Follaje superior simplificado
+    leaf_clusters = 8
     for cluster in range(leaf_clusters):
         angle = cluster * 2 * np.pi / leaf_clusters
-        radius = 0.4 + 0.2 * np.random.random()
+        radius = 0.4 + 0.15 * np.sin(cluster)
         
         center_x = radius * np.cos(angle)
         center_y = 0.2 + radius * np.sin(angle)
         
-        # Hojas individuales
-        for leaf in range(5):
-            leaf_angle = angle + leaf * 0.3
-            leaf_x = center_x + 0.1 * np.cos(leaf_angle)
-            leaf_y = center_y + 0.1 * np.sin(leaf_angle)
-            
-            # Forma de hoja
-            t = np.linspace(0, 2 * np.pi, 20)
-            x_leaf = leaf_x + 0.05 * np.cos(t) * (1 + 0.5 * np.cos(2*t))
-            y_leaf = leaf_y + 0.08 * np.sin(t)
-            
-            traces.append(go.Scatter(
-                x=x_leaf, y=y_leaf, mode='lines',
-                line=dict(color=paleta['accent'][cluster % len(paleta['accent'])], width=2),
-                fill='toself',
-                fillcolor=f"rgba({int(paleta['secondary'][leaf % len(paleta['secondary'])][1:3], 16)}, {int(paleta['secondary'][leaf % len(paleta['secondary'])][3:5], 16)}, {int(paleta['secondary'][leaf % len(paleta['secondary'])][5:7], 16)}, 0.4)",
-                showlegend=False
-            ))
+        # Forma de hoja simplificada
+        t = np.linspace(0, 2 * np.pi, 15)
+        x_leaf = center_x + 0.06 * np.cos(t) * (1 + 0.3 * np.cos(2*t))
+        y_leaf = center_y + 0.08 * np.sin(t)
+        
+        leaf_color = paleta['accent'][cluster % len(paleta['accent'])]
+        fill_color = paleta['secondary'][cluster % len(paleta['secondary'])]
+        
+        traces.append(go.Scatter(
+            x=x_leaf, y=y_leaf, mode='lines',
+            line=dict(color=leaf_color, width=2),
+            fill='toself',
+            fillcolor=fill_color,
+            opacity=0.6,
+            showlegend=False
+        ))
     
     return traces
 
@@ -2326,36 +2316,33 @@ def crear_patron_general(n_points, paleta, genetic_profile):
     
     traces = []
     
-    # Espiral galáctica
-    t = np.linspace(0, 6 * np.pi, n_points)
+    # Espiral galáctica simplificada
+    t = np.linspace(0, 6 * np.pi, min(n_points, 200))
     r = 0.1 * t
     x = r * np.cos(t) * np.exp(-0.1 * t)
     y = r * np.sin(t) * np.exp(-0.1 * t)
     
-    # Colores que cambian con la posición
-    colors = []
-    for i in range(len(x)):
-        color_idx = int(i / len(x) * len(paleta['primary']))
-        if color_idx >= len(paleta['primary']):
-            color_idx = len(paleta['primary']) - 1
-        colors.append(paleta['primary'][color_idx])
+    # Color único para la espiral
+    spiral_color = paleta['primary'][0]
     
     traces.append(go.Scatter(
         x=x, y=y, mode='markers',
-        marker=dict(size=np.linspace(2, 8, len(x)), color=colors, opacity=0.8),
+        marker=dict(size=np.linspace(2, 8, len(x)), color=spiral_color, opacity=0.8),
         showlegend=False
     ))
     
     # Anillos concéntricos
     for ring in range(5):
-        theta = np.linspace(0, 2 * np.pi, 100)
+        theta = np.linspace(0, 2 * np.pi, 60)
         radius = 0.2 + ring * 0.15
         x_ring = radius * np.cos(theta)
         y_ring = radius * np.sin(theta)
         
+        ring_color = paleta['accent'][ring % len(paleta['accent'])]
+        
         traces.append(go.Scatter(
             x=x_ring, y=y_ring, mode='lines',
-            line=dict(color=paleta['accent'][ring % len(paleta['accent'])], width=1, dash='dash'),
+            line=dict(color=ring_color, width=1, dash='dash'),
             showlegend=False
         ))
     
@@ -2371,7 +2358,7 @@ def crear_elementos_complejidad(genetic_profile, paleta, sequence_length):
     # Nodos de alta entropía
     entropy = genetic_profile.get('entropy', 0)
     if entropy > 0.8:
-        n_entropy_nodes = int(entropy * 20)
+        n_entropy_nodes = min(int(entropy * 15), 30)
         nodes_x = np.random.uniform(-0.9, 0.9, n_entropy_nodes)
         nodes_y = np.random.uniform(-0.9, 0.9, n_entropy_nodes)
         
@@ -2388,7 +2375,7 @@ def crear_elementos_complejidad(genetic_profile, paleta, sequence_length):
     
     # Campos de frecuencia para secuencias largas
     if sequence_length > 50000:
-        field_density = min(sequence_length // 10000, 50)
+        field_density = min(sequence_length // 10000, 40)
         field_x = np.random.uniform(-1, 1, field_density)
         field_y = np.random.uniform(-1, 1, field_density)
         

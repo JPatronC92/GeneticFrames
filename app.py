@@ -78,50 +78,133 @@ def clean_scientific_name(name: str) -> str:
     return cleaned.strip()
 
 def fetch_dna_sequence(organism: str):
-    """Obtiene secuencia de ADN con estrategia optimizada"""
+    """
+    Obtiene secuencia de ADN desde NCBI con estrategia de búsqueda optimizada
+    Prioriza: genoma completo > cromosomas > mitocondrial > plastidios
+    """
     try:
         Entrez.email = st.secrets["ENTREZ_EMAIL"]
         clean_name = clean_scientific_name(organism).replace('"', '').replace("'", "")
         
+        # Estrategias priorizando genomas completos y cromosomas
         search_strategies = [
-            f"{clean_name}[Organism] AND genome AND complete",
-            f"{clean_name}[Organism] AND chromosome", 
-            f"{clean_name}[Organism] AND mitochondrion",
-            f"{clean_name}[Organism]"
+            # Genoma completo (máxima prioridad)
+            f'"{clean_name}"[Organism] AND ("complete genome"[Title] OR "genome assembly"[Title])',
+            f'"{clean_name}"[Organism] AND "chromosome"[Title] AND "complete"[Title]',
+            
+            # Cromosomas individuales  
+            f'"{clean_name}"[Organism] AND "chromosome"[Title]',
+            f'"{clean_name}"[Organism] AND ("chromosome 1"[Title] OR "chr1"[Title])',
+            
+            # Genomas de cloroplastos (plantas)
+            f'"{clean_name}"[Organism] AND ("chloroplast"[Title] OR "plastid"[Title]) AND "complete"[Title]',
+            
+            # Mitocondrial como respaldo
+            f'"{clean_name}"[Organism] AND "mitochondrion"[Title] AND "complete"[Title]',
+            f'"{clean_name}"[Organism] AND "mitochondrial"[Title]',
+            
+            # Búsqueda general
+            f'"{clean_name}"[Organism]'
         ]
         
-        for strategy in search_strategies:
-            search_handle = Entrez.esearch(
-                db="nucleotide", term=strategy, retmax=10, sort="length"
-            )
-            search_results = Entrez.read(search_handle)
-            search_handle.close()
-            
-            if search_results and "IdList" in search_results and search_results["IdList"]:
-                seq_id = search_results["IdList"][0]
-                break
-        else:
-            raise ValueError(f"No se encontraron secuencias para {organism}")
+        best_sequence = None
+        best_score = 0
         
-        fetch_handle = Entrez.efetch(db="nucleotide", id=seq_id, rettype="fasta", retmode="text")
-        fasta_data = fetch_handle.read()
-        fetch_handle.close()
+        for i, strategy in enumerate(search_strategies):
+            try:
+                search_handle = Entrez.esearch(
+                    db="nucleotide", 
+                    term=strategy, 
+                    retmax=5,
+                    sort="length"  # Ordena por longitud descendente
+                )
+                search_results = Entrez.read(search_handle)
+                search_handle.close()
+                
+                if search_results and search_results.get("IdList"):
+                    # Evalúa cada secuencia encontrada
+                    for seq_id in search_results["IdList"][:3]:  # Máximo 3 por estrategia
+                        try:
+                            # Obtiene metadatos primero
+                            summary_handle = Entrez.esummary(db="nucleotide", id=seq_id)
+                            summary = Entrez.read(summary_handle)[0]
+                            summary_handle.close()
+                            
+                            length = int(summary.get("Length", 0))
+                            title = summary.get("Title", "").lower()
+                            
+                            # Sistema de puntuación para priorizar mejores secuencias
+                            score = calculate_sequence_priority_score(title, length, i)
+                            
+                            if score > best_score and length >= 1000:  # Mínimo 1kb
+                                # Obtiene la secuencia
+                                fetch_handle = Entrez.efetch(
+                                    db="nucleotide", 
+                                    id=seq_id, 
+                                    rettype="fasta", 
+                                    retmode="text"
+                                )
+                                fasta_data = fetch_handle.read()
+                                fetch_handle.close()
+                                
+                                if fasta_data.strip():
+                                    seq_record = SeqIO.read(io.StringIO(fasta_data), "fasta")
+                                    if len(seq_record.seq) >= 1000:
+                                        best_sequence = seq_record
+                                        best_score = score
+                        
+                        except Exception:
+                            continue  # Prueba la siguiente secuencia
+                            
+            except Exception:
+                continue  # Prueba la siguiente estrategia
         
-        if not fasta_data.strip():
-            raise ValueError(f"Secuencia vacía para {organism}")
+        if not best_sequence:
+            raise ValueError(f"No se encontraron secuencias válidas para {organism}")
         
-        seq_record = SeqIO.read(io.StringIO(fasta_data), "fasta")
-        
-        if len(seq_record.seq) < 100:
-            raise ValueError(f"Secuencia demasiado corta: {len(seq_record.seq)} bp")
-        
-        return seq_record
+        return best_sequence
         
     except Exception as e:
         raise ValueError(f"Error obteniendo secuencia: {str(e)}")
 
+def calculate_sequence_priority_score(title: str, length: int, strategy_index: int) -> float:
+    """Calcula puntuación de prioridad para seleccionar la mejor secuencia"""
+    score = 0
+    
+    # Bonificación por tipo de secuencia (mayor = mejor)
+    if "complete genome" in title:
+        score += 1000
+    elif "genome assembly" in title:
+        score += 900
+    elif "chromosome" in title and "complete" in title:
+        score += 800
+    elif "chromosome" in title:
+        score += 700
+    elif "chloroplast" in title and "complete" in title:
+        score += 600
+    elif "plastid" in title and "complete" in title:
+        score += 550
+    elif "mitochondrion" in title and "complete" in title:
+        score += 400
+    elif "mitochondrial" in title:
+        score += 300
+    
+    # Bonificación por longitud (logarítmica para evitar dominancia extrema)
+    score += math.log10(max(length, 1)) * 50
+    
+    # Penalización por índice de estrategia (estrategias posteriores son menos preferidas)
+    score -= strategy_index * 50
+    
+    # Bonificaciones específicas
+    if "reference" in title:
+        score += 100
+    if "refseq" in title:
+        score += 50
+        
+    return score
+
 def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
-    """Análisis genético completo y optimizado"""
+    """Análisis completo del perfil genético para arte único"""
     base_counts = {'A': 0, 'T': 0, 'C': 0, 'G': 0}
     for base in sequence:
         if base in base_counts:
@@ -129,22 +212,57 @@ def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
     
     total_bases = sum(base_counts.values())
     if total_bases == 0:
-        return None
+        return {
+            'organism_id': organism_id,
+            'sequence_length': 0,
+            'error': 'Secuencia vacía'
+        }
     
     frequencies = {base: count / total_bases for base, count in base_counts.items()}
     
-    # Dinucleótidos para diferenciación
+    # Análisis de dinucleótidos y trinucleótidos
     dinucleotides = {}
+    trinucleotides = {}
+    
     for i in range(len(sequence) - 1):
         dinuc = sequence[i:i+2]
         if len(dinuc) == 2 and all(b in 'ATCG' for b in dinuc):
             dinucleotides[dinuc] = dinucleotides.get(dinuc, 0) + 1
     
-    # Entropía de Shannon
-    entropy = -sum(f * math.log2(f) for f in frequencies.values() if f > 0)
+    for i in range(len(sequence) - 2):
+        trinuc = sequence[i:i+3]
+        if len(trinuc) == 3 and all(b in 'ATCG' for b in trinuc):
+            trinucleotides[trinuc] = trinucleotides.get(trinuc, 0) + 1
     
-    # Contenido GC
+    # Análisis de patrones repetitivos
+    repeat_patterns = detect_repeat_patterns(sequence)
+    
+    # Análisis de skew (bias direccional)
+    gc_skew = calculate_gc_skew(sequence)
+    at_skew = calculate_at_skew(sequence)
+    
+    # Entropía de Shannon para diferentes niveles
+    entropy_mono = -sum(f * math.log2(f) for f in frequencies.values() if f > 0)
+    
+    dinuc_freq = {k: v/len(sequence) for k, v in dinucleotides.items()}
+    entropy_di = -sum(f * math.log2(f) for f in dinuc_freq.values() if f > 0)
+    
+    # Contenido GC y análisis de ventanas
     gc_content = (base_counts['G'] + base_counts['C']) / total_bases * 100
+    gc_variance = calculate_gc_variance(sequence)
+    
+    # Periodicidades y estructuras secundarias
+    periodicities = detect_periodicities(sequence)
+    
+    # Complejidad genética multidimensional
+    complexity_score = calculate_complexity_score(
+        entropy_mono, entropy_di, gc_content, gc_variance, repeat_patterns
+    )
+    
+    # Firma genética única (hash de características específicas)
+    genetic_signature = generate_genetic_signature(
+        sequence, organism_id, dinucleotides, trinucleotides
+    )
     
     return {
         'organism_id': organism_id,
@@ -152,14 +270,154 @@ def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
         'base_counts': base_counts,
         'frequencies': frequencies,
         'dinucleotides': dinucleotides,
+        'trinucleotides': trinucleotides,
+        'repeat_patterns': repeat_patterns,
         'gc_content': gc_content,
-        'entropy': entropy,
-        'complexity_score': entropy * gc_content / 50,
-        'adenine_freq': frequencies['A'],
-        'thymine_freq': frequencies['T'],
-        'guanine_freq': frequencies['G'],
-        'cytosine_freq': frequencies['C']
+        'gc_skew': gc_skew,
+        'at_skew': at_skew,
+        'gc_variance': gc_variance,
+        'entropy_mono': entropy_mono,
+        'entropy_di': entropy_di,
+        'periodicities': periodicities,
+        'complexity_score': complexity_score,
+        'genetic_signature': genetic_signature,
+        'purine_content': (frequencies['A'] + frequencies['G']) * 100,
+        'pyrimidine_content': (frequencies['T'] + frequencies['C']) * 100,
+        'weak_bonds': (frequencies['A'] + frequencies['T']) * 100,
+        'strong_bonds': (frequencies['G'] + frequencies['C']) * 100
     }
+
+def detect_repeat_patterns(sequence: str, min_length: int = 3, max_length: int = 20) -> Dict:
+    """Detecta patrones de repetición en la secuencia"""
+    patterns = {}
+    seq_len = len(sequence)
+    
+    for length in range(min_length, min(max_length + 1, seq_len // 10)):
+        pattern_counts = {}
+        
+        for i in range(seq_len - length + 1):
+            pattern = sequence[i:i+length]
+            if all(b in 'ATCG' for b in pattern):
+                pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+        
+        # Solo conserva patrones que aparecen múltiples veces
+        significant_patterns = {p: c for p, c in pattern_counts.items() if c >= 3}
+        if significant_patterns:
+            patterns[f'length_{length}'] = significant_patterns
+    
+    return patterns
+
+def calculate_gc_skew(sequence: str, window_size: int = 1000) -> List[float]:
+    """Calcula GC skew en ventanas deslizantes"""
+    skews = []
+    for i in range(0, len(sequence) - window_size + 1, window_size // 2):
+        window = sequence[i:i+window_size]
+        g_count = window.count('G')
+        c_count = window.count('C')
+        
+        if g_count + c_count > 0:
+            skew = (g_count - c_count) / (g_count + c_count)
+        else:
+            skew = 0
+        skews.append(skew)
+    
+    return skews
+
+def calculate_at_skew(sequence: str, window_size: int = 1000) -> List[float]:
+    """Calcula AT skew en ventanas deslizantes"""
+    skews = []
+    for i in range(0, len(sequence) - window_size + 1, window_size // 2):
+        window = sequence[i:i+window_size]
+        a_count = window.count('A')
+        t_count = window.count('T')
+        
+        if a_count + t_count > 0:
+            skew = (a_count - t_count) / (a_count + t_count)
+        else:
+            skew = 0
+        skews.append(skew)
+    
+    return skews
+
+def calculate_gc_variance(sequence: str, window_size: int = 500) -> float:
+    """Calcula la varianza del contenido GC en ventanas"""
+    gc_contents = []
+    for i in range(0, len(sequence) - window_size + 1, window_size // 4):
+        window = sequence[i:i+window_size]
+        gc_count = window.count('G') + window.count('C')
+        gc_content = gc_count / len(window) if len(window) > 0 else 0
+        gc_contents.append(gc_content)
+    
+    if len(gc_contents) > 1:
+        mean_gc = sum(gc_contents) / len(gc_contents)
+        variance = sum((gc - mean_gc) ** 2 for gc in gc_contents) / len(gc_contents)
+        return variance
+    return 0
+
+def detect_periodicities(sequence: str) -> Dict:
+    """Detecta periodicidades específicas en la secuencia"""
+    periodicities = {}
+    max_period = min(50, len(sequence) // 20)
+    
+    for period in range(2, max_period + 1):
+        correlations = []
+        for i in range(len(sequence) - period):
+            if sequence[i] == sequence[i + period]:
+                correlations.append(1)
+            else:
+                correlations.append(0)
+        
+        if correlations:
+            correlation = sum(correlations) / len(correlations)
+            if correlation > 0.3:  # Umbral para periodicidad significativa
+                periodicities[f'period_{period}'] = correlation
+    
+    return periodicities
+
+def calculate_complexity_score(entropy_mono: float, entropy_di: float, 
+                              gc_content: float, gc_variance: float, 
+                              repeat_patterns: Dict) -> float:
+    """Calcula puntuación de complejidad multidimensional"""
+    # Normaliza entropías (máximo teórico: 2.0 para mono, 4.0 para di)
+    norm_entropy_mono = entropy_mono / 2.0
+    norm_entropy_di = entropy_di / 4.0
+    
+    # Normaliza GC content (óptimo alrededor de 50%)
+    gc_score = 1 - abs(gc_content - 50) / 50
+    
+    # Penaliza alta varianza GC (indica falta de homogeneidad)
+    variance_penalty = max(0, 1 - gc_variance * 10)
+    
+    # Bonifica presencia de patrones repetitivos complejos
+    pattern_bonus = min(0.3, len(repeat_patterns) * 0.05)
+    
+    complexity = (
+        norm_entropy_mono * 0.3 + 
+        norm_entropy_di * 0.3 + 
+        gc_score * 0.2 + 
+        variance_penalty * 0.1 + 
+        pattern_bonus * 0.1
+    )
+    
+    return max(0, min(1, complexity))
+
+def generate_genetic_signature(sequence: str, organism_id: str, 
+                              dinucleotides: Dict, trinucleotides: Dict) -> str:
+    """Genera una firma genética única específica de la especie"""
+    # Combina características únicas para crear una firma
+    signature_elements = [
+        organism_id,
+        str(len(sequence)),
+        str(sequence.count('A')),
+        str(sequence.count('T')),
+        str(sequence.count('G')),
+        str(sequence.count('C')),
+        str(sorted(dinucleotides.items(), key=lambda x: x[1], reverse=True)[:5]),
+        str(sorted(trinucleotides.items(), key=lambda x: x[1], reverse=True)[:3])
+    ]
+    
+    signature_string = '|'.join(signature_elements)
+    return hashlib.md5(signature_string.encode()).hexdigest()[:16]
 
 # ============================================================================
 # CLASIFICACIÓN TAXONÓMICA

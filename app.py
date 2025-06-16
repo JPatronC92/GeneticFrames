@@ -32,37 +32,68 @@ st.set_page_config(
 if 'session_id' not in st.session_state:
     st.session_state.session_id = hashlib.md5(str(np.random.random()).encode()).hexdigest()
 
-# Paletas de colores semánticas por categoría taxonómica
+# Paletas de colores semánticas por categoría taxonómica con capas de habitat
 TAXONOMIC_PALETTES = {
     'mammal': {
         'primary': ['#8B4513', '#CD853F', '#DEB887', '#F4A460', '#D2691E'],
         'secondary': ['#FF6347', '#FFB347', '#FFCCCB', '#FFA07A', '#FA8072'],
-        'accent': ['#4169E1', '#6495ED', '#87CEEB', '#B0C4DE', '#E6E6FA']
+        'accent': ['#4169E1', '#6495ED', '#87CEEB', '#B0C4DE', '#E6E6FA'],
+        'habitat_bg': ['rgba(139,69,19,0.1)', 'rgba(160,82,45,0.15)', 'rgba(205,133,63,0.1)'],
+        'texture': ['#2F1B14', '#8B4513', '#A0522D']
     },
     'aquatic': {
         'primary': ['#000080', '#0000CD', '#4169E1', '#6495ED', '#87CEEB'],
         'secondary': ['#20B2AA', '#48D1CC', '#40E0D0', '#AFEEEE', '#E0FFFF'],
-        'accent': ['#FF1493', '#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB']
+        'accent': ['#FF1493', '#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB'],
+        'habitat_bg': ['rgba(0,0,128,0.08)', 'rgba(0,206,209,0.12)', 'rgba(72,209,204,0.08)'],
+        'texture': ['#000033', '#003366', '#006699']
     },
     'avian': {
         'primary': ['#FFD700', '#FFA500', '#FF8C00', '#FF7F50', '#FF6347'],
         'secondary': ['#4682B4', '#5F9EA0', '#6495ED', '#7B68EE', '#9370DB'],
-        'accent': ['#32CD32', '#90EE90', '#98FB98', '#F0FFF0', '#FFFFE0']
+        'accent': ['#32CD32', '#90EE90', '#98FB98', '#F0FFF0', '#FFFFE0'],
+        'habitat_bg': ['rgba(135,206,235,0.1)', 'rgba(255,215,0,0.08)', 'rgba(176,196,222,0.12)'],
+        'texture': ['#87CEEB', '#4682B4', '#B0C4DE']
     },
     'reptile': {
         'primary': ['#228B22', '#32CD32', '#9ACD32', '#ADFF2F', '#7FFF00'],
         'secondary': ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#F5DEB3'],
-        'accent': ['#DC143C', '#B22222', '#FF0000', '#FF6347', '#FA8072']
+        'accent': ['#DC143C', '#B22222', '#FF0000', '#FF6347', '#FA8072'],
+        'habitat_bg': ['rgba(34,139,34,0.1)', 'rgba(139,69,19,0.08)', 'rgba(205,133,63,0.12)'],
+        'texture': ['#006400', '#228B22', '#8FBC8F']
     },
     'arthropod': {
         'primary': ['#4B0082', '#8B008B', '#9932CC', '#BA55D3', '#DA70D6'],
         'secondary': ['#FF4500', '#FF6347', '#FF8C00', '#FFA500', '#FFD700'],
-        'accent': ['#00CED1', '#40E0D0', '#48D1CC', '#20B2AA', '#008B8B']
+        'accent': ['#00CED1', '#40E0D0', '#48D1CC', '#20B2AA', '#008B8B'],
+        'habitat_bg': ['rgba(75,0,130,0.1)', 'rgba(255,69,0,0.08)', 'rgba(64,224,208,0.12)'],
+        'texture': ['#2E0854', '#4B0082', '#8B008B']
     },
     'plant': {
         'primary': ['#006400', '#228B22', '#32CD32', '#90EE90', '#98FB98'],
         'secondary': ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#DEB887'],
-        'accent': ['#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB', '#F0F8FF']
+        'accent': ['#FF69B4', '#FFB6C1', '#FFC0CB', '#FFCCCB', '#F0F8FF'],
+        'habitat_bg': ['rgba(0,100,0,0.08)', 'rgba(34,139,34,0.12)', 'rgba(144,238,144,0.1)'],
+        'texture': ['#013220', '#228B22', '#32CD32']
+    }
+}
+
+# Configuraciones de capas por habitat
+HABITAT_LAYERS = {
+    'terrestrial': {
+        'background_layers': 5,
+        'depth_effect': 'mountain_ranges',
+        'texture_pattern': 'geological'
+    },
+    'aquatic': {
+        'background_layers': 7,
+        'depth_effect': 'underwater_zones',
+        'texture_pattern': 'fluid_currents'
+    },
+    'aerial': {
+        'background_layers': 6,
+        'depth_effect': 'cloud_stratification',
+        'texture_pattern': 'wind_patterns'
     }
 }
 
@@ -426,25 +457,355 @@ def generate_genetic_signature(sequence: str, organism_id: str,
 def determine_taxonomic_category(species_name: str, description: str) -> str:
     """Determina categoría taxonómica para paletas semánticas"""
     name_lower = species_name.lower()
+    desc_lower = description.lower()
     
     patterns = {
-        'mammal': ['panthera', 'canis', 'felis', 'homo', 'bos', 'ursus', 'rattus'],
-        'aquatic': ['balaenoptera', 'tursiops', 'salmo', 'octopus', 'cancer'],
-        'avian': ['aquila', 'bubo', 'falco', 'corvus', 'gallus'],
-        'reptile': ['python', 'crocodylus', 'iguana', 'gecko', 'chelonia'],
-        'arthropod': ['drosophila', 'apis', 'aedes', 'tribolium'],
-        'plant': ['arabidopsis', 'oryza', 'triticum', 'zea', 'solanum']
+        'mammal': ['panthera', 'canis', 'felis', 'homo', 'bos', 'ursus', 'rattus', 'mammalia'],
+        'aquatic': ['balaenoptera', 'tursiops', 'salmo', 'octopus', 'cancer', 'fish', 'whale', 'dolphin'],
+        'avian': ['aquila', 'bubo', 'falco', 'corvus', 'gallus', 'bird', 'aves'],
+        'reptile': ['python', 'crocodylus', 'iguana', 'gecko', 'chelonia', 'reptilia', 'snake'],
+        'arthropod': ['drosophila', 'apis', 'aedes', 'tribolium', 'arthropoda', 'insect'],
+        'plant': ['arabidopsis', 'oryza', 'triticum', 'zea', 'solanum', 'plantae', 'plant']
     }
     
     for category, category_patterns in patterns.items():
-        if any(pattern in name_lower for pattern in category_patterns):
+        if any(pattern in name_lower or pattern in desc_lower for pattern in category_patterns):
             return category
     
     return 'mammal'  # Default
 
+def determine_habitat_type(category: str, species_name: str) -> str:
+    """Determina el tipo de habitat basado en la categoría y especie"""
+    name_lower = species_name.lower()
+    
+    if category == 'aquatic':
+        return 'aquatic'
+    elif category == 'avian':
+        return 'aerial'
+    elif any(term in name_lower for term in ['whale', 'dolphin', 'fish', 'octopus', 'shark']):
+        return 'aquatic'
+    elif any(term in name_lower for term in ['eagle', 'hawk', 'bird', 'falcon']):
+        return 'aerial'
+    else:
+        return 'terrestrial'
+
 def get_taxonomic_palette(category: str) -> Dict:
     """Obtiene paleta específica por categoría"""
     return TAXONOMIC_PALETTES.get(category, TAXONOMIC_PALETTES['mammal'])
+
+# ============================================================================
+# SISTEMA DE CAPAS MÚLTIPLES Y EFECTOS DE PROFUNDIDAD
+# ============================================================================
+
+def create_habitat_background_layers(habitat_type: str, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
+    """Genera capas de fondo basadas en habitat con efectos de profundidad"""
+    layers = []
+    config = HABITAT_LAYERS[habitat_type]
+    num_layers = config['background_layers']
+    
+    if habitat_type == 'aquatic':
+        layers.extend(create_underwater_depth_layers(num_layers, palette, genetic_profile))
+    elif habitat_type == 'aerial':
+        layers.extend(create_cloud_stratification_layers(num_layers, palette, genetic_profile))
+    else:  # terrestrial
+        layers.extend(create_mountain_range_layers(num_layers, palette, genetic_profile))
+    
+    return layers
+
+def create_underwater_depth_layers(num_layers: int, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
+    """Crea capas de profundidad submarina con efecto de desenfoque"""
+    layers = []
+    
+    for depth in range(num_layers):
+        # Más profundo = más oscuro y difuso
+        depth_factor = depth / num_layers
+        opacity = 0.15 - depth * 0.02
+        
+        # Genera ondas de corrientes marinas
+        x_current = np.linspace(-1.5, 1.5, 60)
+        y_current = []
+        
+        for x in x_current:
+            # Múltiples armónicos para crear corrientes complejas
+            y = 0
+            for harmonic in range(1, 4):
+                amplitude = 0.3 / harmonic * (1 - depth_factor)
+                frequency = harmonic * 2 + depth * 0.5
+                phase = depth * np.pi / 3
+                y += amplitude * np.sin(frequency * x + phase)
+            
+            # Desplazamiento vertical por profundidad
+            y += -0.8 + depth * 0.25
+            y_current.append(y)
+        
+        # Color que se vuelve más azul oscuro con la profundidad
+        base_color = palette['habitat_bg'][min(depth, len(palette['habitat_bg'])-1)]
+        
+        layers.append(go.Scatter(
+            x=x_current, y=y_current,
+            mode='lines',
+            line=dict(
+                color=base_color,
+                width=max(1, 4 - depth),
+                smoothing=1.0
+            ),
+            fill='tonexty' if depth > 0 else None,
+            fillcolor=f'rgba(0,50,100,{opacity*0.5})',
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Añade partículas flotantes (plancton, sedimentos)
+        if genetic_profile.get('complexity_score', 0) > 0.5:
+            particles_x = np.random.uniform(-1.2, 1.2, 15 - depth * 2)
+            particles_y = np.random.uniform(-0.9 + depth * 0.2, -0.7 + depth * 0.2, 15 - depth * 2)
+            
+            layers.append(go.Scatter(
+                x=particles_x, y=particles_y,
+                mode='markers',
+                marker=dict(
+                    size=np.random.uniform(1, 3, len(particles_x)),
+                    color=f'rgba(100,150,255,{opacity})',
+                    opacity=0.6
+                ),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+    
+    return layers
+
+def create_cloud_stratification_layers(num_layers: int, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
+    """Crea capas de estratificación atmosférica"""
+    layers = []
+    
+    for altitude in range(num_layers):
+        altitude_factor = altitude / num_layers
+        opacity = 0.12 - altitude * 0.015
+        
+        # Genera formaciones nubosas
+        theta = np.linspace(0, 4 * np.pi, 80)
+        x_cloud = []
+        y_cloud = []
+        
+        for t in theta:
+            # Patrones de viento en diferentes altitudes
+            wind_pattern = np.sin(t + altitude * np.pi / 2) * 0.1
+            turbulence = np.sin(t * 3 + altitude) * 0.05
+            
+            x = (t / (2 * np.pi) - 1) + wind_pattern
+            y = 0.4 + altitude * 0.15 + turbulence
+            
+            # Efecto de perspectiva atmosférica
+            if abs(x) < 1.3:  # Solo dentro del campo visual
+                x_cloud.append(x)
+                y_cloud.append(y)
+        
+        base_color = palette['habitat_bg'][min(altitude, len(palette['habitat_bg'])-1)]
+        
+        layers.append(go.Scatter(
+            x=x_cloud, y=y_cloud,
+            mode='lines',
+            line=dict(
+                color=base_color,
+                width=max(1, 5 - altitude),
+                smoothing=1.3
+            ),
+            fill='tonextx',
+            fillcolor=f'rgba(200,220,255,{opacity})',
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return layers
+
+def create_mountain_range_layers(num_layers: int, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
+    """Crea capas de montañas con perspectiva geological"""
+    layers = []
+    
+    for range_idx in range(num_layers):
+        distance_factor = range_idx / num_layers
+        opacity = 0.2 - range_idx * 0.03
+        
+        # Genera perfiles montañosos
+        x_mountain = np.linspace(-1.5, 1.5, 50)
+        y_mountain = []
+        
+        base_height = 0.3 - range_idx * 0.1
+        
+        for x in x_mountain:
+            # Múltiples picos con diferentes frecuencias
+            height = base_height
+            
+            # Pico principal
+            height += 0.4 * np.exp(-((x - 0.2) ** 2) / (0.3 + range_idx * 0.1))
+            
+            # Picos secundarios
+            height += 0.2 * np.exp(-((x + 0.5) ** 2) / 0.4)
+            height += 0.15 * np.exp(-((x - 0.8) ** 2) / 0.2)
+            
+            # Ruido geológico
+            noise = 0.05 * np.sin(x * 20 + range_idx) * (1 - distance_factor)
+            height += noise
+            
+            y_mountain.append(height)
+        
+        # Color que se vuelve más azulado con la distancia (perspectiva atmosférica)
+        base_color = palette['texture'][min(range_idx, len(palette['texture'])-1)]
+        
+        layers.append(go.Scatter(
+            x=x_mountain, y=y_mountain,
+            mode='lines',
+            line=dict(
+                color=base_color,
+                width=max(1, 6 - range_idx),
+                smoothing=0.8
+            ),
+            fill='tozeroy',
+            fillcolor=f'rgba(100,80,60,{opacity})',
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return layers
+
+def create_procedural_texture_overlay(habitat_type: str, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
+    """Genera texturas procedurales basadas en patrones de ADN"""
+    textures = []
+    config = HABITAT_LAYERS[habitat_type]
+    pattern_type = config['texture_pattern']
+    
+    # Usa patrones de repetición del ADN para generar texturas
+    repeat_patterns = genetic_profile.get('repeat_patterns', {})
+    complexity = genetic_profile.get('complexity_score', 0.5)
+    
+    if pattern_type == 'fluid_currents':
+        textures.extend(create_fluid_texture(repeat_patterns, palette, complexity))
+    elif pattern_type == 'wind_patterns':
+        textures.extend(create_wind_texture(repeat_patterns, palette, complexity, genetic_profile))
+    else:  # geological
+        textures.extend(create_geological_texture(repeat_patterns, palette, complexity, genetic_profile))
+    
+    return textures
+
+def create_fluid_texture(repeat_patterns: Dict, palette: Dict, complexity: float) -> List[go.Scatter]:
+    """Crea textura fluida basada en patrones de ADN repetitivos"""
+    textures = []
+    
+    # Extrae periodicidades del ADN para generar flujos
+    flow_lines = int(10 + complexity * 15)
+    
+    for flow in range(flow_lines):
+        t = np.linspace(0, 6 * np.pi, 60)
+        
+        # Usa patrones de repetición para modular el flujo
+        base_frequency = 2 + flow * 0.3
+        amplitude = 0.1 + complexity * 0.15
+        
+        # Aplica modulaciones basadas en dinucleótidos
+        if repeat_patterns:
+            # Usa el patrón más común para modular
+            common_pattern = max(repeat_patterns.get('length_3', {'ATG': 1}).items(), key=lambda x: x[1])
+            pattern_hash = sum(ord(c) for c in common_pattern[0]) if common_pattern else 100
+            phase_shift = (pattern_hash % 100) / 100 * 2 * np.pi
+        else:
+            phase_shift = flow * np.pi / 8
+        
+        x_flow = t / np.pi - 1.5
+        y_flow = amplitude * np.sin(base_frequency * t + phase_shift) + flow * 0.05 - 0.6
+        
+        # Transparencia basada en complejidad genética
+        opacity = 0.05 + complexity * 0.1
+        
+        textures.append(go.Scatter(
+            x=x_flow, y=y_flow,
+            mode='lines',
+            line=dict(
+                color=f'rgba(50,150,255,{opacity})',
+                width=1,
+                smoothing=1.2
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return textures
+
+def create_wind_texture(repeat_patterns: Dict, palette: Dict, complexity: float, genetic_profile: Dict = None) -> List[go.Scatter]:
+    """Crea textura de viento basada en periodicidades del ADN"""
+    textures = []
+    
+    # Genera líneas de viento basadas en periodicidades
+    wind_streams = int(8 + complexity * 12)
+    
+    for stream in range(wind_streams):
+        x_wind = np.linspace(-1.2, 1.2, 40)
+        y_wind = []
+        
+        base_altitude = 0.2 + stream * 0.08
+        
+        for x in x_wind:
+            # Turbulencia basada en entropía del ADN
+            entropy = genetic_profile.get('entropy_mono', 1.5) if genetic_profile else 1.5
+            turbulence = entropy / 2 * 0.1 * np.sin(x * 15 + stream * np.pi / 4)
+            
+            y = base_altitude + turbulence
+            y_wind.append(y)
+        
+        opacity = 0.03 + complexity * 0.07
+        
+        textures.append(go.Scatter(
+            x=x_wind, y=y_wind,
+            mode='lines',
+            line=dict(
+                color=f'rgba(200,220,255,{opacity})',
+                width=0.5,
+                smoothing=1.5
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return textures
+
+def create_geological_texture(repeat_patterns: Dict, palette: Dict, complexity: float, genetic_profile: Dict = None) -> List[go.Scatter]:
+    """Crea textura geológica basada en la firma genética"""
+    textures = []
+    
+    # Genera estratos geológicos basados en GC content y skew
+    gc_content = genetic_profile.get('gc_content', 50) if genetic_profile else 50
+    strata_count = int(5 + complexity * 8)
+    
+    for stratum in range(strata_count):
+        x_strata = np.linspace(-1.3, 1.3, 30)
+        y_base = -0.8 + stratum * 0.15
+        
+        # Modula la forma del estrato con características genéticas
+        y_strata = []
+        for x in x_strata:
+            # Usa GC content para crear ondulaciones
+            gc_modulation = (gc_content - 50) / 50 * 0.05
+            noise = 0.02 * np.sin(x * 25 + stratum * np.pi / 3)
+            
+            y = y_base + gc_modulation + noise
+            y_strata.append(y)
+        
+        # Color basado en contenido mineral (simulado con datos genéticos)
+        mineral_intensity = (stratum % 3) / 3
+        color_intensity = 0.1 + mineral_intensity * 0.15
+        
+        textures.append(go.Scatter(
+            x=x_strata, y=y_strata,
+            mode='lines',
+            line=dict(
+                color=f'rgba(120,80,60,{color_intensity})',
+                width=2,
+                smoothing=0.6
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    return textures
 
 # ============================================================================
 # GENERADORES DE PATRONES VISUALES UNIFICADOS
@@ -631,35 +992,166 @@ def create_animation_frame(progress: float, animation_type: str, genetic_profile
 # MOTOR DE VISUALIZACIÓN PRINCIPAL
 # ============================================================================
 
-def create_genetic_art(sequence: str, genetic_profile: Dict, category: str, palette: Dict) -> go.Figure:
-    """Motor principal de generación de arte genético"""
+def create_genetic_art(sequence: str, genetic_profile: Dict, category: str, palette: Dict, organism_name: str = "") -> go.Figure:
+    """Motor principal de generación de arte genético con capas múltiples"""
     fig = go.Figure()
     
     sequence_length = len(sequence)
     n_points = min(2000, sequence_length // 10)
     
-    # Generar patrón base
-    pattern_traces = create_pattern_by_category(category, n_points, palette, genetic_profile)
+    # Determina el tipo de habitat para las capas de fondo
+    habitat_type = determine_habitat_type(category, organism_name)
     
+    # Capa 1: Capas de fondo con efectos de profundidad
+    background_layers = create_habitat_background_layers(habitat_type, palette, genetic_profile)
+    for layer in background_layers:
+        fig.add_trace(layer)
+    
+    # Capa 2: Texturas procedurales basadas en ADN
+    texture_overlays = create_procedural_texture_overlay(habitat_type, palette, genetic_profile)
+    for texture in texture_overlays:
+        fig.add_trace(texture)
+    
+    # Capa 3: Patrón genético principal (arte base)
+    pattern_traces = create_pattern_by_category(category, n_points, palette, genetic_profile)
     for trace in pattern_traces:
         fig.add_trace(trace)
     
-    # Layout optimizado
+    # Capa 4: Elementos de complejidad genética superpuestos
+    complexity_elements = create_genetic_complexity_overlay(genetic_profile, palette, sequence_length)
+    for element in complexity_elements:
+        fig.add_trace(element)
+    
+    # Layout optimizado con efectos visuales mejorados
     fig.update_layout(
         title=dict(
-            text=f"🧬 Genoma Artístico - {genetic_profile.get('organism_id', 'Especie')}",
-            font=dict(size=20, color=palette['accent'][0]),
+            text=f"🧬 {organism_name} - Genoma Multicapa",
+            font=dict(size=22, color=palette['accent'][0], family="Arial Black"),
             x=0.5
         ),
-        plot_bgcolor='rgba(5,5,5,1)',
-        paper_bgcolor='rgba(5,5,5,1)',
+        plot_bgcolor='rgba(2,2,8,1)',  # Fondo más profundo
+        paper_bgcolor='rgba(2,2,8,1)',
         showlegend=False,
-        xaxis=dict(visible=False, range=[-1.2, 1.2]),
-        yaxis=dict(visible=False, range=[-1.2, 1.2]),
-        height=700
+        xaxis=dict(visible=False, range=[-1.6, 1.6]),  # Rango ampliado para capas
+        yaxis=dict(visible=False, range=[-1.6, 1.6]),
+        height=750,
+        # Añade efectos de iluminación sutil
+        annotations=[
+            dict(
+                text=f"Habitat: {habitat_type.title()} | Complejidad: {genetic_profile.get('complexity_score', 0):.2f}",
+                xref="paper", yref="paper",
+                x=0.02, y=0.98,
+                showarrow=False,
+                font=dict(size=10, color=palette['accent'][1]),
+                bgcolor="rgba(0,0,0,0.3)",
+                bordercolor=palette['accent'][2],
+                borderwidth=1
+            )
+        ]
     )
     
     return fig
+
+def create_genetic_complexity_overlay(genetic_profile: Dict, palette: Dict, sequence_length: int) -> List[go.Scatter]:
+    """Crea elementos visuales superpuestos basados en complejidad genética"""
+    overlay_elements = []
+    
+    complexity = genetic_profile.get('complexity_score', 0.5)
+    entropy = genetic_profile.get('entropy_mono', 1.5)
+    gc_content = genetic_profile.get('gc_content', 50)
+    
+    # Elementos que aparecen solo en genomas de alta complejidad
+    if complexity > 0.7:
+        # Constelación de elementos genéticos especiales
+        constellation_points = int(15 + complexity * 20)
+        
+        # Distribución basada en la firma genética
+        genetic_signature = genetic_profile.get('genetic_signature', 'default')
+        np.random.seed(sum(ord(c) for c in genetic_signature[:8]))  # Seed determinista
+        
+        x_stars = np.random.uniform(-1.3, 1.3, constellation_points)
+        y_stars = np.random.uniform(-1.3, 1.3, constellation_points)
+        
+        # Tamaños basados en entropía local
+        sizes = np.random.uniform(2, 8, constellation_points) * (entropy / 2)
+        
+        # Colores basados en GC content
+        if gc_content > 60:
+            star_colors = [palette['accent'][0]] * constellation_points
+        elif gc_content < 40:
+            star_colors = [palette['accent'][1]] * constellation_points
+        else:
+            star_colors = [palette['accent'][2]] * constellation_points
+        
+        overlay_elements.append(go.Scatter(
+            x=x_stars, y=y_stars,
+            mode='markers',
+            marker=dict(
+                size=sizes,
+                color=star_colors,
+                opacity=0.4 + complexity * 0.3,
+                symbol='star',
+                line=dict(color='white', width=0.5)
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+    
+    # Redes de conexión para genomas con alta entropía
+    if entropy > 1.7:
+        # Crea conexiones entre puntos aleatorios basados en datos genéticos
+        connection_density = int(entropy * 8)
+        
+        for _ in range(connection_density):
+            # Puntos de conexión influenciados por skew genético
+            gc_skew = genetic_profile.get('gc_skew', [0])
+            if gc_skew:
+                skew_influence = np.mean(gc_skew)
+                x1 = np.random.uniform(-1, 1) + skew_influence * 0.2
+                y1 = np.random.uniform(-1, 1)
+                x2 = np.random.uniform(-1, 1) + skew_influence * 0.2
+                y2 = np.random.uniform(-1, 1)
+                
+                connection_opacity = max(0.05, entropy / 4 * 0.2)
+                
+                overlay_elements.append(go.Scatter(
+                    x=[x1, x2], y=[y1, y2],
+                    mode='lines',
+                    line=dict(
+                        color=f'rgba(150,150,255,{connection_opacity})',
+                        width=0.5
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+    
+    # Ondas de periodicidad para secuencias con patrones repetitivos
+    periodicities = genetic_profile.get('periodicities', {})
+    if periodicities:
+        # Genera ondas basadas en las periodicidades más significativas
+        for period_key, correlation in list(periodicities.items())[:3]:
+            if correlation > 0.4:
+                period_num = int(period_key.split('_')[1]) if '_' in period_key else 10
+                
+                t = np.linspace(0, 4 * np.pi, 100)
+                x_wave = np.cos(t) * 0.8
+                y_wave = correlation * 0.3 * np.sin(period_num * t / 5) + np.sin(t) * 0.8
+                
+                wave_opacity = correlation * 0.15
+                
+                overlay_elements.append(go.Scatter(
+                    x=x_wave, y=y_wave,
+                    mode='lines',
+                    line=dict(
+                        color=f'rgba(255,200,100,{wave_opacity})',
+                        width=1,
+                        smoothing=1.5
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+    
+    return overlay_elements
 
 def create_animated_art(fig_original: go.Figure, genetic_profile: Dict, organism_name: str) -> go.Figure:
     """Generador de arte animado optimizado"""
@@ -768,8 +1260,8 @@ def main():
                     category = determine_taxonomic_category(organism_name, seq_record.description)
                     palette = get_taxonomic_palette(category)
                     
-                    with st.spinner("Generando arte genético..."):
-                        fig = create_genetic_art(sequence, genetic_profile, category, palette)
+                    with st.spinner("Generando arte genético multicapa..."):
+                        fig = create_genetic_art(sequence, genetic_profile, category, palette, organism_name)
                     
                     st.plotly_chart(fig, use_container_width=True)
                     

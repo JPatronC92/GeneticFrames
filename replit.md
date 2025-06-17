@@ -96,6 +96,14 @@ DNA Art Generator is a Streamlit-based web application that creates unique visua
 
 ## Changelog
 
+- June 16, 2025: Universal DNA Art Algorithm Implementation
+  - Implemented universal algorithm applicable to any animal species
+  - Added advanced genome sequence prioritization (complete genomes > chromosomes > organelles)
+  - Enhanced genetic analysis with 15+ parameters (GC content, entropy, complexity, skew, patterns)
+  - Created multi-layer visual system (habitat backgrounds, DNA textures, complexity elements)
+  - Developed structure determination based on GC content (linear/circular/spiral)
+  - Added comprehensive sequence type detection and reporting
+  - Implemented detailed genetic parameter visualization in interface
 - June 16, 2025: Major refactoring and optimization
   - Consolidated 2795 lines to 400+ optimized lines
   - Eliminated 30+ redundant functions

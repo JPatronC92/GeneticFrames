@@ -447,7 +447,163 @@ def get_taxonomic_palette(category: str) -> Dict:
     return TAXONOMIC_PALETTES.get(category, TAXONOMIC_PALETTES['mammal'])
 
 # ============================================================================
-# GENERADORES DE PATRONES VISUALES UNIFICADOS
+# SISTEMA DE CAPAS MÚLTIPLES Y EFECTOS VISUALES AVANZADOS
+# ============================================================================
+
+def determine_habitat_type(category: str, organism_name: str) -> str:
+    """Determina el tipo de hábitat para efectos de fondo"""
+    name_lower = organism_name.lower()
+    
+    # Mapeo específico por nombre de organismo
+    aquatic_indicators = ['whale', 'dolphin', 'shark', 'fish', 'octopus', 'squid', 'salmon', 'tuna']
+    aerial_indicators = ['eagle', 'falcon', 'hawk', 'owl', 'sparrow', 'crow', 'parrot']
+    arboreal_indicators = ['monkey', 'sloth', 'koala', 'lemur', 'squirrel']
+    
+    if any(indicator in name_lower for indicator in aquatic_indicators) or category == 'aquatic':
+        return 'oceanic'
+    elif any(indicator in name_lower for indicator in aerial_indicators) or category == 'avian':
+        return 'aerial'
+    elif any(indicator in name_lower for indicator in arboreal_indicators):
+        return 'arboreal'
+    else:
+        return 'terrestrial'
+
+def create_habitat_background_layer(habitat_type: str, genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
+    """Crea capa de fondo basada en hábitat"""
+    background_traces = []
+    
+    if habitat_type == 'oceanic':
+        # Capas de profundidad oceánica
+        depths = [0.9, 0.7, 0.5, 0.3, 0.1]
+        for i, depth in enumerate(depths):
+            n_particles = 50 - i * 8
+            x = np.random.uniform(-1.2, 1.2, n_particles) 
+            y = np.random.uniform(-1.2 + i * 0.4, 1.2 - i * 0.4, n_particles)
+            
+            opacity = depth * 0.3
+            size = np.random.uniform(1, 4, n_particles)
+            
+            background_traces.append(go.Scatter(
+                x=x, y=y, mode='markers',
+                marker=dict(
+                    size=size,
+                    color=f'rgba(30, {100 + i * 30}, 255, {opacity})',
+                    symbol='circle'
+                ),
+                showlegend=False, hoverinfo='skip'
+            ))
+    
+    elif habitat_type == 'aerial':
+        # Nubes y corrientes de aire
+        for layer in range(4):
+            x = np.linspace(-1.2, 1.2, 60)
+            y_base = -0.8 + layer * 0.4
+            y = y_base + 0.15 * np.sin(x * 3 + layer * np.pi / 2) * np.exp(-0.5 * layer)
+            
+            opacity = 0.2 - layer * 0.04
+            color = f'rgba(200, 220, 255, {opacity})'
+            
+            background_traces.append(go.Scatter(
+                x=x, y=y, mode='lines',
+                line=dict(color=color, width=8 - layer),
+                showlegend=False, hoverinfo='skip'
+            ))
+    
+    elif habitat_type == 'arboreal':
+        # Estructura de ramas y follaje
+        for branch in range(6):
+            angle = branch * np.pi / 3
+            length = np.linspace(0, 0.8, 30)
+            
+            x = length * np.cos(angle) * (1 + 0.1 * np.sin(length * 8))
+            y = length * np.sin(angle) * (1 + 0.1 * np.cos(length * 8))
+            
+            background_traces.append(go.Scatter(
+                x=x, y=y, mode='lines',
+                line=dict(color='rgba(101, 67, 33, 0.4)', width=6 - branch),
+                showlegend=False, hoverinfo='skip'
+            ))
+    
+    else:  # terrestrial
+        # Texturas terrestres con patrones geológicos
+        for layer in range(3):
+            n_points = 80 - layer * 20
+            radius = 0.3 + layer * 0.2
+            angles = np.linspace(0, 2 * np.pi, n_points)
+            
+            # Variación basada en perfil genético
+            complexity_factor = genetic_profile.get('complexity_score', 0.5)
+            noise = np.random.normal(0, 0.1 * complexity_factor, n_points)
+            
+            x = (radius + noise) * np.cos(angles)
+            y = (radius + noise) * np.sin(angles)
+            
+            background_traces.append(go.Scatter(
+                x=x, y=y, mode='markers',
+                marker=dict(
+                    size=3 - layer * 0.5,
+                    color=f'rgba({139 - layer * 20}, {120 - layer * 15}, 80, 0.3)',
+                    symbol='square'
+                ),
+                showlegend=False, hoverinfo='skip'
+            ))
+    
+    return background_traces
+
+def create_dna_texture_layer(genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
+    """Genera texturas procedurales basadas en patrones de repetición del ADN"""
+    texture_traces = []
+    
+    # Usar patrones repetitivos para generar texturas
+    repeat_patterns = genetic_profile.get('repeat_patterns', {})
+    
+    if repeat_patterns:
+        # Selecciona el patrón más frecuente
+        most_frequent_pattern = None
+        max_frequency = 0
+        
+        for length_key, patterns in repeat_patterns.items():
+            for pattern, frequency in patterns.items():
+                if frequency > max_frequency:
+                    max_frequency = frequency
+                    most_frequent_pattern = pattern
+        
+        if most_frequent_pattern:
+            # Convierte el patrón de ADN en textura visual
+            pattern_length = len(most_frequent_pattern)
+            texture_density = min(100, max_frequency // 2)
+            
+            for i in range(texture_density):
+                # Posición basada en el hash del patrón
+                hash_value = hash(most_frequent_pattern + str(i))
+                x = (hash_value % 1000) / 500 - 1
+                y = ((hash_value // 1000) % 1000) / 500 - 1
+                
+                # Color basado en la composición del patrón
+                gc_content = (most_frequent_pattern.count('G') + most_frequent_pattern.count('C')) / pattern_length
+                
+                if gc_content > 0.6:
+                    color = palette['primary'][0]
+                elif gc_content < 0.4:
+                    color = palette['secondary'][0]
+                else:
+                    color = palette['accent'][0]
+                
+                texture_traces.append(go.Scatter(
+                    x=[x], y=[y], mode='markers',
+                    marker=dict(
+                        size=2 + pattern_length * 0.5,
+                        color=color,
+                        opacity=0.15,
+                        symbol='diamond'
+                    ),
+                    showlegend=False, hoverinfo='skip'
+                ))
+    
+    return texture_traces
+
+# ============================================================================
+# GENERADORES DE PATRONES VISUALES UNIFICADOS CON CAPAS
 # ============================================================================
 
 def create_pattern_by_category(category: str, n_points: int, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:

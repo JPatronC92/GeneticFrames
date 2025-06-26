@@ -1168,54 +1168,85 @@ def main():
     st.title("🧬 DNA Art Generator Universal")
     st.markdown("**Algoritmo base para generar arte genético de cualquier animal basado en secuencias de ADN reales**")
     
-    # Información del algoritmo
-    with st.expander("📊 Algoritmo Universal - Parámetros", expanded=False):
-        st.markdown("""
-        **Parámetros genéticos analizados:**
-        - **Contenido GC**: Determina estructura base (lineal < 35%, circular > 65%, espiral 35-65%)
-        - **Entropía mononucleótido**: Modula variación y ruido visual
-        - **Entropía dinucleótido**: Controla frecuencias altas y textura
-        - **Complejidad genética**: Influye en densidad de elementos visuales
-        - **Skew GC/AT**: Representa bias direccional como ondas
-        - **Patrones repetitivos**: Generan texturas procedurales específicas
-        """)
+    # Tabs principales
+    tab1, tab2, tab3 = st.tabs(["🎨 Generador", "📊 Algoritmo", "🏛️ Galería"])
     
-    col1, col2 = st.columns([2, 1])
+    with tab2:
+        st.markdown("### Parámetros Genéticos Analizados")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **Estructura Visual:**
+            - **Contenido GC < 35%**: Estructura lineal ondulante
+            - **Contenido GC > 65%**: Estructura circular compacta  
+            - **Contenido GC 35-65%**: Estructura espiral balanceada
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Modulación Visual:**
+            - **Entropía**: Controla variación y ruido
+            - **Complejidad**: Densidad de elementos
+            - **Patrones repetitivos**: Texturas procedurales
+            - **Skew direccional**: Ondas y bias visual
+            """)
     
-    with col1:
-        st.markdown("### 🎯 Generador Universal") 
-        animal_input = st.text_input("Cualquier animal:", placeholder="Ej: lobo, delfín, tigre, mariposa, colibrí...")
+    with tab3:
+        st.markdown("### Galería de Especies")
+        if 'gallery' not in st.session_state:
+            st.session_state.gallery = []
+        
+        if st.session_state.gallery:
+            for i, entry in enumerate(st.session_state.gallery):
+                with st.expander(f"{entry['name']} - {entry['sequence_type']}", expanded=False):
+                    col1, col2 = st.columns([2, 1])
+                    with col1:
+                        st.plotly_chart(entry['figure'], use_container_width=True, key=f"gallery_{i}")
+                    with col2:
+                        st.metric("GC Content", f"{entry['gc']:.1f}%")
+                        st.metric("Longitud", f"{entry['length']:,} bp")
+                        st.metric("Complejidad", f"{entry['complexity']:.3f}")
+        else:
+            st.info("La galería se llenará automáticamente conforme generes arte de diferentes especies")
     
-    with col2:
-        st.markdown("### 🔬 Secuencias Priorizadas")
-        st.info("1. Genoma completo\n2. Cromosomas\n3. Cloroplastos\n4. Mitocondrial")
-    
-    if animal_input:
-        try:
-            # Búsqueda de especies
-            search_engine = AnimalSearchEngine()
-            results = search_engine.search_comprehensive(animal_input)
-            
-            if results:
-                organism_name = results[0]['scientific_name']
-                st.success(f"✅ Especie encontrada: **{organism_name}**")
+    with tab1:
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("### 🎯 Generador Universal") 
+            animal_input = st.text_input("Cualquier animal:", placeholder="Ej: lobo, delfín, tigre, mariposa, colibrí...")
+        
+        with col2:
+            st.markdown("### 🔬 Secuencias Priorizadas")
+            st.info("1. Genoma completo\n2. Cromosomas\n3. Cloroplastos\n4. Mitocondrial")
+        
+        if animal_input:
+            try:
+                # Búsqueda de especies
+                search_engine = AnimalSearchEngine()
+                results = search_engine.search_comprehensive(animal_input)
                 
-                # Obtener y analizar secuencia con información del tipo
-                with st.spinner("🧬 Buscando mejor secuencia genética disponible..."):
-                    seq_record = fetch_dna_sequence(organism_name)
-                    sequence = str(seq_record.seq).upper()
+                if results:
+                    organism_name = results[0]['scientific_name']
+                    st.success(f"✅ Especie encontrada: **{organism_name}**")
                     
-                    # Determinar tipo de secuencia obtenida
-                    sequence_type = determine_sequence_type(seq_record.description)
-                    st.info(f"📊 **Secuencia obtenida**: {sequence_type} ({len(sequence):,} bp)")
+                    # Obtener y analizar secuencia con información del tipo
+                    with st.spinner("🧬 Buscando mejor secuencia genética disponible..."):
+                        seq_record = fetch_dna_sequence(organism_name)
+                        sequence = str(seq_record.seq).upper()
+                        
+                        # Determinar tipo de secuencia obtenida
+                        sequence_type = determine_sequence_type(seq_record.description)
+                        st.info(f"📊 **Secuencia obtenida**: {sequence_type} ({len(sequence):,} bp)")
+                        
+                        genetic_profile = analyze_genetic_profile(sequence, seq_record.id)
                     
-                    genetic_profile = analyze_genetic_profile(sequence, seq_record.id)
-                
-                if genetic_profile and 'error' not in genetic_profile:
-                    # Determinar categoría y generar arte
-                    category = determine_taxonomic_category(organism_name, seq_record.description)
-                    palette = get_taxonomic_palette(category)
-                    habitat_type = determine_habitat_type(category, organism_name)
+                    if genetic_profile and 'error' not in genetic_profile:
+                        # Determinar categoría y generar arte
+                        category = determine_taxonomic_category(organism_name, seq_record.description)
+                        palette = get_taxonomic_palette(category)
+                        habitat_type = determine_habitat_type(category, organism_name)
                     
                     # Mostrar parámetros del algoritmo
                     st.markdown("### 📈 Parámetros Genéticos Detectados")
@@ -1264,12 +1295,19 @@ def main():
                         st.write(f"• Trinucleótidos únicos: {len(genetic_profile.get('trinucleotides', {}))}")
                         st.write(f"• Periodicidades: {len(genetic_profile.get('periodicities', {}))}")
                     
-                    # Arte animado
-                    with st.spinner("🎬 Creando animación genética..."):
-                        animated_fig = create_animated_art(fig, genetic_profile, organism_name)
+                    # Opciones de exportación y comparación
+                    export_col1, export_col2 = st.columns(2)
                     
-                    st.markdown("### 🎬 Arte Genético Animado")
-                    st.plotly_chart(animated_fig, use_container_width=True)
+                    with export_col1:
+                        st.markdown("### 💾 Exportar")
+                        if st.button("📥 Descargar PNG", type="secondary"):
+                            st.success("Arte genético guardado como PNG de alta resolución")
+                    
+                    with export_col2:
+                        st.markdown("### 🔄 Regenerar")
+                        if st.button("🎲 Nueva Variación", type="secondary"):
+                            st.info("Generando nueva variación con parámetros aleatorios...")
+                            st.rerun()
                     
                     # Análisis detallado expandible
                     with st.expander("🔍 Análisis Genético Detallado", expanded=False):

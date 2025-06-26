@@ -1,6 +1,6 @@
 """
-DNA Art Generator - Versión Refactorizada y Optimizada
-Generador de arte genético basado en secuencias de ADN reales
+DNA Art Generator - Generador de Arte Genético
+Convierte secuencias genéticas reales en arte único mediante análisis bioinformático avanzado.
 """
 
 import streamlit as st
@@ -237,10 +237,6 @@ def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
     # Análisis de patrones repetitivos
     repeat_patterns = detect_repeat_patterns(sequence)
     
-    # Análisis de skew (bias direccional)
-    gc_skew = calculate_gc_skew(sequence)
-    at_skew = calculate_at_skew(sequence)
-    
     # Entropía de Shannon para diferentes niveles
     entropy_mono = -sum(f * math.log2(f) for f in frequencies.values() if f > 0)
     
@@ -249,20 +245,9 @@ def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
     
     # Contenido GC y análisis de ventanas
     gc_content = (base_counts['G'] + base_counts['C']) / total_bases * 100
-    gc_variance = calculate_gc_variance(sequence)
-    
-    # Periodicidades y estructuras secundarias
-    periodicities = detect_periodicities(sequence)
     
     # Complejidad genética multidimensional
-    complexity_score = calculate_complexity_score(
-        entropy_mono, entropy_di, gc_content, gc_variance, repeat_patterns
-    )
-    
-    # Firma genética única (hash de características específicas)
-    genetic_signature = generate_genetic_signature(
-        sequence, organism_id, dinucleotides, trinucleotides
-    )
+    complexity_score = entropy_mono * gc_content / 200
     
     return {
         'organism_id': organism_id,
@@ -273,14 +258,9 @@ def analyze_genetic_profile(sequence: str, organism_id: str) -> Dict:
         'trinucleotides': trinucleotides,
         'repeat_patterns': repeat_patterns,
         'gc_content': gc_content,
-        'gc_skew': gc_skew,
-        'at_skew': at_skew,
-        'gc_variance': gc_variance,
         'entropy_mono': entropy_mono,
         'entropy_di': entropy_di,
-        'periodicities': periodicities,
         'complexity_score': complexity_score,
-        'genetic_signature': genetic_signature,
         'purine_content': (frequencies['A'] + frequencies['G']) * 100,
         'pyrimidine_content': (frequencies['T'] + frequencies['C']) * 100,
         'weak_bonds': (frequencies['A'] + frequencies['T']) * 100,
@@ -306,118 +286,6 @@ def detect_repeat_patterns(sequence: str, min_length: int = 3, max_length: int =
             patterns[f'length_{length}'] = significant_patterns
     
     return patterns
-
-def calculate_gc_skew(sequence: str, window_size: int = 1000) -> List[float]:
-    """Calcula GC skew en ventanas deslizantes"""
-    skews = []
-    for i in range(0, len(sequence) - window_size + 1, window_size // 2):
-        window = sequence[i:i+window_size]
-        g_count = window.count('G')
-        c_count = window.count('C')
-        
-        if g_count + c_count > 0:
-            skew = (g_count - c_count) / (g_count + c_count)
-        else:
-            skew = 0
-        skews.append(skew)
-    
-    return skews
-
-def calculate_at_skew(sequence: str, window_size: int = 1000) -> List[float]:
-    """Calcula AT skew en ventanas deslizantes"""
-    skews = []
-    for i in range(0, len(sequence) - window_size + 1, window_size // 2):
-        window = sequence[i:i+window_size]
-        a_count = window.count('A')
-        t_count = window.count('T')
-        
-        if a_count + t_count > 0:
-            skew = (a_count - t_count) / (a_count + t_count)
-        else:
-            skew = 0
-        skews.append(skew)
-    
-    return skews
-
-def calculate_gc_variance(sequence: str, window_size: int = 500) -> float:
-    """Calcula la varianza del contenido GC en ventanas"""
-    gc_contents = []
-    for i in range(0, len(sequence) - window_size + 1, window_size // 4):
-        window = sequence[i:i+window_size]
-        gc_count = window.count('G') + window.count('C')
-        gc_content = gc_count / len(window) if len(window) > 0 else 0
-        gc_contents.append(gc_content)
-    
-    if len(gc_contents) > 1:
-        mean_gc = sum(gc_contents) / len(gc_contents)
-        variance = sum((gc - mean_gc) ** 2 for gc in gc_contents) / len(gc_contents)
-        return variance
-    return 0
-
-def detect_periodicities(sequence: str) -> Dict:
-    """Detecta periodicidades específicas en la secuencia"""
-    periodicities = {}
-    max_period = min(50, len(sequence) // 20)
-    
-    for period in range(2, max_period + 1):
-        correlations = []
-        for i in range(len(sequence) - period):
-            if sequence[i] == sequence[i + period]:
-                correlations.append(1)
-            else:
-                correlations.append(0)
-        
-        if correlations:
-            correlation = sum(correlations) / len(correlations)
-            if correlation > 0.3:  # Umbral para periodicidad significativa
-                periodicities[f'period_{period}'] = correlation
-    
-    return periodicities
-
-def calculate_complexity_score(entropy_mono: float, entropy_di: float, 
-                              gc_content: float, gc_variance: float, 
-                              repeat_patterns: Dict) -> float:
-    """Calcula puntuación de complejidad multidimensional"""
-    # Normaliza entropías (máximo teórico: 2.0 para mono, 4.0 para di)
-    norm_entropy_mono = entropy_mono / 2.0
-    norm_entropy_di = entropy_di / 4.0
-    
-    # Normaliza GC content (óptimo alrededor de 50%)
-    gc_score = 1 - abs(gc_content - 50) / 50
-    
-    # Penaliza alta varianza GC (indica falta de homogeneidad)
-    variance_penalty = max(0, 1 - gc_variance * 10)
-    
-    # Bonifica presencia de patrones repetitivos complejos
-    pattern_bonus = min(0.3, len(repeat_patterns) * 0.05)
-    
-    complexity = (
-        norm_entropy_mono * 0.3 + 
-        norm_entropy_di * 0.3 + 
-        gc_score * 0.2 + 
-        variance_penalty * 0.1 + 
-        pattern_bonus * 0.1
-    )
-    
-    return max(0, min(1, complexity))
-
-def generate_genetic_signature(sequence: str, organism_id: str, 
-                              dinucleotides: Dict, trinucleotides: Dict) -> str:
-    """Genera una firma genética única específica de la especie"""
-    # Combina características únicas para crear una firma
-    signature_elements = [
-        organism_id,
-        str(len(sequence)),
-        str(sequence.count('A')),
-        str(sequence.count('T')),
-        str(sequence.count('G')),
-        str(sequence.count('C')),
-        str(sorted(dinucleotides.items(), key=lambda x: x[1], reverse=True)[:5]),
-        str(sorted(trinucleotides.items(), key=lambda x: x[1], reverse=True)[:3])
-    ]
-    
-    signature_string = '|'.join(signature_elements)
-    return hashlib.md5(signature_string.encode()).hexdigest()[:16]
 
 # ============================================================================
 # CLASIFICACIÓN TAXONÓMICA
@@ -446,10 +314,6 @@ def get_taxonomic_palette(category: str) -> Dict:
     """Obtiene paleta específica por categoría"""
     return TAXONOMIC_PALETTES.get(category, TAXONOMIC_PALETTES['mammal'])
 
-# ============================================================================
-# SISTEMA DE CAPAS MÚLTIPLES Y EFECTOS VISUALES AVANZADOS
-# ============================================================================
-
 def determine_habitat_type(category: str, organism_name: str) -> str:
     """Determina el tipo de hábitat para efectos de fondo"""
     name_lower = organism_name.lower()
@@ -468,323 +332,8 @@ def determine_habitat_type(category: str, organism_name: str) -> str:
     else:
         return 'terrestrial'
 
-def create_habitat_background_layer(habitat_type: str, genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
-    """Crea capa de fondo basada en hábitat"""
-    background_traces = []
-    
-    if habitat_type == 'oceanic':
-        # Capas de profundidad oceánica
-        depths = [0.9, 0.7, 0.5, 0.3, 0.1]
-        for i, depth in enumerate(depths):
-            n_particles = 50 - i * 8
-            x = np.random.uniform(-1.2, 1.2, n_particles) 
-            y = np.random.uniform(-1.2 + i * 0.4, 1.2 - i * 0.4, n_particles)
-            
-            opacity = depth * 0.3
-            size = np.random.uniform(1, 4, n_particles)
-            
-            background_traces.append(go.Scatter(
-                x=x, y=y, mode='markers',
-                marker=dict(
-                    size=size,
-                    color=f'rgba(30, {100 + i * 30}, 255, {opacity})',
-                    symbol='circle'
-                ),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    elif habitat_type == 'aerial':
-        # Nubes y corrientes de aire
-        for layer in range(4):
-            x = np.linspace(-1.2, 1.2, 60)
-            y_base = -0.8 + layer * 0.4
-            y = y_base + 0.15 * np.sin(x * 3 + layer * np.pi / 2) * np.exp(-0.5 * layer)
-            
-            opacity = 0.2 - layer * 0.04
-            color = f'rgba(200, 220, 255, {opacity})'
-            
-            background_traces.append(go.Scatter(
-                x=x, y=y, mode='lines',
-                line=dict(color=color, width=8 - layer),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    elif habitat_type == 'arboreal':
-        # Estructura de ramas y follaje
-        for branch in range(6):
-            angle = branch * np.pi / 3
-            length = np.linspace(0, 0.8, 30)
-            
-            x = length * np.cos(angle) * (1 + 0.1 * np.sin(length * 8))
-            y = length * np.sin(angle) * (1 + 0.1 * np.cos(length * 8))
-            
-            background_traces.append(go.Scatter(
-                x=x, y=y, mode='lines',
-                line=dict(color='rgba(101, 67, 33, 0.4)', width=6 - branch),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    else:  # terrestrial
-        # Texturas terrestres con patrones geológicos
-        for layer in range(3):
-            n_points = 80 - layer * 20
-            radius = 0.3 + layer * 0.2
-            angles = np.linspace(0, 2 * np.pi, n_points)
-            
-            # Variación basada en perfil genético
-            complexity_factor = genetic_profile.get('complexity_score', 0.5)
-            noise = np.random.normal(0, 0.1 * complexity_factor, n_points)
-            
-            x = (radius + noise) * np.cos(angles)
-            y = (radius + noise) * np.sin(angles)
-            
-            background_traces.append(go.Scatter(
-                x=x, y=y, mode='markers',
-                marker=dict(
-                    size=3 - layer * 0.5,
-                    color=f'rgba({139 - layer * 20}, {120 - layer * 15}, 80, 0.3)',
-                    symbol='square'
-                ),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    return background_traces
-
-def create_dna_texture_layer(genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
-    """Genera texturas procedurales basadas en patrones de repetición del ADN"""
-    texture_traces = []
-    
-    # Usar patrones repetitivos para generar texturas
-    repeat_patterns = genetic_profile.get('repeat_patterns', {})
-    
-    if repeat_patterns:
-        # Selecciona el patrón más frecuente
-        most_frequent_pattern = None
-        max_frequency = 0
-        
-        for length_key, patterns in repeat_patterns.items():
-            for pattern, frequency in patterns.items():
-                if frequency > max_frequency:
-                    max_frequency = frequency
-                    most_frequent_pattern = pattern
-        
-        if most_frequent_pattern:
-            # Convierte el patrón de ADN en textura visual
-            pattern_length = len(most_frequent_pattern)
-            texture_density = min(100, max_frequency // 2)
-            
-            for i in range(texture_density):
-                # Posición basada en el hash del patrón
-                hash_value = hash(most_frequent_pattern + str(i))
-                x = (hash_value % 1000) / 500 - 1
-                y = ((hash_value // 1000) % 1000) / 500 - 1
-                
-                # Color basado en la composición del patrón
-                gc_content = (most_frequent_pattern.count('G') + most_frequent_pattern.count('C')) / pattern_length
-                
-                if gc_content > 0.6:
-                    color = palette['primary'][0]
-                elif gc_content < 0.4:
-                    color = palette['secondary'][0]
-                else:
-                    color = palette['accent'][0]
-                
-                texture_traces.append(go.Scatter(
-                    x=[x], y=[y], mode='markers',
-                    marker=dict(
-                        size=2 + pattern_length * 0.5,
-                        color=color,
-                        opacity=0.15,
-                        symbol='diamond'
-                    ),
-                    showlegend=False, hoverinfo='skip'
-                ))
-    
-    return texture_traces
-
 # ============================================================================
-# GENERADORES DE PATRONES VISUALES UNIFICADOS CON CAPAS
-# ============================================================================
-
-def create_pattern_by_category(category: str, n_points: int, palette: Dict, genetic_profile: Dict) -> List[go.Scatter]:
-    """Generador unificado de patrones por categoría taxonómica"""
-    traces = []
-    
-    if category == 'mammal':
-        # Espiral dorada orgánica
-        golden_ratio = 1.618033988749
-        for layer in range(5):
-            angles = np.linspace(0, 8 * np.pi, n_points // 5)
-            r = np.sqrt(angles) * 0.1 * (layer + 1)
-            x = r * np.cos(angles * golden_ratio) * (1 + 0.1 * np.sin(angles * 3))
-            y = r * np.sin(angles * golden_ratio) * (1 + 0.1 * np.cos(angles * 3))
-            
-            traces.append(go.Scatter(
-                x=x, y=y, mode='markers',
-                marker=dict(
-                    size=np.random.uniform(2, 8, len(x)),
-                    color=palette['primary'][layer % len(palette['primary'])],
-                    opacity=0.7
-                ),
-                showlegend=False
-            ))
-    
-    elif category == 'aquatic':
-        # Ondas fluidas
-        for wave in range(7):
-            t = np.linspace(0, 4 * np.pi, max(10, n_points // 7))
-            amplitude = 0.6 - wave * 0.08
-            frequency = 2 + wave * 0.5
-            
-            x = t / (2 * np.pi) - 1
-            y = amplitude * np.sin(frequency * t) * np.exp(-0.1 * wave * t)
-            
-            traces.append(go.Scatter(
-                x=x, y=y, mode='lines+markers',
-                line=dict(color=palette['primary'][wave % len(palette['primary'])], width=3),
-                marker=dict(size=4, color=palette['secondary'][wave % len(palette['secondary'])]),
-                showlegend=False
-            ))
-    
-    elif category == 'avian':
-        # Plumas radiantes
-        for feather in range(12):
-            angle_base = feather * 2 * np.pi / 12
-            spine_length = np.linspace(0, 0.8, 40)
-            spine_x = spine_length * np.cos(angle_base)
-            spine_y = spine_length * np.sin(angle_base)
-            
-            traces.append(go.Scatter(
-                x=spine_x, y=spine_y, mode='lines',
-                line=dict(color=palette['primary'][feather % len(palette['primary'])], width=2),
-                showlegend=False
-            ))
-    
-    elif category == 'reptile':
-        # Escamas hexagonales
-        for layer in range(3):
-            radius = 0.3 + layer * 0.2
-            n_hexagons = 6 + layer * 2
-            angles = np.linspace(0, 2 * np.pi, n_hexagons, endpoint=False)
-            x_hex = radius * np.cos(angles)
-            y_hex = radius * np.sin(angles)
-            
-            traces.append(go.Scatter(
-                x=x_hex, y=y_hex, mode='markers',
-                marker=dict(
-                    size=15 - layer * 3,
-                    color=palette['primary'][layer % len(palette['primary'])],
-                    symbol='hexagon'
-                ),
-                showlegend=False
-            ))
-    
-    else:  # arthropod, plant, default
-        # Patrón general: espiral cósmica
-        t = np.linspace(0, 6 * np.pi, min(n_points, 200))
-        r = 0.1 * t
-        x = r * np.cos(t) * np.exp(-0.1 * t)
-        y = r * np.sin(t) * np.exp(-0.1 * t)
-        
-        traces.append(go.Scatter(
-            x=x, y=y, mode='markers',
-            marker=dict(
-                size=np.linspace(2, 8, len(x)),
-                color=palette['primary'][0],
-                opacity=0.8
-            ),
-            showlegend=False
-        ))
-    
-    return traces
-
-# ============================================================================
-# SISTEMA DE ANIMACIÓN UNIFICADO
-# ============================================================================
-
-def determine_animation_type(organism_name: str, genetic_profile: Dict) -> str:
-    """Determina tipo de animación basado en organismo"""
-    name_lower = organism_name.lower()
-    
-    if any(word in name_lower for word in ['dolphin', 'whale', 'fish', 'octopus']):
-        return 'aquatic_flow'
-    elif any(word in name_lower for word in ['lion', 'tiger', 'wolf', 'bear', 'jaguar']):
-        return 'heartbeat_mammal'
-    else:
-        return 'cosmic_rotation'
-
-def create_animation_frame(progress: float, animation_type: str, genetic_profile: Dict) -> List[go.Scatter]:
-    """Generador unificado de frames de animación"""
-    traces = []
-    
-    if animation_type == 'heartbeat_mammal':
-        # Latido rítmico
-        pulse_phase = progress * 6 * 2 * np.pi
-        pulse_intensity = 1 + 0.6 * np.sin(pulse_phase)
-        
-        for ring in range(5):
-            theta = np.linspace(0, 2 * np.pi, 80)
-            base_radius = 0.15 + ring * 0.12
-            radius = base_radius * pulse_intensity * (1 - ring * 0.08)
-            
-            x = radius * np.cos(theta)
-            y = radius * np.sin(theta)
-            
-            opacity = max(0.1, (0.8 - ring * 0.15) * (0.5 + 0.5 * np.sin(pulse_phase)))
-            color = f'rgba({255 - ring * 30}, {100 + ring * 20}, 50, {opacity})'
-            
-            traces.append(go.Scatter(
-                x=x, y=y, mode='lines',
-                line=dict(color=color, width=max(1, 3 + ring - 2 * np.sin(pulse_phase))),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    elif animation_type == 'aquatic_flow':
-        # Ondas fluidas
-        for wave_layer in range(6):
-            t = np.linspace(-2, 2, 80)
-            frequency = 2 + wave_layer * 0.5
-            amplitude = 0.15 - wave_layer * 0.02
-            phase = progress * 6 * np.pi + wave_layer * np.pi / 3
-            
-            x = t
-            y = amplitude * np.sin(frequency * np.pi * t + phase) * np.exp(-0.1 * abs(t))
-            y += -0.7 + wave_layer * 0.25
-            
-            transparency = max(0.1, 0.7 - wave_layer * 0.1)
-            color = f'rgba(30, {150 + wave_layer * 20}, 255, {transparency})'
-            
-            traces.append(go.Scatter(
-                x=x, y=y, mode='lines',
-                line=dict(color=color, width=4 - wave_layer * 0.5),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    else:  # cosmic_rotation
-        # Rotación cósmica
-        n_stars = 20
-        galaxy_rotation = progress * 2 * np.pi
-        
-        for star in range(n_stars):
-            star_angle = star * 2 * np.pi / n_stars + galaxy_rotation
-            orbit_radius = 0.2 + 0.5 * (star % 5) / 5
-            
-            x = orbit_radius * np.cos(star_angle)
-            y = orbit_radius * np.sin(star_angle)
-            
-            brightness = max(0.1, 0.4 + 0.6 * np.sin(progress * 12 * np.pi + star * np.pi / 3))
-            color = f'rgba(255, 255, 200, {brightness})'
-            
-            traces.append(go.Scatter(
-                x=[x], y=[y], mode='markers',
-                marker=dict(size=4 + 6 * brightness, color=color, symbol='star'),
-                showlegend=False, hoverinfo='skip'
-            ))
-    
-    return traces
-
-# ============================================================================
-# MOTOR DE VISUALIZACIÓN PRINCIPAL
+# GENERADOR DE ARTE GENÉTICO UNIVERSAL
 # ============================================================================
 
 def create_genetic_art(sequence: str, genetic_profile: Dict, category: str, palette: Dict) -> go.Figure:
@@ -795,32 +344,86 @@ def create_genetic_art(sequence: str, genetic_profile: Dict, category: str, pale
     fig = go.Figure()
     organism_name = genetic_profile.get('organism_id', 'Unknown')
     
-    # PASO 1: Determinar hábitat para capas de fondo
-    habitat_type = determine_habitat_type(category, organism_name)
+    # Extraer parámetros genéticos universales
+    gc_content = genetic_profile.get('gc_content', 50)
+    entropy_mono = genetic_profile.get('entropy_mono', 1.5)
+    complexity_score = genetic_profile.get('complexity_score', 0.5)
+    sequence_length = genetic_profile.get('sequence_length', 1000)
     
-    # PASO 2: Crear capas de fondo basadas en hábitat
-    background_layers = create_habitat_background_layer(habitat_type, genetic_profile, palette)
-    for layer in background_layers:
-        fig.add_trace(layer)
+    # Normalizar parámetros para uso visual
+    gc_normalized = gc_content / 100  # 0-1
+    entropy_norm = entropy_mono / 2.0  # 0-1 aproximadamente
+    complexity_norm = min(1.0, complexity_score)
     
-    # PASO 3: Añadir textura procedural basada en patrones de ADN
-    texture_layers = create_dna_texture_layer(genetic_profile, palette)
-    for texture in texture_layers:
-        fig.add_trace(texture)
-    
-    # PASO 4: Generar patrón principal basado en perfil genético
-    sequence_length = len(sequence)
     n_points = min(2000, sequence_length // 10)
     
-    # Usar algoritmo universal basado en características genéticas
-    main_pattern = create_universal_dna_pattern(genetic_profile, palette, n_points)
-    for trace in main_pattern:
-        fig.add_trace(trace)
+    # ALGORITMO BASE: Generar estructura principal
+    if gc_content < 35:
+        # Bajo GC: Estructuras más lineales y abiertas
+        structure = create_linear_structure(n_points, complexity_norm)
+    elif gc_content > 65:
+        # Alto GC: Estructuras más compactas y circulares
+        structure = create_circular_structure(n_points, complexity_norm)
+    else:
+        # GC medio: Estructuras espirales balanceadas
+        structure = create_spiral_structure(n_points, complexity_norm)
     
-    # PASO 5: Añadir elementos de complejidad genética
-    complexity_elements = create_genetic_complexity_elements(genetic_profile, palette)
-    for element in complexity_elements:
-        fig.add_trace(element)
+    # Crear estructura principal
+    main_trace = go.Scatter(
+        x=structure['x'],
+        y=structure['y'],
+        mode='markers+lines',
+        marker=dict(
+            size=structure['sizes'],
+            color=structure['colors'],
+            colorscale=[[0, palette['primary'][0]], [1, palette['secondary'][0]]],
+            opacity=0.8,
+            line=dict(width=1, color='white')
+        ),
+        line=dict(
+            color=palette['primary'][0],
+            width=2 + complexity_norm * 3
+        ),
+        showlegend=False
+    )
+    fig.add_trace(main_trace)
+    
+    # Añadir elementos basados en dinucleótidos
+    dinucleotides = genetic_profile.get('dinucleotides', {})
+    if dinucleotides:
+        sorted_dinucs = sorted(dinucleotides.items(), key=lambda x: x[1], reverse=True)[:8]
+        
+        for i, (dinuc, frequency) in enumerate(sorted_dinucs):
+            angle = i * 2 * np.pi / 8
+            radius = 0.8 + 0.2 * (frequency / max(dinucleotides.values()))
+            
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            
+            # Color basado en composición del dinucleótido
+            if 'A' in dinuc and 'T' in dinuc:
+                color = palette['primary'][0]
+            elif 'G' in dinuc and 'C' in dinuc:
+                color = palette['secondary'][0]
+            else:
+                color = palette['accent'][0]
+            
+            size = 8 + 12 * (frequency / max(dinucleotides.values()))
+            
+            fig.add_trace(go.Scatter(
+                x=[x], y=[y],
+                mode='markers',
+                marker=dict(
+                    size=size,
+                    color=color,
+                    opacity=0.7,
+                    symbol='hexagon',
+                    line=dict(width=2, color='white')
+                ),
+                text=dinuc,
+                textposition='middle center',
+                showlegend=False
+            ))
     
     # Layout optimizado con información genética
     fig.update_layout(
@@ -849,68 +452,6 @@ def create_genetic_art(sequence: str, genetic_profile: Dict, category: str, pale
     )
     
     return fig
-
-def create_universal_dna_pattern(genetic_profile: Dict, palette: Dict, n_points: int) -> List[go.Scatter]:
-    """
-    Algoritmo universal que genera patrones visuales basados en características genéticas
-    Aplicable a cualquier animal sin depender de clasificación taxonómica
-    """
-    traces = []
-    
-    # Extraer parámetros genéticos universales
-    gc_content = genetic_profile.get('gc_content', 50)
-    entropy_mono = genetic_profile.get('entropy_mono', 1.5)
-    entropy_di = genetic_profile.get('entropy_di', 3.0)
-    complexity_score = genetic_profile.get('complexity_score', 0.5)
-    sequence_length = genetic_profile.get('sequence_length', 1000)
-    
-    # Normalizar parámetros para uso visual
-    gc_normalized = gc_content / 100  # 0-1
-    entropy_norm = entropy_mono / 2.0  # 0-1 aproximadamente
-    complexity_norm = min(1.0, complexity_score)
-    
-    # ALGORITMO BASE: Generar estructura principal
-    
-    # 1. Determinar forma base según contenido GC
-    if gc_content < 35:
-        # Bajo GC: Estructuras más lineales y abiertas
-        base_structure = create_linear_structure(n_points, complexity_norm)
-    elif gc_content > 65:
-        # Alto GC: Estructuras más compactas y circulares
-        base_structure = create_circular_structure(n_points, complexity_norm)
-    else:
-        # GC medio: Estructuras espirales balanceadas
-        base_structure = create_spiral_structure(n_points, complexity_norm)
-    
-    # 2. Aplicar modulación basada en entropía
-    modulated_structure = apply_entropy_modulation(base_structure, entropy_norm, entropy_di)
-    
-    # 3. Añadir elementos basados en dinucleótidos
-    dinucleotide_elements = create_dinucleotide_elements(genetic_profile, palette)
-    
-    # 4. Crear estructura principal
-    main_trace = go.Scatter(
-        x=modulated_structure['x'],
-        y=modulated_structure['y'],
-        mode='markers+lines',
-        marker=dict(
-            size=modulated_structure['sizes'],
-            color=modulated_structure['colors'],
-            opacity=0.8,
-            line=dict(width=1, color='white')
-        ),
-        line=dict(
-            color=palette['primary'][0],
-            width=2 + complexity_norm * 3
-        ),
-        showlegend=False
-    )
-    traces.append(main_trace)
-    
-    # 5. Añadir elementos de dinucleótidos
-    traces.extend(dinucleotide_elements)
-    
-    return traces
 
 def create_linear_structure(n_points: int, complexity: float) -> Dict:
     """Estructura lineal para secuencias con bajo contenido GC"""
@@ -969,197 +510,31 @@ def create_spiral_structure(n_points: int, complexity: float) -> Dict:
     
     return {'x': x, 'y': y, 'sizes': sizes, 'colors': colors}
 
-def apply_entropy_modulation(structure: Dict, entropy_norm: float, entropy_di: float) -> Dict:
-    """Aplica modulación basada en entropía de la secuencia"""
-    x, y = structure['x'], structure['y']
-    sizes, colors = structure['sizes'], structure['colors']
+def determine_sequence_type(description: str) -> str:
+    """Determina el tipo de secuencia obtenida desde la descripción"""
+    desc_lower = description.lower()
     
-    # Noise basado en entropía
-    noise_intensity = entropy_norm * 0.2
-    
-    # Aplicar ruido gaussiano
-    x_noise = np.random.normal(0, noise_intensity, len(x))
-    y_noise = np.random.normal(0, noise_intensity, len(y))
-    
-    # Modulación de frecuencia alta basada en entropía de dinucleótidos
-    high_freq = entropy_di / 4.0
-    freq_modulation = 0.1 * high_freq * np.sin(np.arange(len(x)) * 0.5)
-    
-    return {
-        'x': x + x_noise + freq_modulation,
-        'y': y + y_noise + freq_modulation,
-        'sizes': sizes * (0.8 + 0.4 * entropy_norm),
-        'colors': colors
-    }
-
-def create_dinucleotide_elements(genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
-    """Crea elementos visuales basados en frecuencias de dinucleótidos"""
-    traces = []
-    dinucleotides = genetic_profile.get('dinucleotides', {})
-    
-    if not dinucleotides:
-        return traces
-    
-    # Obtener los 8 dinucleótidos más frecuentes
-    sorted_dinucs = sorted(dinucleotides.items(), key=lambda x: x[1], reverse=True)[:8]
-    
-    for i, (dinuc, frequency) in enumerate(sorted_dinucs):
-        # Posición basada en índice
-        angle = i * 2 * np.pi / 8
-        radius = 0.8 + 0.2 * (frequency / max(dinucleotides.values()))
-        
-        x = radius * np.cos(angle)
-        y = radius * np.sin(angle)
-        
-        # Color basado en composición del dinucleótido
-        if 'A' in dinuc and 'T' in dinuc:
-            color = palette['primary'][0]
-        elif 'G' in dinuc and 'C' in dinuc:
-            color = palette['secondary'][0]
-        else:
-            color = palette['accent'][0]
-        
-        # Tamaño proporcional a frecuencia
-        size = 8 + 12 * (frequency / max(dinucleotides.values()))
-        
-        traces.append(go.Scatter(
-            x=[x], y=[y],
-            mode='markers',
-            marker=dict(
-                size=size,
-                color=color,
-                opacity=0.7,
-                symbol='hexagon',
-                line=dict(width=2, color='white')
-            ),
-            text=dinuc,
-            textposition='middle center',
-            showlegend=False
-        ))
-    
-    return traces
-
-def create_genetic_complexity_elements(genetic_profile: Dict, palette: Dict) -> List[go.Scatter]:
-    """Añade elementos visuales que representan la complejidad genética"""
-    traces = []
-    
-    complexity_score = genetic_profile.get('complexity_score', 0.5)
-    gc_skew = genetic_profile.get('gc_skew', [])
-    
-    # Elementos de complejidad como partículas dispersas
-    if complexity_score > 0.3:
-        n_complexity_elements = int(50 * complexity_score)
-        
-        # Distribución aleatoria con densidad basada en complejidad
-        x_complex = np.random.uniform(-1.2, 1.2, n_complexity_elements)
-        y_complex = np.random.uniform(-1.2, 1.2, n_complexity_elements)
-        
-        # Tamaños variables
-        sizes_complex = np.random.uniform(1, 4, n_complexity_elements) * complexity_score
-        
-        traces.append(go.Scatter(
-            x=x_complex,
-            y=y_complex,
-            mode='markers',
-            marker=dict(
-                size=sizes_complex,
-                color=palette['accent'][0],
-                opacity=0.3,
-                symbol='star'
-            ),
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-    
-    # Representación de GC skew como ondas
-    if gc_skew and len(gc_skew) > 5:
-        x_skew = np.linspace(-1, 1, len(gc_skew))
-        y_skew = 0.9 + 0.2 * np.array(gc_skew)  # Posición superior
-        
-        traces.append(go.Scatter(
-            x=x_skew,
-            y=y_skew,
-            mode='lines',
-            line=dict(
-                color=palette['secondary'][0],
-                width=1,
-                dash='dot'
-            ),
-            opacity=0.6,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-    
-    return traces
-
-def create_animated_art(fig_original: go.Figure, genetic_profile: Dict, organism_name: str) -> go.Figure:
-    """Generador de arte animado optimizado"""
-    original_traces = list(fig_original.data)
-    animation_type = determine_animation_type(organism_name, genetic_profile)
-    
-    frames = []
-    total_frames = 60  # Optimizado para mejor rendimiento
-    
-    for frame_num in range(total_frames):
-        frame_data = []
-        progress = frame_num / total_frames
-        
-        # Arte base con transparencia
-        for trace in original_traces:
-            new_trace = go.Scatter(
-                x=trace.x if hasattr(trace, 'x') else [],
-                y=trace.y if hasattr(trace, 'y') else [],
-                mode=trace.mode if hasattr(trace, 'mode') else 'markers',
-                marker=dict(
-                    size=getattr(trace.marker, 'size', 5) if hasattr(trace, 'marker') else 5,
-                    color=getattr(trace.marker, 'color', '#00ff88') if hasattr(trace, 'marker') else '#00ff88',
-                    opacity=0.4
-                ),
-                showlegend=False
-            )
-            frame_data.append(new_trace)
-        
-        # Añadir animación
-        animation_traces = create_animation_frame(progress, animation_type, genetic_profile)
-        frame_data.extend(animation_traces)
-        
-        frames.append(go.Frame(data=frame_data, name=str(frame_num)))
-    
-    # Figura animada
-    animated_fig = go.Figure(
-        data=frames[0].data if frames else [],
-        frames=frames
-    )
-    
-    animated_fig.update_layout(
-        title=f"🧬 {organism_name} - Genoma Animado",
-        template="plotly_dark",
-        plot_bgcolor='rgba(5,10,15,1)',
-        paper_bgcolor='rgba(5,10,15,1)',
-        height=600,
-        updatemenus=[{
-            "type": "buttons",
-            "showactive": False,
-            "x": 0.1, "y": 0.02,
-            "buttons": [
-                {
-                    "label": "▶️ Loop",
-                    "method": "animate",
-                    "args": [None, {"frame": {"duration": 100, "redraw": True}}]
-                },
-                {
-                    "label": "⏸️ Pause", 
-                    "method": "animate",
-                    "args": [[None], {"frame": {"duration": 0}}]
-                }
-            ]
-        }]
-    )
-    
-    return animated_fig
+    if "complete genome" in desc_lower:
+        return "Genoma Completo"
+    elif "genome assembly" in desc_lower:
+        return "Ensamblaje Genómico"
+    elif "chromosome" in desc_lower and "complete" in desc_lower:
+        return "Cromosoma Completo"
+    elif "chromosome" in desc_lower:
+        return "Cromosoma"
+    elif "chloroplast" in desc_lower and "complete" in desc_lower:
+        return "Cloroplasto Completo"
+    elif "plastid" in desc_lower and "complete" in desc_lower:
+        return "Plastidio Completo"
+    elif "mitochondrion" in desc_lower and "complete" in desc_lower:
+        return "Mitocondria Completa"
+    elif "mitochondrial" in desc_lower:
+        return "Mitocondrial"
+    else:
+        return "Secuencia Genética"
 
 # ============================================================================
-# INTERFAZ PRINCIPAL OPTIMIZADA
+# INTERFAZ PRINCIPAL
 # ============================================================================
 
 def main():
@@ -1189,7 +564,7 @@ def main():
             - **Entropía**: Controla variación y ruido
             - **Complejidad**: Densidad de elementos
             - **Patrones repetitivos**: Texturas procedurales
-            - **Skew direccional**: Ondas y bias visual
+            - **Dinucleótidos**: Elementos hexagonales únicos
             """)
     
     with tab3:
@@ -1247,117 +622,107 @@ def main():
                         category = determine_taxonomic_category(organism_name, seq_record.description)
                         palette = get_taxonomic_palette(category)
                         habitat_type = determine_habitat_type(category, organism_name)
-                    
-                    # Mostrar parámetros del algoritmo
-                    st.markdown("### 📈 Parámetros Genéticos Detectados")
-                    param_col1, param_col2, param_col3, param_col4 = st.columns(4)
-                    
-                    with param_col1:
-                        gc_content = genetic_profile['gc_content']
-                        if gc_content < 35:
-                            structure_type = "Lineal"
-                        elif gc_content > 65:
-                            structure_type = "Circular"
-                        else:
-                            structure_type = "Espiral"
-                        st.metric("GC Content", f"{gc_content:.1f}%", f"→ {structure_type}")
-                    
-                    with param_col2:
-                        entropy_mono = genetic_profile['entropy_mono']
-                        st.metric("Entropía Mono", f"{entropy_mono:.3f}", f"→ Variación visual")
-                    
-                    with param_col3:
-                        complexity_score = genetic_profile['complexity_score']
-                        st.metric("Complejidad", f"{complexity_score:.3f}", f"→ Densidad elementos")
-                    
-                    with param_col4:
-                        repeat_count = len(genetic_profile.get('repeat_patterns', {}))
-                        st.metric("Patrones", f"{repeat_count}", f"→ Texturas")
-                    
-                    with st.spinner("🎨 Ejecutando algoritmo universal..."):
-                        fig = create_genetic_art(sequence, genetic_profile, category, palette)
-                    
-                    st.markdown("### 🎨 Arte Genético Generado")
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Información adicional
-                    info_col1, info_col2 = st.columns(2)
-                    
-                    with info_col1:
-                        st.markdown("**🌍 Clasificación Detectada:**")
-                        st.write(f"• Categoría: {category.title()}")
-                        st.write(f"• Hábitat: {habitat_type.title()}")
-                        st.write(f"• Paleta: {len(palette['primary'])} colores primarios")
-                    
-                    with info_col2:
-                        st.markdown("**🧬 Análisis Genético:**")
-                        st.write(f"• Dinucleótidos únicos: {len(genetic_profile.get('dinucleotides', {}))}")
-                        st.write(f"• Trinucleótidos únicos: {len(genetic_profile.get('trinucleotides', {}))}")
-                        st.write(f"• Periodicidades: {len(genetic_profile.get('periodicities', {}))}")
-                    
-                    # Opciones de exportación y comparación
-                    export_col1, export_col2 = st.columns(2)
-                    
-                    with export_col1:
-                        st.markdown("### 💾 Exportar")
-                        if st.button("📥 Descargar PNG", type="secondary"):
-                            st.success("Arte genético guardado como PNG de alta resolución")
-                    
-                    with export_col2:
-                        st.markdown("### 🔄 Regenerar")
-                        if st.button("🎲 Nueva Variación", type="secondary"):
-                            st.info("Generando nueva variación con parámetros aleatorios...")
-                            st.rerun()
-                    
-                    # Análisis detallado expandible
-                    with st.expander("🔍 Análisis Genético Detallado", expanded=False):
-                        detail_col1, detail_col2 = st.columns(2)
                         
-                        with detail_col1:
-                            st.markdown("**Composición de Bases:**")
-                            for base, count in genetic_profile['base_counts'].items():
-                                percentage = (count / genetic_profile['sequence_length']) * 100
-                                st.write(f"• {base}: {count:,} ({percentage:.1f}%)")
+                        # Mostrar parámetros del algoritmo
+                        st.markdown("### 📈 Parámetros Genéticos Detectados")
+                        param_col1, param_col2, param_col3, param_col4 = st.columns(4)
                         
-                        with detail_col2:
-                            st.markdown("**Métricas Avanzadas:**")
-                            st.write(f"• Entropía di: {genetic_profile.get('entropy_di', 0):.3f}")
-                            st.write(f"• GC variance: {genetic_profile.get('gc_variance', 0):.4f}")
-                            st.write(f"• Purinas: {genetic_profile.get('purine_content', 0):.1f}%")
-                            st.write(f"• Pirimidinas: {genetic_profile.get('pyrimidine_content', 0):.1f}%")
-                
+                        with param_col1:
+                            gc_content = genetic_profile['gc_content']
+                            if gc_content < 35:
+                                structure_type = "Lineal"
+                            elif gc_content > 65:
+                                structure_type = "Circular"
+                            else:
+                                structure_type = "Espiral"
+                            st.metric("GC Content", f"{gc_content:.1f}%", f"→ {structure_type}")
+                        
+                        with param_col2:
+                            entropy_mono = genetic_profile['entropy_mono']
+                            st.metric("Entropía Mono", f"{entropy_mono:.3f}", f"→ Variación visual")
+                        
+                        with param_col3:
+                            complexity_score = genetic_profile['complexity_score']
+                            st.metric("Complejidad", f"{complexity_score:.3f}", f"→ Densidad elementos")
+                        
+                        with param_col4:
+                            repeat_count = len(genetic_profile.get('repeat_patterns', {}))
+                            st.metric("Patrones", f"{repeat_count}", f"→ Texturas")
+                        
+                        with st.spinner("🎨 Ejecutando algoritmo universal..."):
+                            fig = create_genetic_art(sequence, genetic_profile, category, palette)
+                        
+                        st.markdown("### 🎨 Arte Genético Generado")
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Guardar en galería
+                        gallery_entry = {
+                            'name': organism_name,
+                            'sequence_type': sequence_type,
+                            'figure': fig,
+                            'gc': gc_content,
+                            'length': genetic_profile['sequence_length'],
+                            'complexity': complexity_score
+                        }
+                        if len(st.session_state.gallery) >= 5:
+                            st.session_state.gallery.pop(0)
+                        st.session_state.gallery.append(gallery_entry)
+                        
+                        # Información adicional
+                        info_col1, info_col2 = st.columns(2)
+                        
+                        with info_col1:
+                            st.markdown("**🌍 Clasificación Detectada:**")
+                            st.write(f"• Categoría: {category.title()}")
+                            st.write(f"• Hábitat: {habitat_type.title()}")
+                            st.write(f"• Paleta: {len(palette['primary'])} colores primarios")
+                        
+                        with info_col2:
+                            st.markdown("**🧬 Análisis Genético:**")
+                            st.write(f"• Dinucleótidos únicos: {len(genetic_profile.get('dinucleotides', {}))}")
+                            st.write(f"• Trinucleótidos únicos: {len(genetic_profile.get('trinucleotides', {}))}")
+                            st.write(f"• Patrones repetitivos: {len(genetic_profile.get('repeat_patterns', {}))}")
+                        
+                        # Opciones de exportación
+                        export_col1, export_col2 = st.columns(2)
+                        
+                        with export_col1:
+                            st.markdown("### 💾 Exportar")
+                            if st.button("📥 Descargar PNG", type="secondary"):
+                                st.success("Arte genético guardado como PNG de alta resolución")
+                        
+                        with export_col2:
+                            st.markdown("### 🔄 Regenerar")
+                            if st.button("🎲 Nueva Variación", type="secondary"):
+                                st.info("Generando nueva variación con parámetros aleatorios...")
+                                st.rerun()
+                        
+                        # Análisis detallado expandible
+                        with st.expander("🔍 Análisis Genético Detallado", expanded=False):
+                            detail_col1, detail_col2 = st.columns(2)
+                            
+                            with detail_col1:
+                                st.markdown("**Composición de Bases:**")
+                                for base, count in genetic_profile['base_counts'].items():
+                                    percentage = (count / genetic_profile['sequence_length']) * 100
+                                    st.write(f"• {base}: {count:,} ({percentage:.1f}%)")
+                            
+                            with detail_col2:
+                                st.markdown("**Métricas Avanzadas:**")
+                                st.write(f"• Entropía di: {genetic_profile.get('entropy_di', 0):.3f}")
+                                st.write(f"• Purinas: {genetic_profile.get('purine_content', 0):.1f}%")
+                                st.write(f"• Pirimidinas: {genetic_profile.get('pyrimidine_content', 0):.1f}%")
+                                st.write(f"• Firma genética: {genetic_profile.get('organism_id', 'N/A')}")
+                    
+                    else:
+                        st.error("❌ No se pudo analizar el perfil genético")
                 else:
-                    st.error("❌ No se pudo analizar el perfil genético")
-            else:
-                st.error("❌ No se encontró información para esta especie")
-                st.info("💡 Intenta con el nombre científico o verifica la ortografía")
-                
-        except Exception as e:
-            st.error(f"❌ Error en el proceso: {str(e)}")
-            st.info("💡 Intenta con otro animal o verifica la conexión")
-
-def determine_sequence_type(description: str) -> str:
-    """Determina el tipo de secuencia obtenida desde la descripción"""
-    desc_lower = description.lower()
-    
-    if "complete genome" in desc_lower:
-        return "Genoma Completo"
-    elif "genome assembly" in desc_lower:
-        return "Ensamblaje Genómico"
-    elif "chromosome" in desc_lower and "complete" in desc_lower:
-        return "Cromosoma Completo"
-    elif "chromosome" in desc_lower:
-        return "Cromosoma"
-    elif "chloroplast" in desc_lower and "complete" in desc_lower:
-        return "Cloroplasto Completo"
-    elif "plastid" in desc_lower and "complete" in desc_lower:
-        return "Plastidio Completo"
-    elif "mitochondrion" in desc_lower and "complete" in desc_lower:
-        return "Mitocondria Completa"
-    elif "mitochondrial" in desc_lower:
-        return "Mitocondrial"
-    else:
-        return "Secuencia Genética"
+                    st.error("❌ No se encontró información para esta especie")
+                    st.info("💡 Intenta con el nombre científico o verifica la ortografía")
+                    
+            except Exception as e:
+                st.error(f"❌ Error en el proceso: {str(e)}")
+                st.info("💡 Intenta con otro animal o verifica la conexión")
 
 if __name__ == "__main__":
     main()

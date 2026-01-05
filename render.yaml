@@ -17,6 +17,10 @@ services:
         value: 3.11.0
       - key: PORT
         value: 8000
+      - key: DEBUG
+        value: "false"
+      - key: ENTREZ_EMAIL
+        value: "deploy@geneticframes.com" # Required by NCBI Entrez API
       - key: REDIS_ENABLED
         value: true
       - key: REDIS_URL
@@ -27,7 +31,7 @@ services:
       - key: ALPHAFOLD_ENABLED
         value: true
       - key: CORS_ORIGINS
-        value: "*" # Update this with your Vercel frontend URL in production
+        value: "*" # WARNING: Update this with your Vercel frontend URL in production for security
 
   # ---------------------------------------------------
   # 🚀 Redis Cache (For DNA Sequences & Rate Limiting)

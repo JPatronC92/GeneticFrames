@@ -20,7 +20,7 @@ plotly==5.18.0
 matplotlib==3.8.2
 
 # HTTP & Async
-httpx==0.26.0
+httpx==0.25.2
 aiofiles==23.2.1
 python-multipart==0.0.6
 

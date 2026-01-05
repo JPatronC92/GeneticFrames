@@ -4,13 +4,22 @@ Search for animals by common or scientific name
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import List
+from typing import List, Dict
 from loguru import logger
 
 from app.services.animal_search import animal_search_service
 from app.schemas.species import SpeciesSearchResponse, SpeciesResult
 
 router = APIRouter()
+
+
+@router.get("/exhibits", response_model=Dict[str, List[SpeciesResult]])
+async def get_zoo_exhibits():
+    """
+    Get all species categorized by 'Zoo Exhibit' (Zone).
+    e.g., 'Deep Sea Giants', 'Apex Predators'.
+    """
+    return await animal_search_service.get_zoo_exhibits()
 
 
 @router.get("/search", response_model=SpeciesSearchResponse)

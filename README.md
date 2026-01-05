@@ -38,7 +38,19 @@ graph TD
 1.  **Firma Genómica**: Algoritmo que transforma secuencias de ADN en parámetros visuales (colores, formas) de manera determinística.
 2.  **Simulador de Mutaciones**: Permite visualizar cómo cambios en el ADN afectan la obra de arte generada.
 3.  **Exhibiciones**: Agrupación temática de especies (e.g., "Deep Sea Giants").
-4.  **Búsqueda de Especies**: Conexión directa con bases de datos científicas.
+4.  **Búsqueda de Especies**:
+    *   **Modo Demo**: Búsqueda "infinita" mediante generación procedural para especies no catalogadas.
+    *   **Modo Producción** (Roadmap): Conexión directa con NCBI GenBank.
+
+---
+
+## 🚧 Estado del MVP (Modo Demo)
+
+Actualmente, el proyecto está configurado para demostraciones rápidas y estables.
+
+*   **ADN Simulado Determinístico**: Para garantizar la velocidad y disponibilidad sin depender de APIs externas (que pueden ser lentas o tener límites), el sistema genera secuencias de ADN pseudo-reales basadas en el nombre de la especie.
+    *   *Ejemplo*: "Tiger" siempre generará la misma secuencia y la misma obra de arte, manteniendo la coherencia.
+*   **Búsqueda Flexible**: Si buscas una especie que no está en la base de datos interna, el sistema generará una entrada al vuelo, permitiendo explorar cualquier concepto (ej. "Dragon", "Alien").
 
 ---
 

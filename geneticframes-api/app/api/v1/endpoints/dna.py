@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from loguru import logger
 
 from app.services.dna_service import dna_service
-from app.schemas.dna import DNAAnalysisResponse, DNAGenerateRequest
+from app.schemas.dna import DNAAnalysisResponse, DNAGenerateRequest, MutationRequest
 from app.core.cache import cache_manager
 
 router = APIRouter()
@@ -16,18 +16,12 @@ router = APIRouter()
 @router.post("/analyze", response_model=DNAAnalysisResponse)
 async def analyze_dna(request: DNAGenerateRequest):
     """
-    Fetch and analyze DNA sequence for a species
-    
-    Returns:
-    - DNA sequence metadata
-    - Base composition
-    - GC content
-    - Genetic complexity metrics
-    - Art generation parameters
+    Fetch and analyze DNA sequence for a species.
+    Includes 'Art Traits' generation.
     """
     try:
         # Check cache first
-        cache_key = f"dna:{request.species_name}"
+        cache_key = f"dna:{request.species_name}:{request.mutation_rate}"
         cached = await cache_manager.get(cache_key)
         
         if cached:
@@ -37,6 +31,27 @@ async def analyze_dna(request: DNAGenerateRequest):
         # Fetch and analyze DNA
         result = await dna_service.analyze_species_dna(request.species_name)
         
+        # Apply mutation if requested (Simulating Evolution)
+        if request.mutation_rate > 0:
+            mutated_seq = await dna_service.simulate_mutation(result.sequence_preview, request.mutation_rate) # Note: mutating preview for MVP speed
+
+            # Recalculate signature for the mutated sequence
+            result.genomic_signature = f"{result.genomic_signature}-mutated"
+
+            # Recalculate Art Traits so the visual actually changes!
+            from Bio.SeqUtils import gc_fraction
+            mutated_gc = gc_fraction(mutated_seq) * 100
+
+            # Generate new art parameters from the mutated DNA
+            new_art_traits = dna_service.generate_art_parameters(
+                mutated_seq,
+                mutated_gc,
+                result.genomic_signature
+            )
+
+            result.art_traits = new_art_traits
+            result.sequence_preview = mutated_seq
+
         # Cache the result
         await cache_manager.set(cache_key, result.dict(), ttl=3600)
         
@@ -51,6 +66,14 @@ async def analyze_dna(request: DNAGenerateRequest):
             status_code=500,
             detail=f"Failed to analyze DNA: {str(e)}"
         )
+
+
+@router.post("/mutate", response_model=str)
+async def mutate_sequence(request: MutationRequest):
+    """
+    Simulate evolution: Mutate a raw DNA sequence
+    """
+    return await dna_service.simulate_mutation(request.sequence, request.mutation_rate)
 
 
 @router.post("/generate-art")

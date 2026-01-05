@@ -3,7 +3,7 @@ AlphaFold Integration Endpoint
 Protein structure prediction and visualization
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Path
 from loguru import logger
 
 from app.services.alphafold_service import alphafold_service
@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.get("/protein/{uniprot_id}", response_model=ProteinStructureResponse)
 async def get_protein_structure(
-    uniprot_id: str = Query(..., description="UniProt accession ID")
+    uniprot_id: str = Path(..., description="UniProt accession ID")
 ):
     """
     Get protein structure from AlphaFold Database

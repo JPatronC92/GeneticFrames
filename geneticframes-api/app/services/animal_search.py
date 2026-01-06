@@ -39,6 +39,17 @@ class AnimalSearchService:
                     taxonomy={"group": sp["group"]}
                 ))
 
+        # Demo Fallback: If no exact match, allow a "Generated" result
+        # This allows the demo to feel "infinite" even with a small DB
+        if not results and len(query) > 2:
+            results.append(SpeciesResult(
+                common_name=query.title(),
+                scientific_name=f"{query.capitalize()} (Gen)",
+                confidence=0.8,
+                source="GeneticFrames AI Generator",
+                taxonomy={"group": "New Discoveries"}
+            ))
+
         return results[:limit]
 
     async def get_suggestions(self, query: str, limit: int = 5) -> List[str]:

@@ -70,9 +70,11 @@ class DNAService:
         Simulate fetching a unique DNA sequence based on the species name.
         In production, this calls NCBI Entrez.
         """
-        # Deterministic random seed based on name to ensure same species = same DNA always
-        random.seed(species_name)
-        length = random.randint(500, 2000)
+        # Deterministic generator based on name to ensure same species = same DNA always
+        # We use a local Random instance to ensure thread safety and avoid affecting global state
+        rng = random.Random(species_name)
+
+        length = rng.randint(500, 2000)
         bases = ["A", "T", "G", "C"]
 
         # Bias based on name characters to make it pseudo-unique
@@ -86,7 +88,7 @@ class DNAService:
         total_w = sum(weights)
         weights = [w/total_w for w in weights]
 
-        return "".join(random.choices(bases, weights=weights, k=length))
+        return "".join(rng.choices(bases, weights=weights, k=length))
 
     def generate_art_parameters(self, sequence: str, gc_content: float, signature: str) -> ArtTraits:
         """

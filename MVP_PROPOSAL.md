@@ -1,18 +1,8 @@
-# 🧬 GeneticFrames - Propuesta MVP Integral
+# 🧬 GeneticFrames - Documentación Técnica y Arquitectura
 
-## 📋 Executive Summary
+## 🎯 Arquitectura del Sistema
 
-**Objetivo**: Convertir GeneticFrames en un MVP funcional, escalable y listo para producción real.
-
-**Estado Actual**: 70% funcional técnicamente, 40% listo para usuarios reales
-**Meta MVP**: 100% funcional, 90% listo para producción en 3-4 semanas
-**Inversión Estimada**: $0 (usando tier gratuitos) - $50/mes (producción real)
-
----
-
-## 🎯 Arquitectura Propuesta para MVP
-
-### **Opción A: Stack Moderno Full-Stack (Recomendado para escalabilidad)**
+### **Opción A: Stack Moderno Full-Stack**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -58,11 +48,10 @@
 **Desventajas:**
 - ⚠️ Requiere aprender JavaScript/TypeScript
 - ⚠️ Mayor complejidad inicial
-- ⚠️ 2-3 semanas de desarrollo
 
 ---
 
-### **Opción B: Stack Python Optimizado (Recomendado para MVP rápido)**
+### **Opción B: Stack Python Optimizado**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -91,7 +80,6 @@
 
 **Ventajas:**
 - ✅ Mantiene código Python existente
-- ✅ MVP en 1 semana
 - ✅ Menor curva de aprendizaje
 - ✅ Prototipado ultra-rápido
 
@@ -102,7 +90,7 @@
 
 ---
 
-### **Opción C: Hybrid Stack (Equilibrio perfecto)** ⭐ **RECOMENDADO**
+### **Opción C: Hybrid Stack** ⭐ **RECOMENDADO**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -133,7 +121,7 @@
 
 ---
 
-## 🛠️ Tecnologías Específicas Recomendadas
+## 🛠️ Tecnologías
 
 ### **Frontend (UI/UX)**
 
@@ -160,26 +148,26 @@
 
 ### **Base de Datos & Storage**
 
-| Tecnología | Uso | Por qué | Costo |
-|------------|-----|---------|-------|
-| **Supabase** | PostgreSQL + Auth + Storage | Todo-en-uno, tier gratuito generoso | $0-25/mes |
-| **Upstash Redis** | Caché distribuido | Edge locations, pay-per-request | $0-10/mes |
-| **Cloudflare R2** | Almacenamiento imágenes | Más barato que S3, sin egress fees | $0-5/mes |
-| **Turso (SQLite)** | Alternativa ligera | Edge database, ultra-rápido | $0-5/mes |
+| Tecnología | Uso | Por qué |
+|------------|-----|---------|
+| **Supabase** | PostgreSQL + Auth + Storage | Todo-en-uno, tier gratuito generoso |
+| **Upstash Redis** | Caché distribuido | Edge locations, pay-per-request |
+| **Cloudflare R2** | Almacenamiento imágenes | Más barato que S3, sin egress fees |
+| **Turso (SQLite)** | Alternativa ligera | Edge database, ultra-rápido |
 
 ### **Deployment & DevOps**
 
-| Tecnología | Uso | Por qué | Costo |
-|------------|-----|---------|-------|
-| **Vercel** | Frontend hosting | Deploy automático, edge functions | $0/mes |
-| **Railway/Fly.io** | Backend API | Escalado automático, fácil setup | $5-15/mes |
-| **GitHub Actions** | CI/CD | Tests automáticos, deploy | $0/mes |
-| **Sentry** | Error tracking | Monitoreo en producción | $0/mes |
-| **PostHog** | Analytics | Understand user behavior | $0/mes |
+| Tecnología | Uso | Por qué |
+|------------|-----|---------|
+| **Vercel** | Frontend hosting | Deploy automático, edge functions |
+| **Railway/Fly.io** | Backend API | Escalado automático, fácil setup |
+| **GitHub Actions** | CI/CD | Tests automáticos, deploy |
+| **Sentry** | Error tracking | Monitoreo en producción |
+| **PostHog** | Analytics | Understand user behavior |
 
 ### **Alternativas Fuera de Python**
 
-#### **Visualización Avanzada (Fuerte Recomendación)**
+#### **Visualización Avanzada**
 
 1. **Three.js + GLSL Shaders**: Arte genético en 3D con efectos visuales impresionantes
    ```javascript
@@ -202,7 +190,7 @@
    - Mejor performance
    - Editor visual
 
-#### **Backend Alternativo (Si quieres salir de Python)**
+#### **Backend Alternativo**
 
 1. **Bun + Hono**: JavaScript/TypeScript ultra-rápido
    ```typescript
@@ -226,163 +214,9 @@
 
 ---
 
-## 📦 Plan de Implementación MVP (Opción C - Hybrid)
+## 🎨 Funcionalidades Clave
 
-### **Fase 1: Fundamentos (Semana 1)** ⚡ CRÍTICO
-
-#### Día 1-2: Setup & Infraestructura
-```bash
-# Frontend
-npm create vite@latest geneticframes-web -- --template react-ts
-cd geneticframes-web
-npm install @tanstack/react-query axios zustand
-npm install @shadcn/ui tailwindcss framer-motion
-npm install three @react-three/fiber @react-three/drei
-
-# Backend
-cd ../geneticframes-api
-python -m venv venv
-pip install fastapi uvicorn[standard] redis celery
-pip install biopython numpy scipy pillow
-pip install supabase pydantic-settings python-dotenv
-```
-
-#### Día 3-4: API Core
-- ✅ Migrar código Python a FastAPI endpoints
-- ✅ Implementar rate limiting (SlowAPI)
-- ✅ Setup Redis para caché de secuencias NCBI
-- ✅ Configurar CORS y seguridad
-
-```python
-# api/main.py - Estructura base
-from fastapi import FastAPI, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi_limiter import FastAPILimiter
-from redis import asyncio as aioredis
-
-app = FastAPI(title="GeneticFrames API")
-
-@app.post("/api/search")
-async def search_species(query: str):
-    """Búsqueda optimizada de especies"""
-    pass
-
-@app.post("/api/generate")
-async def generate_art(species: str, background_tasks: BackgroundTasks):
-    """Generación async de arte genético"""
-    pass
-```
-
-#### Día 5-7: Frontend Base
-- ✅ Layout principal con TailwindCSS
-- ✅ Componente de búsqueda con autocomplete
-- ✅ Integración con API (React Query)
-- ✅ Loader states y error handling
-
-### **Fase 2: Features Core (Semana 2)** 🎨
-
-#### Día 8-10: Visualización Mejorada
-- ✅ Migrar algoritmo de arte a Three.js (3D)
-- ✅ Añadir controles interactivos (zoom, rotate)
-- ✅ Exportación a PNG/SVG de alta resolución
-- ✅ Preview en tiempo real
-
-```typescript
-// components/DNAArt3D.tsx
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
-
-export function DNAArt3D({ geneticData }) {
-    return (
-        <Canvas>
-            <PerspectiveCamera makeDefault />
-            <OrbitControls />
-            <DNAHelix data={geneticData} />
-            <ParticleSystem count={10000} />
-        </Canvas>
-    );
-}
-```
-
-#### Día 11-14: Galería & Social
-- ✅ Galería pública con infinite scroll
-- ✅ Sistema de favoritos (Supabase Auth)
-- ✅ Compartir en redes (Open Graph)
-- ✅ Leaderboard de especies populares
-
-### **Fase 3: Optimización (Semana 3)** ⚡
-
-#### Día 15-17: Performance
-- ✅ Implementar caché multinivel (Redis + Browser)
-- ✅ Lazy loading de componentes pesados
-- ✅ Optimización de imágenes (Sharp/ImageKit)
-- ✅ CDN para assets estáticos
-
-#### Día 18-21: UX Polish
-- ✅ Onboarding tutorial (Intro.js)
-- ✅ Dark mode
-- ✅ Responsive design mobile-first
-- ✅ Accesibilidad (a11y)
-
-### **Fase 4: Launch Ready (Semana 4)** 🚀
-
-#### Día 22-24: Testing & QA
-- ✅ Unit tests (Vitest + Pytest)
-- ✅ E2E tests (Playwright)
-- ✅ Load testing (k6)
-- ✅ Bug fixes
-
-#### Día 25-28: Deploy & Marketing
-- ✅ Deploy a producción (Vercel + Railway)
-- ✅ Setup analytics (PostHog)
-- ✅ Landing page optimizada
-- ✅ Soft launch (ProductHunt, Reddit)
-
----
-
-## 💰 Costos Estimados
-
-### **Tier Gratuito (0-1000 usuarios/mes)**
-```
-✅ Vercel: $0 (100GB bandwidth)
-✅ Supabase: $0 (500MB database, 1GB storage)
-✅ Upstash Redis: $0 (10K comandos/día)
-✅ Railway: $5/mes (500 horas ejecución)
-✅ Cloudflare R2: $0 (10GB storage)
-─────────────────────────
-Total: $5/mes
-```
-
-### **Tier Startup (1K-10K usuarios/mes)**
-```
-✅ Vercel Pro: $20/mes
-✅ Supabase Pro: $25/mes
-✅ Upstash Redis: $10/mes
-✅ Railway Pro: $20/mes
-✅ Cloudflare R2: $5/mes
-✅ Sentry: $0/mes (gratutio hasta 5K eventos)
-─────────────────────────
-Total: $80/mes
-```
-
-### **Tier Scale (10K-100K usuarios/mes)**
-```
-✅ Vercel: $20/mes
-✅ Supabase Pro: $25/mes
-✅ Upstash Redis: $50/mes
-✅ Railway: $50/mes
-✅ Cloudflare R2: $15/mes
-✅ Sentry: $26/mes
-✅ PostHog: $0/mes (gratuito hasta 1M eventos)
-─────────────────────────
-Total: $186/mes
-```
-
----
-
-## 🎨 Diferenciadores Únicos del MVP
-
-### **1. Visualización 3D Interactiva** (Nadie más lo tiene)
+### **1. Visualización 3D Interactiva**
 - Doble hélice de ADN en 3D rotando
 - Zoom a nivel de bases nitrogenadas
 - Exportar como modelo 3D (GLB/OBJ)
@@ -392,48 +226,21 @@ Total: $186/mes
 - Comparar especies relacionadas
 - Animación de divergencia evolutiva
 
-### **3. NFT Integration** (Monetización)
-- Generar colección limitada (100 ejemplares por especie)
-- Mint en Polygon (fees bajos)
-- Certificado de autenticidad genética
-
-### **4. Educational Mode**
+### **3. Educational Mode**
 - Explicaciones interactivas de cada parámetro genético
 - Quiz sobre genética
 - Colaboración con escuelas/universidades
 
-### **5. API Pública**
-- Freemium model (100 requests/día gratis)
+### **4. API Pública**
+- Freemium model
 - Documentación con ejemplos
 - SDKs en Python/JavaScript/Go
 
 ---
 
-## 🏆 Métricas de Éxito MVP
+## 🚀 Quick Start
 
-### **Técnicas**
-- ✅ Uptime: >99.5%
-- ✅ Tiempo respuesta API: <500ms
-- ✅ Tiempo generación arte: <3s
-- ✅ Score Lighthouse: >90
-
-### **Negocio**
-- 🎯 500 usuarios únicos en primer mes
-- 🎯 100 artes generados/día
-- 🎯 30% tasa de retorno (usuarios que vuelven)
-- 🎯 20+ especies en galería pública
-
-### **Engagement**
-- 📊 Tiempo promedio en sitio: >3 min
-- 📊 5+ artes generados por usuario activo
-- 📊 10% share rate en redes sociales
-- 📊 50+ upvotes en ProductHunt
-
----
-
-## 🚀 Quick Start (Elegir Stack)
-
-### **Si eliges Opción A (Next.js Full-Stack)**
+### **Opción A (Next.js Full-Stack)**
 ```bash
 npx create-next-app@latest geneticframes --typescript --tailwind --app
 cd geneticframes
@@ -441,7 +248,7 @@ npm install @tanstack/react-query three @react-three/fiber
 npm install @supabase/supabase-js zustand framer-motion
 ```
 
-### **Si eliges Opción B (Streamlit Optimizado)**
+### **Opción B (Streamlit Optimizado)**
 ```bash
 cd GeneticFrames
 python -m venv venv
@@ -450,7 +257,7 @@ pip install streamlit==1.38.0 fastapi uvicorn redis
 pip install streamlit-extras streamlit-plotly-events
 ```
 
-### **Si eliges Opción C (Hybrid - Recomendado)** ⭐
+### **Opción C (Hybrid - Recomendado)** ⭐
 ```bash
 # Frontend
 npm create vite@latest geneticframes-web -- --template react-ts
@@ -483,21 +290,3 @@ pip install fastapi uvicorn redis celery biopython supabase
 - 🎓 [Vercel Docs](https://vercel.com/docs)
 - 🎓 [Railway Docs](https://docs.railway.app/)
 - 🎓 [Supabase University](https://supabase.com/docs)
-
----
-
-## 🤝 Siguiente Paso
-
-**¿Qué stack prefieres?**
-
-1. **Opción A**: Next.js (máxima escalabilidad, aprendes JavaScript)
-2. **Opción B**: Streamlit mejorado (rápido, mantiene Python)
-3. **Opción C**: Hybrid React + FastAPI (balance perfecto) ⭐
-
-**Una vez decidas, puedo:**
-- ✅ Generar estructura de carpetas completa
-- ✅ Crear archivos de configuración
-- ✅ Migrar código existente
-- ✅ Setup de deployment
-
-**¿Empezamos?** 🚀

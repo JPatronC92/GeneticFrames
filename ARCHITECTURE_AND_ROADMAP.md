@@ -30,24 +30,7 @@ graph TD
 
 ---
 
-## 2. 🚨 Riesgos Técnicos y Dependencias Críticas
-
-### Dependencias Críticas
-*   **BioPython / NCBI Entrez**: Si la API de NCBI cambia o tiene downtime, el servicio de ADN falla. *Mitigación: El sistema actual tiene un fallback simulado, pero en producción se requiere una caché robusta.*
-*   **AlphaFold DB**: Dependencia externa para estructuras 3D. No hay control sobre su disponibilidad.
-*   **Redis**: Crítico para el rendimiento. Sin él, cada request golpea APIs externas lentas.
-
-### Riesgos Detectados
-1.  **Latencia en Tiempo Real**: El cálculo de `simulate_mutation` en secuencias completas (millones de bases) bloqueará el event loop si no se maneja en workers separados (Celery/BackgroundTasks).
-    *   *Estado actual*: Se usa `BackgroundTasks` para generación de arte, pero la mutación es síncrona en el preview.
-2.  **Conflictos de Dependencias**: Se detectaron conflictos entre versiones de `httpx` requeridas por `supabase` vs otras librerías.
-    *   *Solución aplicada*: Ajuste manual de versiones en `requirements.txt`.
-3.  **Escalabilidad de Memoria**: Cargar genomas completos en memoria RAM para análisis es costoso.
-    *   *Recomendación*: Procesamiento por streaming para secuencias largas.
-
----
-
-## 3. 💡 Mejoras Implementadas (Creative Freedom)
+## 2. 💡 Mejoras Implementadas (Creative Freedom)
 
 Para transformar la herramienta en un "Zoológico de Arte Digital", se implementaron:
 
@@ -65,25 +48,25 @@ Para transformar la herramienta en un "Zoológico de Arte Digital", se implement
 
 ---
 
-## 4. 🗺️ Roadmap a Producción
+## 3. 🗺️ Roadmap Técnico
 
-### Fase 1: Hardening (Semana 1)
+### Fase 1: Hardening
 - [ ] **Tests Unitarios Reales**: Reemplazar mocks en `test_dna.py` con tests que usen VCR.py para grabar respuestas de NCBI.
 - [ ] **Redis Persistencia**: Configurar Redis para no perder caché en reinicios.
 - [ ] **Error Handling Granular**: Diferenciar errores de "Especie no encontrada" vs "Error de conexión NCBI".
 
-### Fase 2: Performance & Scaling (Semana 2)
+### Fase 2: Performance & Scaling
 - [ ] **Celery Workers**: Mover el procesamiento pesado (Análisis de ADN > 10kb) a una cola de tareas Celery.
 - [ ] **Streaming Responses**: Para la generación de arte 3D, enviar datos progresivamente al frontend.
 - [ ] **CDN para Assets**: Servir los archivos PDB/CIF de AlphaFold a través de un proxy/CDN propio para evitar rate limits externos.
 
-### Fase 3: The "Zoo" Experience (Semana 3)
+### Fase 3: The "Zoo" Experience
 - [ ] **User Accounts (Supabase)**: Guardar "Colecciones" de especies favoritas.
 - [ ] **Community Mutations**: Permitir a usuarios guardar sus versiones "mutadas" y compartirlas.
 - [ ] **Integration Tests**: Pruebas E2E completas desde la búsqueda hasta la generación.
 
-### Fase 4: Launch
-- [ ] Despliegue en **Render** (Backend) usando el archivo `render.yaml` incluido.
+### Fase 4: Launch Preparation
+- [ ] Despliegue en **Render** (Backend).
 - [ ] Despliegue en **Vercel** (Frontend).
 - [ ] Configuración de monitoreo (Sentry + Prometheus).
 
@@ -103,6 +86,6 @@ Se ha incluido un archivo `render.yaml` para automatizar el despliegue.
 
 ---
 
-## 5. Conclusión
+## 4. Conclusión
 
 GeneticFrames está listo como MVP avanzado. La arquitectura es modular y soporta la expansión creativa. La inclusión de la lógica de "Arte Genético" en el backend asegura consistencia en cualquier cliente (Web, Mobile, VR).

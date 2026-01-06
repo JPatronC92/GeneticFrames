@@ -1,8 +1,8 @@
 # 🧬 GeneticFrames - Digital Art Zoo
 
-**GeneticFrames** es una plataforma que transforma datos genéticos en arte digital interactivo. Utiliza secuencias de ADN para generar "Firmas Genómicas" visuales únicas, permitiendo explorar la belleza oculta en el código de la vida.
+**GeneticFrames** es una plataforma que transforma datos genéticos en arte digital interactivo. Utiliza secuencias de ADN para generar "Firmas Genómicas visuales únicas, permitiendo explorar la belleza oculta en el código de la vida.
 
-Este proyecto opera como un "Zoológico de Arte Digital", donde los usuarios pueden buscar especies, visualizar sus estructuras moleculares y ver cómo mutaciones genéticas afectarían su representación artística.
+**🌟 Este es el primer zoológico de arte digital.** Este proyecto opera como un "Zoológico de Arte Digital", donde los usuarios pueden buscar especies, visualizar sus estructuras moleculares y ver cómo mutaciones genéticas afectarían su representación artística.
 
 ---
 
@@ -48,7 +48,7 @@ graph TD
 
 Actualmente, el proyecto está configurado para demostraciones rápidas y estables.
 
-*   **ADN Simulado Determinístico**: Para garantizar la velocidad y disponibilidad sin depender de APIs externas (que pueden ser lentas o tener límites), el sistema genera secuencias de ADN pseudo-reales basadas en el nombre de la especie.
+*   **ADN Simulado Determinístico**: Para garantizar la velocidad y disponibilidad sin depender de APIs externas (que pueden ser lentas o tener límites), el sistema genera secuencias de ADN pseudo-aleatorias pero determinísticas basadas en el nombre de la especie.
     *   *Ejemplo*: "Tiger" siempre generará la misma secuencia y la misma obra de arte, manteniendo la coherencia.
 *   **Búsqueda Flexible**: Si buscas una especie que no está en la base de datos interna, el sistema generará una entrada al vuelo, permitiendo explorar cualquier concepto (ej. "Dragon", "Alien").
 

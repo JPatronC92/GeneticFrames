@@ -1,0 +1,146 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Host:
+      - eutils.ncbi.nlm.nih.gov
+      User-Agent:
+      - Python-urllib/3.12
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=Homo+sapiens%5BOrganism%5D+AND+mitochondrion%5Btitle%5D&retmax=1&tool=biopython&email=juliopc92%40gmail.com
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8" ?>
+
+        <!DOCTYPE eSearchResult PUBLIC "-//NLM//DTD esearch 20060628//EN" "https://eutils.ncbi.nlm.nih.gov/eutils/dtd/20060628/esearch.dtd">
+
+        <eSearchResult><Count>71105</Count><RetMax>1</RetMax><RetStart>0</RetStart><IdList>
+
+        <Id>3135756334</Id>
+
+        </IdList><TranslationSet><Translation>     <From>Homo sapiens[Organism]</From>     <To>"Homo
+        sapiens"[Organism]</To>    </Translation></TranslationSet><TranslationStack>   <TermSet>    <Term>"Homo
+        sapiens"[Organism]</Term>    <Field>Organism</Field>    <Count>1</Count>    <Explode>Y</Explode>   </TermSet>   <TermSet>    <Term>mitochondrion[title]</Term>    <Field>title</Field>    <Count>1</Count>    <Explode>N</Explode>   </TermSet>   <OP>AND</OP>  </TranslationStack><QueryTranslation>"Homo
+        sapiens"[Organism] AND mitochondrion[title]</QueryTranslation></eSearchResult>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      Cache-Control:
+      - private
+      Connection:
+      - close
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/xml; charset=UTF-8
+      Date:
+      - Sat, 10 Jan 2026 09:42:24 GMT
+      NCBI-PHID:
+      - 1D34C010467C8A8500005E4FFAFE7EE8.1.1.m_1
+      NCBI-SID:
+      - 7D454C2C2188706F_2045SID
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Finatra
+      Set-Cookie:
+      - ncbi_sid=7D454C2C2188706F_2045SID; domain=.nih.gov; path=/; expires=Sun, 10
+        Jan 2027 09:42:24 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-RateLimit-Limit:
+      - '3'
+      X-RateLimit-Remaining:
+      - '2'
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Host:
+      - eutils.ncbi.nlm.nih.gov
+      User-Agent:
+      - Python-urllib/3.12
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&id=3135756334&rettype=fasta&retmode=text&tool=biopython&email=juliopc92%40gmail.com
+  response:
+    body:
+      string: '>PX569379.1 UNVERIFIED: Homo sapiens mitochondrion sequence
+
+        GAMMCTTTYSGCCCTWWATTTTAWTAATCAAACACCCTCCTAGCCTTACTACTAATAATTATTACATTTT
+
+        GACTACCACAACTCAACGGCTACATAGAAAAATCCACCCCTTACGAGTGCGGCTTCGACCCTATATCCCC
+
+        CGCCCGCGTCCCTTTCTCCATAAAATTCTTCTTAGTAGCTATTACCTTCTTATTATTTGATCTAGAAATT
+
+        GCCCTCCTTTTACCCCTACCATGAGCCCTACAAACAACTAACCTGCCACTAATAGTTATGTCATCCCTCT
+
+        TATTAATCATCATCCTAGCCCTAAGTCTGGCCTATGAGTGACTACAAAAAGGATTAGACTGAACCGAATT
+
+        GGTATATAGTTTAAACAAAACGAATGATTTCGACTAAA
+
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      Cache-Control:
+      - private
+      Connection:
+      - close
+      Content-Disposition:
+      - attachment; filename="sequence.fasta"
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/plain
+      Date:
+      - Sat, 10 Jan 2026 09:42:25 GMT
+      NCBI-PHID:
+      - 1D34C010467C8A850000254FFC20CC3F.1.1.m_7
+      NCBI-SID:
+      - 3EB1BB1AF9A05F28_E7CBSID
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Finatra
+      Set-Cookie:
+      - ncbi_sid=3EB1BB1AF9A05F28_E7CBSID; domain=.nih.gov; path=/; expires=Sun, 10
+        Jan 2027 09:42:25 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-RateLimit-Limit:
+      - '3'
+      X-RateLimit-Remaining:
+      - '1'
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

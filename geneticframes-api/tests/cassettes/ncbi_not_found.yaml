@@ -1,0 +1,67 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Host:
+      - eutils.ncbi.nlm.nih.gov
+      User-Agent:
+      - Python-urllib/3.12
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=XyzAbcNonExistentSpecies123%5BOrganism%5D+AND+mitochondrion%5Btitle%5D&retmax=1&tool=biopython&email=juliopc92%40gmail.com
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8" ?>
+
+        <!DOCTYPE eSearchResult PUBLIC "-//NLM//DTD esearch 20060628//EN" "https://eutils.ncbi.nlm.nih.gov/eutils/dtd/20060628/esearch.dtd">
+
+        <eSearchResult><Count>0</Count><RetMax>0</RetMax><RetStart>0</RetStart><IdList/><TranslationSet/><QueryTranslation>XyzAbcNonExistentSpecies123[Organism]
+        AND mitochondrion[title]</QueryTranslation><ErrorList><PhraseNotFound>XyzAbcNonExistentSpecies123[Organism]</PhraseNotFound></ErrorList><WarningList><OutputMessage>No
+        items found.</OutputMessage></WarningList></eSearchResult>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      Cache-Control:
+      - private
+      Connection:
+      - close
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/xml; charset=UTF-8
+      Date:
+      - Sat, 10 Jan 2026 09:40:56 GMT
+      NCBI-PHID:
+      - 1D322BEA0CD805A500004A4034E17D0D.1.1.m_1
+      NCBI-SID:
+      - 763D8BD067B35310_260ESID
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Finatra
+      Set-Cookie:
+      - ncbi_sid=763D8BD067B35310_260ESID; domain=.nih.gov; path=/; expires=Sun, 10
+        Jan 2027 09:40:57 GMT
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-RateLimit-Limit:
+      - '3'
+      X-RateLimit-Remaining:
+      - '2'
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

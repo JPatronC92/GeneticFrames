@@ -12,6 +12,7 @@ import time
 from loguru import logger
 
 from app.core.config import settings
+from app.core.exceptions import SpeciesNotFoundError, NCBIConnectionError, DNAParsingError
 from app.api.v1.router import api_router
 from app.core.cache import cache_manager
 
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"📊 Debug mode: {settings.DEBUG}")
     logger.info(f"🧬 AlphaFold enabled: {settings.ALPHAFOLD_ENABLED}")
     logger.info(f"💾 Redis enabled: {settings.REDIS_ENABLED}")
+    logger.info(f"🔬 NCBI Live Mode: {settings.NCBI_LIVE_MODE}")
     
     # Initialize cache
     if settings.REDIS_ENABLED:
@@ -71,6 +73,47 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
+# Custom Exception Handlers
+
+@app.exception_handler(SpeciesNotFoundError)
+async def species_not_found_handler(request: Request, exc: SpeciesNotFoundError):
+    """Handle species not found errors"""
+    logger.warning(f"Species not found: {exc.species_name}")
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Species Not Found",
+            "message": exc.message,
+            "species": exc.species_name
+        }
+    )
+
+@app.exception_handler(NCBIConnectionError)
+async def ncbi_connection_error_handler(request: Request, exc: NCBIConnectionError):
+    """Handle NCBI connection errors"""
+    logger.error(f"NCBI connection error: {exc.message}")
+    return JSONResponse(
+        status_code=502,
+        content={
+            "error": "Upstream Service Error",
+            "message": "Could not connect to biological database services. Please try again later.",
+            "details": exc.message if settings.DEBUG else None
+        }
+    )
+
+@app.exception_handler(DNAParsingError)
+async def dna_parsing_error_handler(request: Request, exc: DNAParsingError):
+    """Handle DNA parsing errors"""
+    logger.error(f"DNA parsing error: {exc.message}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "DNA Processing Error",
+            "message": "The DNA sequence could not be processed for art generation.",
+            "details": exc.message if settings.DEBUG else None
+        }
+    )
+
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -100,7 +143,8 @@ async def root():
             "dna_analysis": True,
             "alphafold": settings.ALPHAFOLD_ENABLED,
             "3d_visualization": True,
-            "cache": settings.REDIS_ENABLED
+            "cache": settings.REDIS_ENABLED,
+            "ncbi_live_mode": settings.NCBI_LIVE_MODE
         }
     }
 

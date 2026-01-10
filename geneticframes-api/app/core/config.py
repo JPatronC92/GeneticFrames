@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     
     # NCBI Entrez Configuration
     ENTREZ_EMAIL: str = "juliopc92@gmail.com"
+    NCBI_LIVE_MODE: bool = False
     
     # CORS
     CORS_ORIGINS: List[str] = [

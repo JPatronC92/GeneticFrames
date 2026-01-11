@@ -33,24 +33,7 @@ async def analyze_dna(request: DNAGenerateRequest):
         
         # Apply mutation if requested (Simulating Evolution)
         if request.mutation_rate > 0:
-            mutated_seq = await dna_service.simulate_mutation(result.sequence_preview, request.mutation_rate) # Note: mutating preview for MVP speed
-
-            # Recalculate signature for the mutated sequence
-            result.genomic_signature = f"{result.genomic_signature}-mutated"
-
-            # Recalculate Art Traits so the visual actually changes!
-            from Bio.SeqUtils import gc_fraction
-            mutated_gc = gc_fraction(mutated_seq) * 100
-
-            # Generate new art parameters from the mutated DNA
-            new_art_traits = dna_service.generate_art_parameters(
-                mutated_seq,
-                mutated_gc,
-                result.genomic_signature
-            )
-
-            result.art_traits = new_art_traits
-            result.sequence_preview = mutated_seq
+            result = await dna_service.process_mutation_simulation(request.species_name, request.mutation_rate)
 
         # Cache the result
         await cache_manager.set(cache_key, result.dict(), ttl=3600)

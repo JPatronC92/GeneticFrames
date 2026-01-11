@@ -1,9 +1,9 @@
-// geneticframes-web/src/components/DNAFrame.tsx
+// geneticframes-web/src/components/dna/DNAFrame/DNAFrame.tsx
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
-import type { ArtTraits } from '../types';
+import type { ArtTraits } from '@types'; // Updated import
 
 interface DNAFrameProps {
     traits: ArtTraits;
@@ -74,7 +74,7 @@ const Helix = ({ traits }: { traits: ArtTraits }) => {
     );
 };
 
-export const DNAFrame: React.FC<DNAFrameProps> = ({ traits }) => {
+const DNAFrame: React.FC<DNAFrameProps> = ({ traits }) => {
     return (
         <div className="w-full h-[500px] bg-black rounded-lg overflow-hidden border border-gray-800 relative">
             <div className="absolute top-4 left-4 z-10 bg-black/50 p-2 rounded text-xs text-white backdrop-blur">
@@ -92,3 +92,5 @@ export const DNAFrame: React.FC<DNAFrameProps> = ({ traits }) => {
         </div>
     );
 };
+
+export default DNAFrame;

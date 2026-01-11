@@ -1,7 +1,7 @@
 // geneticframes-web/src/pages/Home.tsx
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getZooExhibits } from '../services/api';
+import { getZooExhibits } from '@services/api';
 import { useLocation } from 'wouter';
 import { Search, Loader2 } from 'lucide-react';
 

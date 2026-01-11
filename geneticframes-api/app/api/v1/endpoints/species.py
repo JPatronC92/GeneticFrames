@@ -56,19 +56,7 @@ async def search_species(
 async def get_popular_species(limit: int = Query(10, ge=1, le=50)):
     """Get most popular/recently searched species"""
     try:
-        # Return curated popular species
-        popular = [
-            {"common_name": "Tiger", "scientific_name": "Panthera tigris", "confidence": 1.0},
-            {"common_name": "Blue Whale", "scientific_name": "Balaenoptera musculus", "confidence": 1.0},
-            {"common_name": "Eagle", "scientific_name": "Aquila chrysaetos", "confidence": 1.0},
-            {"common_name": "Dolphin", "scientific_name": "Tursiops truncatus", "confidence": 1.0},
-            {"common_name": "Elephant", "scientific_name": "Loxodonta africana", "confidence": 1.0},
-            {"common_name": "Great White Shark", "scientific_name": "Carcharodon carcharias", "confidence": 1.0},
-            {"common_name": "Butterfly", "scientific_name": "Danaus plexippus", "confidence": 1.0},
-            {"common_name": "Python", "scientific_name": "Python reticulatus", "confidence": 1.0},
-        ]
-        
-        return [SpeciesResult(**sp) for sp in popular[:limit]]
+        return await animal_search_service.get_popular_species(limit=limit)
     
     except Exception as e:
         logger.error(f"Error getting popular species: {e}")

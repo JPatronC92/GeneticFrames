@@ -1,8 +1,8 @@
 // geneticframes-web/src/App.tsx
 import { Route, Switch } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Home } from './pages/Home';
-import { SpeciesArt } from './pages/SpeciesArt';
+import { Home } from '@pages/Home';
+import { SpeciesArt } from '@pages/SpeciesArt';
 
 const queryClient = new QueryClient({
   defaultOptions: {

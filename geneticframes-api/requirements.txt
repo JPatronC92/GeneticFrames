@@ -43,3 +43,6 @@ black==24.1.1
 ruff==0.1.14
 vcrpy==6.0.1
 pytest-vcr==1.0.2
+ruff==0.1.14
+mypy==1.8.0
+types-redis==4.6.0.20240106

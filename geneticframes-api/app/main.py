@@ -3,18 +3,24 @@ GeneticFrames API - Main FastAPI Application
 Hybrid Stack MVP with AlphaFold Integration
 """
 
+import time
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import time
 from loguru import logger
 
-from app.core.config import settings
-from app.core.exceptions import SpeciesNotFoundError, NCBIConnectionError, DNAParsingError
 from app.api.v1.router import api_router
 from app.core.cache import cache_manager
+from app.core.config import settings
+from app.core.exceptions import (
+    DNAParsingError,
+    NCBIConnectionError,
+    SpeciesNotFoundError,
+)
+
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
@@ -26,14 +32,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"🧬 AlphaFold enabled: {settings.ALPHAFOLD_ENABLED}")
     logger.info(f"💾 Redis enabled: {settings.REDIS_ENABLED}")
     logger.info(f"🔬 NCBI Live Mode: {settings.NCBI_LIVE_MODE}")
-    
+
     # Initialize cache
     if settings.REDIS_ENABLED:
         await cache_manager.connect()
         logger.info("✅ Redis cache connected")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("🛑 Shutting down application")
     if settings.REDIS_ENABLED:
@@ -160,7 +166,7 @@ async def health_check():
             "alphafold": "operational" if settings.ALPHAFOLD_ENABLED else "disabled"
         }
     }
-    
+
     # Test cache connection
     if settings.REDIS_ENABLED:
         try:
@@ -168,7 +174,7 @@ async def health_check():
         except Exception as e:
             health_status["services"]["cache"] = f"error: {str(e)}"
             health_status["status"] = "degraded"
-    
+
     return health_status
 
 if __name__ == "__main__":

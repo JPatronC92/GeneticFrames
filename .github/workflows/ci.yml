@@ -1,0 +1,83 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main", "refactor/*" ]
+
+jobs:
+  # ---------------------------------------------------
+  # 🐍 Backend Quality & Tests
+  # ---------------------------------------------------
+  backend-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    - name: Install Dependencies
+      run: |
+        cd geneticframes-api
+        pip install -r requirements.txt
+    - name: Lint with Ruff
+      run: |
+        cd geneticframes-api
+        ruff check .
+    - name: Type Check with Mypy
+      run: |
+        cd geneticframes-api
+        mypy .
+
+  backend-tests:
+    needs: backend-quality
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    - name: Install Dependencies
+      run: |
+        cd geneticframes-api
+        pip install -r requirements.txt
+    - name: Run Tests
+      env:
+        REDIS_ENABLED: true
+        REDIS_URL: redis://localhost:6379/0
+        ENTREZ_EMAIL: ci@geneticframes.com
+      run: |
+        cd geneticframes-api
+        pytest
+
+  # ---------------------------------------------------
+  # 🎨 Frontend Quality
+  # ---------------------------------------------------
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: geneticframes-web/package-lock.json
+    - name: Install Dependencies
+      run: |
+        cd geneticframes-web
+        npm ci
+    - name: Build
+      run: |
+        cd geneticframes-web
+        npm run build

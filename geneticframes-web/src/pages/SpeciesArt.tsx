@@ -1,9 +1,9 @@
 // geneticframes-web/src/pages/SpeciesArt.tsx
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyzeDNA } from '../services/api';
+import { analyzeDNA } from '@services/api';
 import { useRoute } from 'wouter';
-import { DNAFrame } from '../components/DNAFrame';
+import DNAFrame from '@components/dna/DNAFrame';
 import { Dna, RefreshCw, ArrowLeft, FlaskConical } from 'lucide-react';
 import { Link } from 'wouter';
 

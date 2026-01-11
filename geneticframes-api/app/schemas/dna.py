@@ -2,8 +2,9 @@
 DNA Analysis and Art Schemas
 """
 
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
 
 
 class DNAGenerateRequest(BaseModel):

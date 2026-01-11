@@ -1,8 +1,9 @@
 import pytest
 import vcr
-from app.services.dna_service import dna_service, DNAService
+
 from app.core.config import settings
 from app.core.exceptions import SpeciesNotFoundError
+from app.services.dna_service import DNAService, dna_service
 
 # Configure VCR
 my_vcr = vcr.VCR(

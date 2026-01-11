@@ -3,12 +3,13 @@ Species Search Endpoint
 Search for animals by common or scientific name
 """
 
+from typing import Dict, List
+
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Dict
 from loguru import logger
 
+from app.schemas.species import SpeciesResult, SpeciesSearchResponse
 from app.services.animal_search import animal_search_service
-from app.schemas.species import SpeciesSearchResponse, SpeciesResult
 
 router = APIRouter()
 
@@ -29,7 +30,7 @@ async def search_species(
 ):
     """
     Search for species by common or scientific name
-    
+
     Supports:
     - English and Spanish common names
     - Scientific names
@@ -37,13 +38,13 @@ async def search_species(
     """
     try:
         results = await animal_search_service.search_comprehensive(query, limit=limit)
-        
+
         return SpeciesSearchResponse(
             query=query,
             results=results,
             total=len(results)
         )
-    
+
     except Exception as e:
         logger.error(f"Error searching species '{query}': {e}")
         raise HTTPException(
@@ -56,20 +57,8 @@ async def search_species(
 async def get_popular_species(limit: int = Query(10, ge=1, le=50)):
     """Get most popular/recently searched species"""
     try:
-        # Return curated popular species
-        popular = [
-            {"common_name": "Tiger", "scientific_name": "Panthera tigris", "confidence": 1.0},
-            {"common_name": "Blue Whale", "scientific_name": "Balaenoptera musculus", "confidence": 1.0},
-            {"common_name": "Eagle", "scientific_name": "Aquila chrysaetos", "confidence": 1.0},
-            {"common_name": "Dolphin", "scientific_name": "Tursiops truncatus", "confidence": 1.0},
-            {"common_name": "Elephant", "scientific_name": "Loxodonta africana", "confidence": 1.0},
-            {"common_name": "Great White Shark", "scientific_name": "Carcharodon carcharias", "confidence": 1.0},
-            {"common_name": "Butterfly", "scientific_name": "Danaus plexippus", "confidence": 1.0},
-            {"common_name": "Python", "scientific_name": "Python reticulatus", "confidence": 1.0},
-        ]
-        
-        return [SpeciesResult(**sp) for sp in popular[:limit]]
-    
+        return await animal_search_service.get_popular_species(limit=limit)
+
     except Exception as e:
         logger.error(f"Error getting popular species: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -84,7 +73,7 @@ async def autocomplete_species(
     try:
         suggestions = await animal_search_service.get_suggestions(query, limit=limit)
         return {"suggestions": suggestions}
-    
+
     except Exception as e:
         logger.error(f"Autocomplete error: {e}")
         return {"suggestions": []}

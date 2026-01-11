@@ -3,9 +3,10 @@ Animal Search Service
 Handles species lookup and "Zoo Exhibit" categorization.
 """
 
-from typing import List, Dict
-import asyncio
+from typing import Dict, List
+
 from app.schemas.species import SpeciesResult
+
 
 class AnimalSearchService:
     """Service for searching animals and organizing exhibits"""
@@ -77,5 +78,21 @@ class AnimalSearchService:
             ))
 
         return exhibits
+
+    async def get_popular_species(self, limit: int = 10) -> List[SpeciesResult]:
+        """Get curated list of popular species"""
+        # Return curated popular species
+        popular = [
+            {"common_name": "Tiger", "scientific_name": "Panthera tigris", "confidence": 1.0},
+            {"common_name": "Blue Whale", "scientific_name": "Balaenoptera musculus", "confidence": 1.0},
+            {"common_name": "Eagle", "scientific_name": "Aquila chrysaetos", "confidence": 1.0},
+            {"common_name": "Dolphin", "scientific_name": "Tursiops truncatus", "confidence": 1.0},
+            {"common_name": "Elephant", "scientific_name": "Loxodonta africana", "confidence": 1.0},
+            {"common_name": "Great White Shark", "scientific_name": "Carcharodon carcharias", "confidence": 1.0},
+            {"common_name": "Butterfly", "scientific_name": "Danaus plexippus", "confidence": 1.0},
+            {"common_name": "Python", "scientific_name": "Python reticulatus", "confidence": 1.0},
+        ]
+
+        return [SpeciesResult(**sp) for sp in popular[:limit]]
 
 animal_search_service = AnimalSearchService()

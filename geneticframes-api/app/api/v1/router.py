@@ -3,7 +3,8 @@ API v1 Router - Aggregates all endpoints
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import species, dna, alphafold
+
+from app.api.v1.endpoints import alphafold, dna, species
 
 api_router = APIRouter()
 

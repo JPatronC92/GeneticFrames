@@ -3,18 +3,19 @@ DNA Service - The Core of Genetic Art
 Handles fetching DNA, analyzing it, and converting it into artistic parameters.
 """
 
+import asyncio
+import hashlib
+import random
+from typing import Optional
+
+import redis.asyncio as redis
 from Bio import Entrez
 from Bio.SeqUtils import gc_fraction
-import math
-import random
-import hashlib
-from typing import Dict, Any, List, Optional
 from loguru import logger
-import asyncio
-import redis.asyncio as redis
+
 from app.core.config import settings
-from app.schemas.dna import DNAAnalysisResponse, ArtTraits
-from app.core.exceptions import SpeciesNotFoundError, NCBIConnectionError
+from app.core.exceptions import NCBIConnectionError, SpeciesNotFoundError
+from app.schemas.dna import ArtTraits, DNAAnalysisResponse
 
 # Configure Entrez
 Entrez.email = settings.ENTREZ_EMAIL
@@ -241,6 +242,45 @@ class DNAService:
 
         logger.info(f"Simulated {mutations} mutations (Rate: {rate})")
         return "".join(bases)
+
+    async def process_mutation_simulation(self, species_name: str, mutation_rate: float) -> DNAAnalysisResponse:
+        """
+        Simulate evolution: Mutate sequence and recalculate traits.
+        """
+        # 1. Get original analysis (mock or real)
+        original_result = await self.analyze_species_dna(species_name)
+
+        # 2. Mutate sequence
+        # Note: In a real scenario we'd mutate the full sequence, but for MVP we mutate the preview if full not available
+        mutated_seq = await self.simulate_mutation(original_result.sequence_preview, mutation_rate)
+
+        # 3. Recalculate Signature
+        new_signature = f"{original_result.genomic_signature}-mutated"
+
+        # 4. Recalculate Art Traits
+        mutated_gc = gc_fraction(mutated_seq) * 100
+        new_art_traits = self.generate_art_parameters(
+            mutated_seq,
+            mutated_gc,
+            new_signature
+        )
+
+        # 5. Return modified result
+        # Create a new instance with mutated data
+        return DNAAnalysisResponse(
+            species_name=original_result.species_name,
+            sequence_length=original_result.sequence_length,
+            gc_content=mutated_gc,
+            nucleotide_counts={
+                "A": mutated_seq.count("A"),
+                "T": mutated_seq.count("T"),
+                "G": mutated_seq.count("G"),
+                "C": mutated_seq.count("C")
+            },
+            sequence_preview=mutated_seq,
+            genomic_signature=new_signature,
+            art_traits=new_art_traits
+        )
 
 
 dna_service = DNAService()

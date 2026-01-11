@@ -3,11 +3,14 @@ AlphaFold Service
 Integration with AlphaFold Database for protein structures.
 """
 
-import httpx
 from typing import Optional
+
+import httpx
 from loguru import logger
-from app.schemas.alphafold import ProteinStructureResponse, ConfidenceScore
+
 from app.core.config import settings
+from app.schemas.alphafold import ConfidenceScore, ProteinStructureResponse
+
 
 class AlphaFoldService:
     """Service to interact with AlphaFold API"""

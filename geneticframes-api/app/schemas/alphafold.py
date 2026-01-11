@@ -2,8 +2,9 @@
 AlphaFold Protein Structure Schemas
 """
 
+from typing import List, Optional
+
 from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List
 
 
 class ConfidenceScore(BaseModel):

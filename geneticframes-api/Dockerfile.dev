@@ -1,0 +1,25 @@
+# Dockerfile.dev for API
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+# gcc/python3-dev might be needed for some biopython or redis dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code (though volumes will override this in dev)
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Command to run the application with hot-reloading
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

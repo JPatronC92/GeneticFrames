@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # 🧬 GeneticFrames API
+  api:
+    build:
+      context: ./geneticframes-api
+      dockerfile: Dockerfile.dev
+    container_name: geneticframes-api
+    ports:
+      - "${DOCKER_API_PORT:-8000}:8000"
+    volumes:
+      - ./geneticframes-api:/app
+    environment:
+      - PROJECT_NAME=${PROJECT_NAME:-GeneticFrames Zoo}
+      - REDIS_ENABLED=true
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+      - NCBI_LIVE_MODE=${NCBI_LIVE_MODE:-false}
+      - ENTREZ_EMAIL=${ENTREZ_EMAIL:-dev@local.zoo}
+      - CORS_ORIGINS=*
+    depends_on:
+      - redis
+    networks:
+      - zoo-network
+
+  # 🎨 GeneticFrames Web
+  web:
+    build:
+      context: ./geneticframes-web
+      dockerfile: Dockerfile.dev
+    container_name: geneticframes-web
+    ports:
+      - "${DOCKER_WEB_PORT:-5173}:5173"
+    volumes:
+      - ./geneticframes-web:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:${DOCKER_API_PORT:-8000}/api/v1
+    depends_on:
+      - api
+    networks:
+      - zoo-network
+
+  # 🚀 Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: geneticframes-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - zoo-network
+
+volumes:
+  redis-data:
+
+networks:
+  zoo-network:
+    driver: bridge

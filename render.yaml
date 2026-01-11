@@ -6,12 +6,8 @@ services:
     name: geneticframes-api
     runtime: python
     region: oregon
-    buildCommand: |
-      cd geneticframes-api
-      pip install -r requirements.txt
-    startCommand: |
-      cd geneticframes-api
-      uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: "cd geneticframes-api && pip install -r requirements.txt"
+    startCommand: "cd geneticframes-api && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -32,6 +28,15 @@ services:
         value: true
       - key: CORS_ORIGINS
         value: "*" # WARNING: Update this with your Vercel frontend URL in production for security
+
+  # ---------------------------------------------------
+  # 🎨 GeneticFrames Web (Frontend)
+  # ---------------------------------------------------
+  - type: web
+    name: geneticframes-web
+    env: static
+    buildCommand: "cd geneticframes-web && npm install && npm run build"
+    publishPath: "./geneticframes-web/dist"
 
   # ---------------------------------------------------
   # 🚀 Redis Cache (For DNA Sequences & Rate Limiting)

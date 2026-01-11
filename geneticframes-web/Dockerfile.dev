@@ -1,0 +1,17 @@
+# Dockerfile.dev for Web
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source (volumes will override in dev)
+COPY . .
+
+# Expose Vite port
+EXPOSE 5173
+
+# Run dev server with host exposure
+CMD ["npm", "run", "dev", "--", "--host"]

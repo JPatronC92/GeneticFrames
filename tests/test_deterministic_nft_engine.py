@@ -9,6 +9,10 @@ def test_invalid():
     with pytest.raises(ValueError): canonicalize_dna("ACGT!")
 def test_byte_identical():
     assert generate_deterministic_svg(BASE, "Species") == generate_deterministic_svg(BASE, "Species")
+def test_human_label_does_not_change_certified_image():
+    first, _ = generate_deterministic_svg(BASE, "Label A")
+    second, _ = generate_deterministic_svg(BASE, "Label B")
+    assert first == second
 def test_mutation_changes_artifact():
     mutated = BASE[:400] + ("A" if BASE[400] != "A" else "C") + BASE[401:]
     a, am = generate_deterministic_svg(BASE, "Species"); b, bm = generate_deterministic_svg(mutated, "Species")

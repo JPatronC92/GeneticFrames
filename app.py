@@ -18,6 +18,9 @@ from Bio.SeqUtils import gc_fraction
 
 from animal_search import AnimalSearchEngine
 from database import *
+from alphafold_engine import create_alphafold_biomorphic_3d_art
+from multi_skill_engine import create_multi_skill_masterpiece_art
+from deterministic_nft_engine import create_deterministic_nft_figure, generate_deterministic_svg
 
 # ============================================================================
 # CONFIGURACIÓN
@@ -31,6 +34,10 @@ st.set_page_config(
 
 if 'session_id' not in st.session_state:
     st.session_state.session_id = hashlib.md5(str(np.random.random()).encode()).hexdigest()
+    try:
+        create_tables()
+    except Exception:
+        pass
 
 # Paletas de colores semánticas por categoría taxonómica
 TAXONOMIC_PALETTES = {
@@ -623,6 +630,18 @@ def main():
                         palette = get_taxonomic_palette(category)
                         habitat_type = determine_habitat_type(category, organism_name)
                         
+                        st.markdown("### 🎨 Selector de Algoritmo Generativo")
+                        art_style = st.radio(
+                            "Elija el motor de renderizado visual:",
+                            [
+                                "💎 Certificado NFT Determinista & SVG (6 Principios Blockchain)",
+                                "👑 Arte Maestro Tri-Skill 3D (AlphaFold + InterPro + UCSC)",
+                                "🌌 Escultura Biomórfica 3D (AlphaFold DB & PDB)",
+                                "🌀 Arte Genético 2D (Fórmula de Frecuencia/Entropía)"
+                            ],
+                            horizontal=True
+                        )
+                        
                         # Mostrar parámetros del algoritmo
                         st.markdown("### 📈 Parámetros Genéticos Detectados")
                         param_col1, param_col2, param_col3, param_col4 = st.columns(4)
@@ -649,11 +668,71 @@ def main():
                             repeat_count = len(genetic_profile.get('repeat_patterns', {}))
                             st.metric("Patrones", f"{repeat_count}", f"→ Texturas")
                         
-                        with st.spinner("🎨 Ejecutando algoritmo universal..."):
-                            fig = create_genetic_art(sequence, genetic_profile, category, palette)
-                        
-                        st.markdown("### 🎨 Arte Genético Generado")
-                        st.plotly_chart(fig, use_container_width=True)
+                        # Variable para almacenar código SVG vectorial si aplica
+                        current_svg_code = None
+
+                        if "NFT Determinista" in art_style:
+                            with st.spinner("💎 Calculando Hash SHA-256, Rareza Genética y Vectorial SVG Determinista..."):
+                                fig, current_svg_code, nft_meta = create_deterministic_nft_figure(organism_name, sequence, genetic_profile, palette)
+                            
+                            st.markdown("### 💎 Certificado NFT Determinista (Reproducible & Certificado)")
+                            
+                            nft_col1, nft_col2, nft_col3, nft_col4 = st.columns(4)
+                            with nft_col1:
+                                st.metric("1. Reproducibilidad", "100% SHA-256")
+                            with nft_col2:
+                                st.metric("2. Rareza Codificada", f"{nft_meta['rarity']['tier']}")
+                            with nft_col3:
+                                st.metric("Puntaje Rareza", f"{nft_meta['rarity']['rarity_score']} / 100")
+                            with nft_col4:
+                                st.metric("Ventana ADN Muestreada", f"{nft_meta['sequence_sample_len']} bp")
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            st.markdown("#### 📜 Código Hash Certificador Blockchain (SHA-256)")
+                            st.code(f"SHA-256 Hash: {nft_meta['sha256_hash']}\nSeed Entera: {nft_meta['seed']}\nRasgo Especial: {nft_meta['rarity']['special_trait']}", language="yaml")
+
+                        elif "Tri-Skill" in art_style:
+                            with st.spinner("🧬 Ejecutando Tri-Skill Engine (AlphaFold 3D + InterPro Dominios + UCSC Conservación)..."):
+                                fig, multi_metrics = create_multi_skill_masterpiece_art(organism_name, genetic_profile, palette)
+                            
+                            st.markdown("### 👑 Obra Maestra Tri-Skill 3D (AlphaFold + InterPro + UCSC)")
+                            
+                            ms_col1, ms_col2, ms_col3, ms_col4 = st.columns(4)
+                            with ms_col1:
+                                st.metric("1. AlphaFold pLDDT", f"{multi_metrics['avg_plddt']:.1f} / 100")
+                            with ms_col2:
+                                st.metric("2. InterPro Dominios", f"{multi_metrics['domains_count']} detectados")
+                            with ms_col3:
+                                st.metric("3. UCSC Conservación", f"{multi_metrics['conserved_ratio']:.1f}% sitios (phyloP)")
+                            with ms_col4:
+                                st.metric("UniProt Accession", f"{multi_metrics['uniprot_id']}")
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+
+                        elif "AlphaFold" in art_style:
+                            with st.spinner("🧬 Consultando estructura 3D en AlphaFold DB y calculando puntuaciones pLDDT..."):
+                                fig, af_metrics = create_alphafold_biomorphic_3d_art(organism_name, genetic_profile, palette)
+                            
+                            st.markdown("### 🌌 Escultura Biomórfica 3D (AlphaFold DB)")
+                            
+                            af_col1, af_col2, af_col3, af_col4 = st.columns(4)
+                            with af_col1:
+                                st.metric("UniProt ID", f"{af_metrics['uniprot_id']}")
+                            with af_col2:
+                                st.metric("pLDDT Promedio", f"{af_metrics['avg_plddt']:.1f} / 100")
+                            with af_col3:
+                                st.metric("Regiones Rígidas (≥70)", f"{af_metrics['high_confidence_ratio']:.1f}%")
+                            with af_col4:
+                                st.metric("Residuos Analizados", f"{af_metrics['total_residues']}")
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                        else:
+                            with st.spinner("🎨 Ejecutando algoritmo universal 2D..."):
+                                fig = create_genetic_art(sequence, genetic_profile, category, palette)
+                            
+                            st.markdown("### 🌀 Arte Genético 2D Generado")
+                            st.plotly_chart(fig, use_container_width=True)
                         
                         # Guardar en galería
                         gallery_entry = {
@@ -687,15 +766,26 @@ def main():
                         export_col1, export_col2 = st.columns(2)
                         
                         with export_col1:
-                            st.markdown("### 💾 Exportar")
-                            if st.button("📥 Descargar PNG", type="secondary"):
-                                st.success("Arte genético guardado como PNG de alta resolución")
+                            st.markdown("### 💾 Exportar Vectorial & Certificado")
+                            if current_svg_code:
+                                st.download_button(
+                                    label="📥 Descargar SVG Vectorial (IPFS / Web3 Ready)",
+                                    data=current_svg_code,
+                                    file_name=f"{organism_name.replace(' ', '_').lower()}_nft_dna.svg",
+                                    mime="image/svg+xml"
+                                )
+                            else:
+                                svg_out, _ = generate_deterministic_svg(sequence, organism_name, palette)
+                                st.download_button(
+                                    label="📥 Descargar SVG Vectorial (IPFS / Web3 Ready)",
+                                    data=svg_out,
+                                    file_name=f"{organism_name.replace(' ', '_').lower()}_dna.svg",
+                                    mime="image/svg+xml"
+                                )
                         
                         with export_col2:
-                            st.markdown("### 🔄 Regenerar")
-                            if st.button("🎲 Nueva Variación", type="secondary"):
-                                st.info("Generando nueva variación con parámetros aleatorios...")
-                                st.rerun()
+                            st.markdown("### 🔄 Verificación Certificada")
+                            st.info("🔒 Los gráficos en modo NFT son 100% deterministas. La misma secuencia siempre producirá exactamente el mismo hash SHA-256 e imagen vectorial.")
                         
                         # Análisis detallado expandible
                         with st.expander("🔍 Análisis Genético Detallado", expanded=False):

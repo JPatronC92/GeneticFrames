@@ -163,7 +163,9 @@ def generate_deterministic_svg(sequence: str, organism_name: str, palette: Optio
         r, ri = 190+105*p["gc"]+36*p["entropy"], 92+65*p["purine"]
         outer.append(f"{cx+r*math.cos(angle):.2f},{cy+r*math.sin(angle):.2f}")
         inner.append(f"{cx+ri*math.cos(-angle):.2f},{cy+ri*math.sin(-angle):.2f}")
-    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img"><title>{escape(organism_name)}</title>',
+    # Human labels live in the manifest, not in the certified image bytes. This
+    # preserves the core contract: sequence + fragment policy + version = SVG.
+    svg = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img"><title>GeneticFrames DNA artifact</title>',
            f'<defs><radialGradient id="bg"><stop stop-color="{colors["background"]}"/><stop offset="1" stop-color="#020307"/></radialGradient></defs>',
            '<rect width="800" height="800" fill="url(#bg)"/>',
            f'<polygon points="{" ".join(outer)}" fill="none" stroke="{colors["primary"]}" stroke-width="3"/>',
@@ -179,7 +181,7 @@ def generate_deterministic_svg(sequence: str, organism_name: str, palette: Optio
             a, r = 2*math.pi*pos/len(fragment), 330+(pos%7)
             svg.append(f'<circle cx="{cx+r*math.cos(a):.2f}" cy="{cy+r*math.sin(a):.2f}" r="2.2" fill="{color}"/>')
     svg += [f'<text x="24" y="758" fill="#aab" font-family="monospace" font-size="11">GFDP v{ALGORITHM_VERSION} | fragment:{manifest["fragment"]["sha256"][:20]}</text>',
-            f'<text x="24" y="782" fill="#fff" font-size="15">{escape(organism_name)} · algorithmic rarity {rarity["score"]}</text></svg>']
+            f'<text x="24" y="782" fill="#fff" font-size="15">algorithmic rarity {rarity["score"]} · {rarity["tier"]}</text></svg>']
     code = "".join(svg)
     if len(code.encode()) > MAX_SVG_BYTES: raise RuntimeError("SVG size budget exceeded")
     manifest["svg_sha256"], manifest["svg_bytes"] = hashlib.sha256(code.encode()).hexdigest(), len(code.encode())

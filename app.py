@@ -20,7 +20,11 @@ from animal_search import AnimalSearchEngine
 from database import *
 from alphafold_engine import create_alphafold_biomorphic_3d_art
 from multi_skill_engine import create_multi_skill_masterpiece_art
-from deterministic_nft_engine import create_deterministic_nft_figure, generate_deterministic_svg
+from deterministic_nft_engine import create_deterministic_nft_figure, generate_deterministic_svg, select_fragment
+import sonification_core
+import os
+import scipy.io.wavfile as wavfile
+import scipy.signal as signal
 
 # ============================================================================
 # CONFIGURACIÓN
@@ -683,14 +687,14 @@ def main():
                             with nft_col2:
                                 st.metric("2. Rareza Codificada", f"{nft_meta['rarity']['tier']}")
                             with nft_col3:
-                                st.metric("Puntaje Rareza", f"{nft_meta['rarity']['rarity_score']} / 100")
+                                st.metric("Puntaje Rareza", f"{nft_meta['rarity']['score']} / 100")
                             with nft_col4:
-                                st.metric("Ventana ADN Muestreada", f"{nft_meta['sequence_sample_len']} bp")
+                                st.metric("Ventana ADN Muestreada", f"{nft_meta['fragment']['length']} bp")
                             
                             st.plotly_chart(fig, use_container_width=True)
                             
                             st.markdown("#### 📜 Código Hash Certificador Blockchain (SHA-256)")
-                            st.code(f"SHA-256 Hash: {nft_meta['sha256_hash']}\nSeed Entera: {nft_meta['seed']}\nRasgo Especial: {nft_meta['rarity']['special_trait']}", language="yaml")
+                            st.code(f"Manifest SHA-256: {nft_meta['manifest_sha256']}\nSecuencia SHA-256: {nft_meta['sequence']['sha256']}\nFragment SHA-256: {nft_meta['fragment']['sha256']}\nSeed (Prefix): {nft_meta['fragment']['sha256'][:16]}", language="yaml")
 
                         elif "Tri-Skill" in art_style:
                             with st.spinner("🧬 Ejecutando Tri-Skill Engine (AlphaFold 3D + InterPro Dominios + UCSC Conservación)..."):
@@ -763,10 +767,10 @@ def main():
                             st.write(f"• Patrones repetitivos: {len(genetic_profile.get('repeat_patterns', {}))}")
                         
                         # Opciones de exportación
-                        export_col1, export_col2 = st.columns(2)
+                        export_col1, export_col2, export_col3 = st.columns(3)
                         
                         with export_col1:
-                            st.markdown("### 💾 Exportar Vectorial & Certificado")
+                            st.markdown("### 💾 Exportar Vectorial")
                             if current_svg_code:
                                 st.download_button(
                                     label="📥 Descargar SVG Vectorial (IPFS / Web3 Ready)",
@@ -782,8 +786,55 @@ def main():
                                     file_name=f"{organism_name.replace(' ', '_').lower()}_dna.svg",
                                     mime="image/svg+xml"
                                 )
-                        
+
                         with export_col2:
+                            st.markdown("### 🎵 Sonificación Genómica (Rust)")
+                            audio_file = f"static/{organism_name.replace(' ', '_').lower()}_sonification.wav"
+                            os.makedirs("static", exist_ok=True)
+                            
+                            if st.button("Generar Pista de Audio"):
+                                with st.spinner("Sintetizando audio a nivel de hardware (Rust/Hound)..."):
+                                    try:
+                                        # Extraer solo la ventana renderizada para evitar 60 mins de audio en genomas enteros
+                                        dna_fragment, _ = select_fragment(sequence)
+                                        sonification_core.generate_dna_audio(dna_fragment, audio_file, 44100, 200)
+                                        
+                                        st.audio(audio_file, format="audio/wav")
+                                        
+                                        # Calcular Espectrograma
+                                        sample_rate, samples = wavfile.read(audio_file)
+                                        frequencies, times, spectrogram = signal.spectrogram(samples, sample_rate, nperseg=1024)
+                                        
+                                        # Recortar las frecuencias altas para ver mejor las notas base
+                                        freq_mask = frequencies <= 800
+                                        frequencies = frequencies[freq_mask]
+                                        spectrogram = spectrogram[freq_mask, :]
+                                        
+                                        fig_spec = go.Figure(data=go.Heatmap(
+                                            z=10 * np.log10(spectrogram + 1e-10),
+                                            x=times,
+                                            y=frequencies,
+                                            colorscale='magma',
+                                            showscale=False
+                                        ))
+                                        fig_spec.update_layout(
+                                            title="Espectrograma Genómico", 
+                                            xaxis_title="Tiempo (s)", 
+                                            yaxis_title="Frecuencia (Hz)",
+                                            height=250,
+                                            margin=dict(l=20, r=20, t=30, b=20),
+                                            paper_bgcolor="#020307",
+                                            plot_bgcolor="#020307",
+                                            font={"color": "white"}
+                                        )
+                                        st.plotly_chart(fig_spec, use_container_width=True)
+                                        
+                                        with open(audio_file, "rb") as f:
+                                            st.download_button("📥 Descargar WAV", f, file_name=os.path.basename(audio_file), mime="audio/wav")
+                                    except Exception as e:
+                                        st.error(f"Error generando audio: {e}")
+                        
+                        with export_col3:
                             st.markdown("### 🔄 Verificación Certificada")
                             st.info("🔒 Los gráficos en modo NFT son 100% deterministas. La misma secuencia siempre producirá exactamente el mismo hash SHA-256 e imagen vectorial.")
                         

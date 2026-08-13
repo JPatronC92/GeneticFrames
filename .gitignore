@@ -22,3 +22,6 @@ dna_art.db
 Thumbs.db
 .vscode/
 .idea/
+*.wav
+static/
+sonification_core/target/

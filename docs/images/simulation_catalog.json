@@ -1,0 +1,206 @@
+{
+  "protocol_version": "0.1.0",
+  "swarm_metrics_summary": {
+    "total_rounds": 5,
+    "total_actions": 64,
+    "total_generations": 25,
+    "total_trades": 3,
+    "total_volume_gf": 10.68,
+    "total_fees_collected_gf": 0.1602,
+    "actions_by_type": {
+      "generate": 25,
+      "hold": 5,
+      "create_ask": 18,
+      "place_bid": 13,
+      "buy_listing": 3
+    },
+    "collections_leaderboard": [
+      {
+        "agent_id": "0xCollector_Felidae",
+        "felidae_completion": "2/6 (33.3%)",
+        "delphinidae_completion": "1/2 (50.0%)"
+      },
+      {
+        "agent_id": "0xCollector_Cetacea",
+        "felidae_completion": "0/6 (0.0%)",
+        "delphinidae_completion": "2/2 (100.0%)"
+      },
+      {
+        "agent_id": "0xHunter_Genesis",
+        "felidae_completion": "1/6 (16.7%)",
+        "delphinidae_completion": "1/2 (50.0%)"
+      },
+      {
+        "agent_id": "0xHunter_Value",
+        "felidae_completion": "0/6 (0.0%)",
+        "delphinidae_completion": "0/2 (0.0%)"
+      },
+      {
+        "agent_id": "0xMarketMaker_Global",
+        "felidae_completion": "1/6 (16.7%)",
+        "delphinidae_completion": "0/2 (0.0%)"
+      },
+      {
+        "agent_id": "0xArbitrage_Bot",
+        "felidae_completion": "0/6 (0.0%)",
+        "delphinidae_completion": "0/2 (0.0%)"
+      }
+    ],
+    "wealth_leaderboard": [
+      {
+        "agent_id": "0xMarketMaker_Global",
+        "strategy": "Market Maker",
+        "gf_balance": 74.31,
+        "frames_count": 4,
+        "est_portfolio_val_gf": 83.81
+      },
+      {
+        "agent_id": "0xHunter_Genesis",
+        "strategy": "Rarity Hunter",
+        "gf_balance": 34.26,
+        "frames_count": 5,
+        "est_portfolio_val_gf": 59.26
+      },
+      {
+        "agent_id": "0xCollector_Felidae",
+        "strategy": "Taxonomic Collector (Felidae)",
+        "gf_balance": 27.2,
+        "frames_count": 6,
+        "est_portfolio_val_gf": 48.7
+      },
+      {
+        "agent_id": "0xCollector_Cetacea",
+        "strategy": "Taxonomic Collector (Delphinidae)",
+        "gf_balance": 29.07,
+        "frames_count": 5,
+        "est_portfolio_val_gf": 41.07
+      },
+      {
+        "agent_id": "0xHunter_Value",
+        "strategy": "Rarity Hunter",
+        "gf_balance": 25.0,
+        "frames_count": 5,
+        "est_portfolio_val_gf": 32.5
+      },
+      {
+        "agent_id": "0xArbitrage_Bot",
+        "strategy": "Arbitrageur",
+        "gf_balance": 30.0,
+        "frames_count": 0,
+        "est_portfolio_val_gf": 30.0
+      }
+    ]
+  },
+  "tier_specimens": [
+    {
+      "tier": "Genesis",
+      "filename": "tier-genesis-mammoth.svg",
+      "common_name": "Woolly Mammoth",
+      "scientific_name": "Mammuthus primigenius",
+      "taxonomy": {
+        "kingdom": "Animalia",
+        "phylum": "Chordata",
+        "class": "Mammalia",
+        "order": "Proboscidea",
+        "family": "Elephantidae",
+        "genus": "Mammuthus",
+        "taxon_id": 37329
+      },
+      "accession": "NC_007596.2",
+      "gc_content_pct": 16.67,
+      "entropy": 0.758205,
+      "algorithmic_rarity": 74.87,
+      "svg_sha256": "326cd844dd772144480a441076f4fb6e67921e94d7a32c4d7849b06be65a397a",
+      "manifest_sha256": "d6503813b947ed212ab6ea93b47cbab70ef3686041045a324ff353fb11c608d6",
+      "conservation_status": "Extinct (EX)"
+    },
+    {
+      "tier": "Epic",
+      "filename": "tier-epic-axolotl.svg",
+      "common_name": "Axolotl",
+      "scientific_name": "Ambystoma mexicanum",
+      "taxonomy": {
+        "kingdom": "Animalia",
+        "phylum": "Chordata",
+        "class": "Amphibia",
+        "order": "Caudata",
+        "family": "Ambystomatidae",
+        "genus": "Ambystoma",
+        "taxon_id": 8296
+      },
+      "accession": "NC_005797.1",
+      "gc_content_pct": 56.77,
+      "entropy": 0.921791,
+      "algorithmic_rarity": 16.0,
+      "svg_sha256": "62ee33d25305ebd3d8d7e75bc256a2d040379f415b48f2da6769da3097572667",
+      "manifest_sha256": "86d895c3d4de70a9cbdea4b65c382dbb643dd13a41738ff03d57fd85f9abfce1",
+      "conservation_status": "Critically Endangered (CR)"
+    },
+    {
+      "tier": "Rare",
+      "filename": "tier-rare-jaguar.svg",
+      "common_name": "Jaguar",
+      "scientific_name": "Panthera onca",
+      "taxonomy": {
+        "kingdom": "Animalia",
+        "phylum": "Chordata",
+        "class": "Mammalia",
+        "order": "Carnivora",
+        "family": "Felidae",
+        "genus": "Panthera",
+        "taxon_id": 9690
+      },
+      "accession": "NC_028684.1",
+      "gc_content_pct": 43.36,
+      "entropy": 0.852845,
+      "algorithmic_rarity": 33.9,
+      "svg_sha256": "1ea214fa7ab440c2d7e3bf003bd0123ceaf7070bb45e260b1c55c9eb9d348d21",
+      "manifest_sha256": "d41d3309614d46a303df097ae1d22202a29d55607a7258f733b98ce2dd494033",
+      "conservation_status": "Near Threatened (NT)"
+    },
+    {
+      "tier": "Uncommon",
+      "filename": "tier-uncommon-cat.svg",
+      "common_name": "Domestic Cat",
+      "scientific_name": "Felis catus",
+      "taxonomy": {
+        "kingdom": "Animalia",
+        "phylum": "Chordata",
+        "class": "Mammalia",
+        "order": "Carnivora",
+        "family": "Felidae",
+        "genus": "Felis",
+        "taxon_id": 9685
+      },
+      "accession": "NC_001700.1",
+      "gc_content_pct": 56.77,
+      "entropy": 0.921791,
+      "algorithmic_rarity": 16.0,
+      "svg_sha256": "62ee33d25305ebd3d8d7e75bc256a2d040379f415b48f2da6769da3097572667",
+      "manifest_sha256": "9ed26f7e907c4b51f14c191e07af010efd172878cad4911de5dc40d437d555c6",
+      "conservation_status": "Domesticated"
+    },
+    {
+      "tier": "Common",
+      "filename": "tier-common-mouse.svg",
+      "common_name": "House Mouse",
+      "scientific_name": "Mus musculus",
+      "taxonomy": {
+        "kingdom": "Animalia",
+        "phylum": "Chordata",
+        "class": "Mammalia",
+        "order": "Rodentia",
+        "family": "Muridae",
+        "genus": "Mus",
+        "taxon_id": 10090
+      },
+      "accession": "NC_005089.1",
+      "gc_content_pct": 50.0,
+      "entropy": 0.911636,
+      "algorithmic_rarity": 6.02,
+      "svg_sha256": "5bed8ae67f2e826a77b2fa183b2cea3b0beb764e344aa3c533caaa44b4367dea",
+      "manifest_sha256": "194b5c6052edc256dfa6b1f4e1fc3eefd07c344e9f6fc9fb57fe43d06ea0e7f0",
+      "conservation_status": "Least Concern (LC)"
+    }
+  ]
+}

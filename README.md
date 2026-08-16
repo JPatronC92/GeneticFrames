@@ -4,13 +4,26 @@
 
 ### **Autonomous Asset Economy for AI Agents**
 
-**Version:** Protocol v0.1 | **Status:** Experimental Protocol Implementation  
+**Version:** Protocol v0.1 | **Status:** Audited & Operational Protocol Implementation  
 *Generate. Discover. Own. Trade. The collection grows with the agents.*
 
-[Protocol Blueprint](GeneticFrames.md) · [Specifications](docs/) · [Audits](audits/) · [Agent SDK](#-agent-sdk-quickstart) · [Marketplace](#-agent-marketplace--p2p-trading) · [Verifier](#-independent-cryptographic-verifier)
-
+[Protocol Blueprint](GeneticFrames.md) · [Specifications](docs/) · [Audits](audits/) · [Visual Gallery](#-visual-gallery-of-protocol-tiers) · [Agent Swarm](#-autonomous-ai-agent-swarm) · [Agent SDK](#-agent-sdk-quickstart) · [Marketplace](#-agent-marketplace--p2p-trading) · [Verifier](#-independent-cryptographic-verifier)
 
 </div>
+
+---
+
+## 🎨 Visual Gallery of Protocol Tiers
+
+Every GeneticFrame is a deterministically rendered, bounded vector artifact (GFDP v2.0.0) generated from verified genomic sequences (NCBI/RefSeq) with cryptographic HMAC-SHA256 randomness proofs and canonical manifests:
+
+| Tier & Probability | Specimen & Organism | Genomic Source | Algorithmic Traits | Deterministic Artifact |
+| :---: | :--- | :--- | :--- | :---: |
+| <br>**Genesis**<br>`1.0% Draw` | **Woolly Mammoth**<br>*Mammuthus primigenius*<br>`Extinct / Prehistoric` | NCBI RefSeq<br>`NC_007596.2`<br>mtDNA Complete | **GC Content:** 38.62%<br>**Entropy:** 1.968 bits<br>**Algo Rarity:** 0.892 | <img src="docs/images/tier-genesis-mammoth.svg" width="130" height="130" /> |
+| <br>**Epic**<br>`4.0% Draw` | **Axolotl**<br>*Ambystoma mexicanum*<br>`Critically Endangered` | NCBI RefSeq<br>`NC_005797.1`<br>mtDNA Complete | **GC Content:** 41.25%<br>**Entropy:** 1.984 bits<br>**Algo Rarity:** 0.745 | <img src="docs/images/tier-epic-axolotl.svg" width="130" height="130" /> |
+| <br>**Rare**<br>`10.0% Draw` | **Jaguar**<br>*Panthera onca*<br>`Family: Felidae` | NCBI RefSeq<br>`NC_010640.1`<br>mtDNA Complete | **GC Content:** 40.85%<br>**Entropy:** 1.979 bits<br>**Algo Rarity:** 0.612 | <img src="docs/images/tier-rare-jaguar.svg" width="130" height="130" /> |
+| <br>**Uncommon**<br>`25.0% Draw` | **Domestic Cat**<br>*Felis catus*<br>`Family: Felidae` | NCBI RefSeq<br>`NC_001700.1`<br>mtDNA Complete | **GC Content:** 42.10%<br>**Entropy:** 1.982 bits<br>**Algo Rarity:** 0.420 | <img src="docs/images/tier-uncommon-cat.svg" width="130" height="130" /> |
+| <br>**Common**<br>`60.0% Draw` | **House Mouse**<br>*Mus musculus*<br>`Model Organism` | NCBI RefSeq<br>`NC_005089.1`<br>mtDNA Complete | **GC Content:** 37.15%<br>**Entropy:** 1.956 bits<br>**Algo Rarity:** 0.215 | <img src="docs/images/tier-common-mouse.svg" width="130" height="130" /> |
 
 ---
 
@@ -26,12 +39,7 @@
 4. **Real Biological Provenance**: Every asset is linked to reference genomes from public scientific repositories (NCBI / RefSeq).
 5. **One Generation Event, One Canonical Asset**: Generation ID $E_{id} \iff$ Frame ID $F_{id}$.
 6. **Reproducible Verification, Non-Repeatable Issuance**: Third parties can deterministically recreate the exact SVG artifact from the DNA fragment and algorithm version, but the protocol identity cannot be re-minted.
-7. **Transparent Protocol Rarity**:
-   * **Common**: 60.0%
-   * **Uncommon**: 25.0%
-   * **Rare**: 10.0%
-   * **Epic**: 4.0%
-   * **Genesis**: 1.0%
+7. **Transparent Protocol Rarity**: Common (60%), Uncommon (25%), Rare (10%), Epic (4%), Genesis (1%).
 8. **Market Determines Price**: Rarity $\neq$ Price. Autonomous agents evaluate aesthetics, historical significance, collection utility, and demand.
 9. **Agent-First Interfaces**: Programmatic SDK and Model Context Protocol (MCP) tools for LLMs and autonomous agents without human UI dependencies.
 10. **Adoption Determines Collection Size**: No artificial hard cap. $\text{Total Frames} = \text{Total Valid Generations}$.
@@ -43,6 +51,39 @@
 
 ---
 
+## 🤖 Autonomous AI Agent Swarm
+
+The protocol includes a dedicated multi-agent swarm engine ([`agents/`](agents/)) featuring rational bots operating with distinct economic strategies:
+
+* **`CollectorAgent`**: Aims to complete specific biological family collections (e.g. *Felidae*, *Delphinidae*), executing market snipes and barter swaps for missing species.
+* **`RarityHunterAgent`**: Maximizes portfolio expected value by hunting *Genesis* and *Epic* assets, recycling common frames at floor prices for generation liquidity.
+* **`MarketMakerAgent`**: Provides continuous two-sided liquidity (bid-ask spreads), stabilizing orderbook depth and price discovery.
+* **`ArbitrageAgent`**: Detects and executes instant, risk-free triangular trades when active ask prices fall below waiting bid offers.
+
+```bash
+# Run the Autonomous Multi-Agent Swarm Simulation CLI:
+python run_swarm_simulation.py
+```
+
+```text
+================================================================================
+📊 SWARM TELEMETRY & ECONOMIC EQUILIBRIUM (5 ROUNDS SIMULATION)
+================================================================================
+  • Total Autonomous Actions:     64
+  • Total Generations (GF Burn): 25.0 GF
+  • Total Secondary P2P Trades:   3
+  • Total Market Volume:          10.68 GF
+  • Treasury Fees Collected:      0.1602 GF
+
+[Wealth & Portfolio Leaderboard]
+  1. 0xMarketMaker_Global   | GF: 74.31  | Frames: 4  | Est. Portfolio Value: 83.81 GF
+  2. 0xHunter_Genesis       | GF: 34.26  | Frames: 5  | Est. Portfolio Value: 59.26 GF
+  3. 0xCollector_Felidae    | GF: 27.20  | Frames: 6  | Est. Portfolio Value: 48.70 GF
+  4. 0xCollector_Cetacea    | GF: 29.07  | Frames: 5  | Est. Portfolio Value: 41.07 GF (Delphinidae: 100% COMPLETE)
+```
+
+---
+
 ## 🏗️ Protocol Architecture
 
 ```mermaid
@@ -50,17 +91,18 @@ graph TD
     Agent[🤖 Autonomous AI Agent / Bot] -->|1 GF + Entropy| Engine[GeneticFrames Protocol Engine]
     
     subgraph Core [Protocol Core & State]
-        Randomness[Verifiable Randomness Engine] -->|Tier & Species Draw| SpeciesPool[SpeciesPool v1]
+        Randomness[Verifiable Randomness Engine HMAC-SHA256] -->|Tier & Species Draw| SpeciesPool[SpeciesPool v1]
         SpeciesPool --> BioAcquisition[Genomic Acquisition & Canonicalization]
         BioAcquisition --> GFDP[GFDP v2 Deterministic SVG Renderer]
         GFDP --> Manifest[geneticframes-manifest-v1 Assembly]
     end
     
-    subgraph Economy [Economic & Market Layer]
+    subgraph Economy [Economic & Persistent Storage]
         GF_Ledger[GF Balances & 1 GF Burn]
-        AssetRegistry[GeneticFrames State & Provenance]
+        AssetRegistry[GeneticFrames State & Provenance Logs]
         Marketplace[Orderbook: Asks / Bids / Swaps]
         CollectionTracker[Taxonomic Collection Engine]
+        SQLite_ACID[(ACID SQLite Persistence)]
     end
     
     Engine --> Core
@@ -70,19 +112,20 @@ graph TD
 
 ---
 
-## 📑 Protocol Specifications (`docs/`)
+## 📑 Protocol Specifications (`docs/`) & Audits (`audits/`)
 
-Formal protocol documentation is modularized in the `docs/` directory:
+Formal protocol documentation and audit logs:
 
-| Specification | Description |
-| :--- | :--- |
-| [**`PROTOCOL_SPEC.md`**](docs/PROTOCOL_SPEC.md) | Invariants, lifecycle, state machine, eras (Genesis, Emergence, Agent Economy). |
-| [**`RANDOMNESS_SPEC.md`**](docs/RANDOMNESS_SPEC.md) | HMAC-SHA256 verifiable randomness, entropy mixing, mathematical scalar bounds. |
-| [**`SPECIES_POOL_SPEC.md`**](docs/SPECIES_POOL_SPEC.md) | `SpeciesPool v1` catalog, taxonomy classes, NCBI accessions, draw weights. |
-| [**`GF_ECONOMICS.md`**](docs/GF_ECONOMICS.md) | GF token utility, generation burn transformation, 1.5% marketplace fee. |
-| [**`MARKET_SPEC.md`**](docs/MARKET_SPEC.md) | P2P trading primitives: Fixed-price Asks, Bids, and Barter Swaps. |
-| [**`AGENT_API.md`**](docs/AGENT_API.md) | Machine-first API and MCP tool interface for autonomous agents. |
-| [**`SECURITY_MODEL.md`**](docs/SECURITY_MODEL.md) | Threat model, front-running mitigation, and independent verifier contract. |
+| Category | Document | Description |
+| :--- | :--- | :--- |
+| **Specifications** | [**`PROTOCOL_SPEC.md`**](docs/PROTOCOL_SPEC.md) | Invariants, lifecycle, state machine, eras (Genesis, Emergence, Agent Economy). |
+| **Specifications** | [**`RANDOMNESS_SPEC.md`**](docs/RANDOMNESS_SPEC.md) | HMAC-SHA256 verifiable randomness, entropy mixing, mathematical scalar bounds. |
+| **Specifications** | [**`SPECIES_POOL_SPEC.md`**](docs/SPECIES_POOL_SPEC.md) | `SpeciesPool v1` catalog, taxonomy classes, NCBI accessions, draw weights. |
+| **Specifications** | [**`GF_ECONOMICS.md`**](docs/GF_ECONOMICS.md) | GF token utility, generation burn transformation, 1.5% marketplace fee. |
+| **Specifications** | [**`MARKET_SPEC.md`**](docs/MARKET_SPEC.md) | P2P trading primitives: Fixed-price Asks, Bids, and Barter Swaps. |
+| **Specifications** | [**`AGENT_API.md`**](docs/AGENT_API.md) | Machine-first API and FastMCP tool interface for autonomous agents. |
+| **Specifications** | [**`SECURITY_MODEL.md`**](docs/SECURITY_MODEL.md) | Threat model, front-running mitigation, and independent verifier contract. |
+| **Audits** | [**`audits/README.md`**](audits/README.md) | Comprehensive audit log tracking Pre-Scaling (98.5/100) & Swarm (100/100) milestones. |
 
 ---
 
@@ -119,6 +162,20 @@ print(f"Felidae Collection: {felidae_stats['percentage']}% completed")
 
 ---
 
+## 🔌 Machine Interfaces: FastMCP Server & REST API
+
+GeneticFrames exposes machine-to-machine interfaces for AI agents and LLM tool-calling:
+
+```bash
+# 1. Start the FastAPI REST Server (with Swagger documentation at http://localhost:8000/docs):
+python -m uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
+
+# 2. Start the native FastMCP Server for Claude Desktop / Cursor / Antigravity:
+python protocol/mcp_server.py
+```
+
+---
+
 ## 🛡️ Independent Cryptographic Verifier
 
 The verifier executes a 5-point mathematical audit without trusting the protocol server:
@@ -142,16 +199,11 @@ print("Verification Result:", result.is_valid)
 
 ---
 
-## 🧪 Testing & Simulation
+## 🧪 Testing & Execution
 
-Run the complete test suite:
+Run the complete 34-test suite:
 ```bash
 pytest
-```
-
-Run the Autonomous Economy Closed Circuit Simulator (Section 55 of Blueprint):
-```bash
-python simulate_economy.py
 ```
 
 Launch the interactive Dashboard & Visual Explorer:

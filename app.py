@@ -25,7 +25,9 @@ from protocol.engine import GeneticFramesProtocol
 from protocol.agent_sdk import GeneticFramesAgentSDK
 from protocol.species_pool import SPECIES_POOL_V1, RarityTier
 from protocol.verifier import ProtocolVerifier
+from agents.swarm_runner import AgentSwarmEngine
 import sonification_core
+
 import os
 import scipy.io.wavfile as wavfile
 import scipy.signal as signal
@@ -729,23 +731,47 @@ def main():
                 col_a2.write(f"• **Prueba de Azar Verificable:** `{audit_res.randomness_proof_valid}`")
 
         with p_tab5:
-            st.markdown("#### 🤖 Simulador de Circuito Económico (Sección 55 Blueprint)")
-            st.write("Ejecuta una simulación en vivo con múltiples agentes autónomos (Coleccionistas, Traders y Creadores de Mercado) intercambiando y coleccionando frames.")
-            if st.button("▶️ Ejecutar Simulación Multi-Agente"):
-                with st.spinner("Simulando interacciones autónomas..."):
-                    # Execute demo circuit
-                    collector = GeneticFramesAgentSDK(protocol, "0xAgentA_Collector")
-                    trader = GeneticFramesAgentSDK(protocol, "0xAgentB_Trader")
-                    collector.deposit_gf(10.0)
-                    trader.deposit_gf(20.0)
+            st.markdown("#### 🤖 Enjambre de Agentes Autónomos (Agent Swarm)")
+            st.write("Orquesta y simula un ecosistema multi-agente con 6 bots autónomos con estrategias diferenciadas (*Collector Felidae*, *Collector Cetacea*, *Hunter Genesis*, *Hunter Value*, *Market Maker* y *Arbitrageur*).")
 
-                    f1 = collector.generate()["frame_id"]
-                    f2 = trader.generate()["frame_id"]
-                    listing = collector.create_ask(f1, 5.0)
-                    trader.buy_listing(listing["listing_id"])
+            s_col1, s_col2, s_col3 = st.columns([1, 1, 2])
+            with s_col1:
+                rounds_to_run = st.slider("Rondas a Simular:", min_value=1, max_value=15, value=5)
+            with s_col2:
+                run_swarm_btn = st.button("🚀 Lanzar Simulación de Enjambre", type="primary")
 
-                    st.success("✅ Simulación completada: Generación, quemado de GF, auditoría, listado y liquidación atómica P2P ejecutados.")
+            if 'swarm_engine' not in st.session_state:
+                st.session_state.swarm_engine = AgentSwarmEngine(protocol)
+                st.session_state.swarm_engine.initialize_default_swarm()
+
+            swarm: AgentSwarmEngine = st.session_state.swarm_engine
+
+            if run_swarm_btn:
+                with st.spinner(f"Ejecutando {rounds_to_run} rondas autónomas con {len(swarm.agents)} agentes..."):
+                    metrics = swarm.run_simulation(rounds_to_run)
+                    st.session_state.last_swarm_metrics = metrics
+                    st.success(f"✅ ¡Simulación completada! {metrics.total_actions} acciones autónomas ejecutadas en {metrics.total_rounds} rondas.")
                     st.rerun()
+
+            last_m = st.session_state.get("last_swarm_metrics")
+            if last_m:
+                st.divider()
+                st.markdown("##### 📊 Telemetría y Métricas de Equilibrio del Enjambre")
+                sm1, sm2, sm3, sm4 = st.columns(4)
+                sm1.metric("Acciones Totales", f"{last_m.total_actions}")
+                sm2.metric("Generaciones (GF Burn)", f"{last_m.total_generations}")
+                sm3.metric("Trades P2P", f"{last_m.total_trades}")
+                sm4.metric("Volumen Negociado", f"{last_m.total_volume_gf:.2f} GF")
+
+                tab_s1, tab_s2, tab_s3 = st.tabs(["🏆 Tabla de Riqueza y Portafolios", "🐆 Carrera de Colecciones", "⚡ Feed de Acciones"])
+                with tab_s1:
+                    st.dataframe(last_m.wealth_leaderboard, use_container_width=True)
+                with tab_s2:
+                    st.dataframe(last_m.collections_leaderboard, use_container_width=True)
+                with tab_s3:
+                    recent_actions = [a.to_dict() for a in reversed(swarm.all_action_logs[-25:])]
+                    st.dataframe(recent_actions, use_container_width=True)
+
 
     with tab2:
         st.markdown("### Parámetros Genéticos Analizados")

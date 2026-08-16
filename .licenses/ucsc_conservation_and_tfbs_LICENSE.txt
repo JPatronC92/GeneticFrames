@@ -1,5 +1,0 @@
-UCSC Genome Browser Data Terms and Conditions:
-UCSC data and APIs are provided by the University of California Santa Cruz.
-Please review terms at: https://genome.ucsc.edu/conditions.html and https://genome.ucsc.edu/goldenPath/help/api.html
-
-Notification recorded on: 2026-08-11T23:12:15-06:00

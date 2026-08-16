@@ -1,5 +1,0 @@
-InterPro EBI Database Terms and Conditions:
-InterPro data and APIs are provided by EMBL-EBI.
-Please review terms at: https://www.ebi.ac.uk/interpro/ and https://www.ebi.ac.uk/about/terms-of-use/
-
-Notification recorded on: 2026-08-11T23:12:15-06:00

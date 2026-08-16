@@ -7,7 +7,8 @@
 **Version:** Protocol v0.1 | **Status:** Experimental Protocol Implementation  
 *Generate. Discover. Own. Trade. The collection grows with the agents.*
 
-[Protocol Blueprint](GeneticFrames.md) · [Specifications](docs/) · [Agent SDK](#-agent-sdk-quickstart) · [Marketplace](#-agent-marketplace--p2p-trading) · [Verifier](#-independent-cryptographic-verifier)
+[Protocol Blueprint](GeneticFrames.md) · [Specifications](docs/) · [Audits](audits/) · [Agent SDK](#-agent-sdk-quickstart) · [Marketplace](#-agent-marketplace--p2p-trading) · [Verifier](#-independent-cryptographic-verifier)
+
 
 </div>
 

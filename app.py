@@ -21,10 +21,15 @@ from database import *
 from alphafold_engine import create_alphafold_biomorphic_3d_art
 from multi_skill_engine import create_multi_skill_masterpiece_art
 from deterministic_nft_engine import create_deterministic_nft_figure, generate_deterministic_svg, select_fragment
+from protocol.engine import GeneticFramesProtocol
+from protocol.agent_sdk import GeneticFramesAgentSDK
+from protocol.species_pool import SPECIES_POOL_V1, RarityTier
+from protocol.verifier import ProtocolVerifier
 import sonification_core
 import os
 import scipy.io.wavfile as wavfile
 import scipy.signal as signal
+
 
 # ============================================================================
 # CONFIGURACIÓN
@@ -42,6 +47,12 @@ if 'session_id' not in st.session_state:
         create_tables()
     except Exception:
         pass
+
+if 'protocol' not in st.session_state:
+    st.session_state.protocol = GeneticFramesProtocol()
+    st.session_state.protocol.economy.mint_gf("0xAgentA_Collector", 20.0)
+    st.session_state.protocol.economy.mint_gf("0xAgentB_Trader", 30.0)
+
 
 # Paletas de colores semánticas por categoría taxonómica
 TAXONOMIC_PALETTES = {
@@ -555,10 +566,190 @@ def main():
     st.markdown("**Algoritmo base para generar arte genético de cualquier animal basado en secuencias de ADN reales**")
     
     # Tabs principales
-    tab1, tab2, tab3 = st.tabs(["🎨 Generador", "📊 Algoritmo", "🏛️ Galería"])
-    
+    tab0, tab1, tab2, tab3 = st.tabs(["🏛️ Protocolo & Agentes", "🎨 Generador Universal", "📊 Algoritmo GFDP v2", "🖼️ Galería"])
+
+    with tab0:
+        protocol: GeneticFramesProtocol = st.session_state.protocol
+        metrics = protocol.get_protocol_metrics()
+
+        st.markdown("### 🏛️ GeneticFrames: Autonomous Asset Economy for AI Agents")
+        st.caption("Protocolo de activos biológicos digitales con costo fijo de emisión (1 GF), azar verificable, GFDP v2 y mercado autónomo P2P.")
+
+        # Protocol Metrics
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Época Activa", f"Epoch {metrics['epoch']}")
+        m2.metric("Frames Acuñados", f"{metrics['total_frames_minted']}")
+        m3.metric("GF Quemados", f"{metrics['total_gf_burned']:.1f} GF")
+        m4.metric("Tesorería (Fee 1.5%)", f"{metrics['treasury_gf_collected']:.4f} GF")
+        m5.metric("Órdenes / Trades", f"{metrics['active_listings_count']} / {metrics['trades_count']}")
+
+        st.divider()
+
+        # Agent Wallet Control
+        col_agent1, col_agent2, col_agent3 = st.columns([2, 2, 1])
+        with col_agent1:
+            agent_id = st.selectbox(
+                "Identidad del Agente Activo:",
+                ["0xAgentA_Collector", "0xAgentB_Trader", "0xAgentC_MarketMaker", "0xCustom_Agent"]
+            )
+            if agent_id == "0xCustom_Agent":
+                custom_id = st.text_input("Ingrese ID de Agente personalizado:", value="0xNewAgent_01")
+                agent_id = custom_id.strip()
+
+        agent_sdk = GeneticFramesAgentSDK(protocol, agent_id)
+        current_balance = agent_sdk.get_balance()
+
+        with col_agent2:
+            st.metric("Saldo Disponible", f"{current_balance:.2f} GF")
+        with col_agent3:
+            if st.button("💧 Faucet (+10 GF)"):
+                agent_sdk.deposit_gf(10.0)
+                st.rerun()
+
+        # Sub-tabs for Protocol Operations
+        p_tab1, p_tab2, p_tab3, p_tab4, p_tab5 = st.tabs([
+            "⚡ Generar Frame (1 GF)",
+            "🎒 Mi Inventario",
+            "📈 Mercado P2P",
+            "🛡️ Auditor Criptográfico",
+            "🤖 Simulador Económico"
+        ])
+
+        with p_tab1:
+            st.markdown("#### ⚡ Evento de Emisión: `GENERATE` (Costo Fijo: 1.0 GF)")
+            st.write("El agente paga 1 GF (quemado por el protocolo). El organismo, rareza y rasgos se determinan mediante azar verificable HMAC-SHA256 y datos biológicos reales.")
+
+            gen_col1, gen_col2 = st.columns([1, 2])
+            with gen_col1:
+                client_salt = st.text_input("Entropía del Agente (Opcional):", value="agent_client_seed_42")
+                if st.button("🚀 GENERATE (Pagar 1.0 GF)", type="primary"):
+                    if current_balance < 1.0:
+                        st.error("❌ Saldo insuficiente en GF. Usa el botón Faucet arriba.")
+                    else:
+                        try:
+                            record = protocol.generate(agent_id=agent_id, client_entropy=client_salt)
+                            st.success(f"🎉 ¡Frame #{record.frame_id} acuñado exitosamente!")
+                            st.session_state["last_generated_frame"] = record.frame_id
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error en generación: {e}")
+
+            with gen_col2:
+                last_fid = st.session_state.get("last_generated_frame")
+                if last_fid:
+                    frame = protocol.inspect_frame(last_fid)
+                    if frame:
+                        st.markdown(f"##### 🧬 Último Frame Acuñado: #{frame.frame_id} — {frame.common_name} (*{frame.scientific_name}*)")
+                        st.write(f"• **Rareza Protocolo:** `{frame.tier.value}`")
+                        st.write(f"• **Genoma Fuente:** `{frame.manifest['genome']['provider']} {frame.manifest['genome']['accession']}`")
+                        st.write(f"• **Algorithmic Rarity:** `{frame.manifest['genetic_traits']['algorithmic_rarity_score']} ({frame.manifest['genetic_traits']['algorithmic_rarity_tier']})`")
+                        st.image(frame.svg_code, width=320)
+
+        with p_tab2:
+            st.markdown("#### 🎒 Inventario de GeneticFrames")
+            my_frames = agent_sdk.list_my_frames()
+            if not my_frames:
+                st.info(f"El agente {agent_id} no posee GeneticFrames actualmente. Genera uno en la pestaña anterior.")
+            else:
+                for f_data in my_frames:
+                    with st.expander(f"Frame #{f_data['frame_id']} — {f_data['common_name']} ({f_data['tier']})", expanded=False):
+                        fc1, fc2 = st.columns([1, 1])
+                        with fc1:
+                            st.write(f"• **Especie:** {f_data['scientific_name']}")
+                            st.write(f"• **Creador:** `{f_data['creator_id']}`")
+                            st.write(f"• **Propietario:** `{f_data['owner_id']}`")
+                            st.write(f"• **Hash Manifiesto:** `{f_data['manifest_sha256'][:24]}...`")
+                            
+                            # Formulario para listar a la venta
+                            with st.form(f"list_form_{f_data['frame_id']}"):
+                                list_price = st.number_input("Precio de venta (GF):", min_value=0.5, value=3.0, step=0.5)
+                                if st.form_submit_button("🏷️ Publicar en Mercado"):
+                                    try:
+                                        agent_sdk.create_ask(f_data['frame_id'], list_price)
+                                        st.success(f"Frame #{f_data['frame_id']} publicado a {list_price} GF")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(str(e))
+                        with fc2:
+                            full_f = protocol.inspect_frame(f_data['frame_id'])
+                            if full_f:
+                                st.image(full_f.svg_code, width=280)
+
+        with p_tab3:
+            st.markdown("#### 📈 Mercado P2P Autónomo (Orderbook & Trades)")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                st.markdown("##### 🏷️ Listados Activos (Asks)")
+                active_listings = [l for l in protocol.economy.listings.values() if l.status.value == "active"]
+                if not active_listings:
+                    st.info("No hay listados activos en el mercado.")
+                else:
+                    for l in active_listings:
+                        frame_info = protocol.inspect_frame(l.frame_id)
+                        if frame_info:
+                            c1, c2 = st.columns([3, 2])
+                            c1.write(f"**Frame #{l.frame_id}** ({frame_info.common_name} - {frame_info.tier.value})\nVendedor: `{l.seller_id}`")
+                            if l.seller_id != agent_id:
+                                if c2.button(f"Comprar por {l.price_gf} GF", key=f"buy_{l.listing_id}"):
+                                    try:
+                                        agent_sdk.buy_listing(l.listing_id)
+                                        st.success("¡Compra ejecutada exitosamente!")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(str(e))
+                            else:
+                                if c2.button("Cancelar", key=f"cancel_{l.listing_id}"):
+                                    agent_sdk.cancel_ask(l.listing_id)
+                                    st.rerun()
+
+            with m_col2:
+                st.markdown("##### 🏆 Seguimiento de Colecciones Taxonómicas")
+                for family_name in ["Felidae", "Delphinidae", "Balaenopteridae"]:
+                    prog = agent_sdk.check_collection_progress(family_name)
+                    st.write(f"**Colección {family_name}:** {prog['owned_species']}/{prog['total_species']} especies ({prog['percentage']}%)")
+                    st.progress(prog['percentage'] / 100.0)
+
+        with p_tab4:
+            st.markdown("#### 🛡️ Auditor Criptográfico Independiente")
+            st.write("Verifica matemáticamente que un GeneticFrame no fue manipulado, que su secuencia proviene de la fuente biológica y que el SVG es 100% determinista.")
+            
+            audit_fid = st.number_input("ID del Frame a Auditar:", min_value=1, value=1, step=1)
+            if st.button("🔍 Auditar Frame"):
+                audit_res = protocol.verify_frame(audit_fid)
+                if audit_res.is_valid:
+                    st.success(f"✅ Frame #{audit_fid} es 100% AUTÉNTICO y VERIFICADO")
+                else:
+                    st.error(f"❌ Falló la verificación de Frame #{audit_fid}")
+                
+                col_a1, col_a2 = st.columns(2)
+                col_a1.write(f"• **Integridad del Manifiesto:** `{audit_res.manifest_integrity}`")
+                col_a1.write(f"• **Hash de Secuencia Biológica:** `{audit_res.sequence_matches_hash}`")
+                col_a1.write(f"• **Checksum del Fragmento:** `{audit_res.fragment_matches_hash}`")
+                col_a2.write(f"• **Reproducibilidad SVG GFDP v2:** `{audit_res.artifact_reproducible}`")
+                col_a2.write(f"• **Prueba de Azar Verificable:** `{audit_res.randomness_proof_valid}`")
+
+        with p_tab5:
+            st.markdown("#### 🤖 Simulador de Circuito Económico (Sección 55 Blueprint)")
+            st.write("Ejecuta una simulación en vivo con múltiples agentes autónomos (Coleccionistas, Traders y Creadores de Mercado) intercambiando y coleccionando frames.")
+            if st.button("▶️ Ejecutar Simulación Multi-Agente"):
+                with st.spinner("Simulando interacciones autónomas..."):
+                    # Execute demo circuit
+                    collector = GeneticFramesAgentSDK(protocol, "0xAgentA_Collector")
+                    trader = GeneticFramesAgentSDK(protocol, "0xAgentB_Trader")
+                    collector.deposit_gf(10.0)
+                    trader.deposit_gf(20.0)
+
+                    f1 = collector.generate()["frame_id"]
+                    f2 = trader.generate()["frame_id"]
+                    listing = collector.create_ask(f1, 5.0)
+                    trader.buy_listing(listing["listing_id"])
+
+                    st.success("✅ Simulación completada: Generación, quemado de GF, auditoría, listado y liquidación atómica P2P ejecutados.")
+                    st.rerun()
+
     with tab2:
         st.markdown("### Parámetros Genéticos Analizados")
+
         col1, col2 = st.columns(2)
         
         with col1:
